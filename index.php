@@ -3,48 +3,75 @@
 // index.php - Archivo principal en htdocs
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
 // Incluir archivos necesarios
 require_once 'app/Core/Router.php';
 
 // Crear instancia del router
 $router = new Router();
 
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE AUTENTICACIÓN
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/', 'AuthController', 'login');
+$router->addRoute('GET', '/login', 'AuthController', 'login');
+$router->addRoute('POST', '/login', 'AuthController', 'login');
+$router->addRoute('GET', '/logout', 'AuthController', 'logout');
 
+// Recuperación de contraseña
+$router->addRoute('GET', '/forgot-password', 'AuthController', 'forgotPassword');
+$router->addRoute('POST', '/forgot-password', 'AuthController', 'forgotPassword');
+$router->addRoute('GET', '/reset-password', 'AuthController', 'resetPassword');
+$router->addRoute('POST', '/reset-password', 'AuthController', 'resetPassword');
 
-// Definir rutas
-$router->addRoute('GET', '/', 'UserController', 'login');
-$router->addRoute('GET', '/login', 'UserController', 'login');
-$router->addRoute('POST', '/login', 'UserController', 'login');
-$router->addRoute('GET', '/dashboard', 'UserController', 'dashboard');
-$router->addRoute('GET', '/logout', 'UserController', 'logout');
-$router->addRoute('GET', '/partner/create', 'UserController', 'createPartner');
-$router->addRoute('POST', '/partner/create', 'UserController', 'createPartner');
+// Cambio de contraseña dentro de sesión
+$router->addRoute('GET', '/change-password', 'AuthController', 'changePassword');
+$router->addRoute('POST', '/change-password', 'AuthController', 'changePassword');
+
+// Registro de socio
+$router->addRoute('GET', '/partner/register', 'AuthController', 'registerPartner');
+$router->addRoute('POST', '/partner/register', 'AuthController', 'registerPartner');
+$router->addRoute('GET', '/partner/register/success', 'AuthController', 'registerPartner'); // página simple de éxito
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DEL DASHBOARD
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/dashboard', 'DashboardController', 'dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE USUARIOS
+|--------------------------------------------------------------------------
+*/
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
-$router->addRoute('GET', '/users/profile', 'UserController', 'UserProfile'); 
-$router->addRoute('GET', '/partner/list', 'UserController', 'listSocios');
+$router->addRoute('GET', '/users/profile', 'UserController', 'userProfile');
 
-$router->addRoute('GET', '/partner/edit/([0-9]+)', 'UserController', 'updatePartner');
-$router->addRoute('POST', '/partner/edit/([0-9]+)', 'UserController', 'updatePartner');
-$router->addRoute('GET', '/partner/delete/([0-9]+)', 'UserController', 'deletePartner');
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE SOCIOS (PARTNERS)
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/partner/create', 'PartnerController', 'createPartner');
+$router->addRoute('POST', '/partner/create', 'PartnerController', 'createPartner');
+$router->addRoute('GET', '/partner/list', 'PartnerController', 'listSocios');
 
-// New routes
-$router->addRoute('GET', '/partner/register', 'UserController', 'registerPartner');
-$router->addRoute('POST', '/partner/register', 'UserController', 'registerPartner');
-$router->addRoute('GET', '/partner/register/success', 'UserController', 'registerPartner'); // Simple success page
-$router->addRoute('GET', '/partner/manage', 'UserController', 'manageRegistrations');
-$router->addRoute('POST', '/partner/manage', 'UserController', 'manageRegistrations');
+$router->addRoute('GET', '/partner/edit/([0-9]+)', 'PartnerController', 'updatePartner');
+$router->addRoute('POST', '/partner/edit/([0-9]+)', 'PartnerController', 'updatePartner');
+$router->addRoute('GET', '/partner/delete/([0-9]+)', 'PartnerController', 'deletePartner');
 
+// gestión de registros de socios pendientes
+$router->addRoute('GET', '/partner/manage', 'PartnerController', 'manageRegistrations');
+$router->addRoute('POST', '/partner/manage', 'PartnerController', 'manageRegistrations');
 
-// Rutas de recuperación de contraseña
-  // Aquí procesamos el formulario de olvido de contraseña
-
-$router->addRoute('GET', '/forgot-password', 'UserController', 'forgotPassword');
-$router->addRoute('POST', '/forgot-password', 'UserController', 'forgotPassword');  // Aquí procesamos el formulario
-$router->addRoute('GET', '/reset-password', 'UserController', 'resetPassword');  // Ruta para resetear la contraseña
-$router->addRoute('POST', '/reset-password', 'UserController', 'resetPassword');  // Ruta para procesar el formulario de reset
-
-
-
+/*
+|--------------------------------------------------------------------------
+| MANEJO DE ERRORES
+|--------------------------------------------------------------------------
+*/
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     echo "<b>Error:</b> [$errno] $errstr - $errfile:$errline<br>";
 });
@@ -52,6 +79,6 @@ set_exception_handler(function($e) {
     echo "<b>Excepción:</b> " . $e->getMessage() . " - " . $e->getFile() . ":" . $e->getLine() . "<br>";
 });
 
+// Despachar la ruta
 $router->dispatch();
 
-?>
