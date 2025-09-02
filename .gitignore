@@ -53,3 +53,8 @@ node_modules/
 # ========================================
 uploads/
 storage/
+
+Add-Content .gitignore "`n.env"
+
+
+.env
