@@ -56,3 +56,5 @@ storage/
 
 Add-Content .gitignore "`n.env"
 
+
+.env
