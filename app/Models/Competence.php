@@ -96,6 +96,9 @@ class Competence
             case 'usuarios':
             case 'users':
                 return ['users/list', 'fas fa-users'];
+            case 'contribución':
+            case 'contribution':
+                return ['contribution/list', 'fas fa-users'];
 
             case 'permisos':
             case 'permissions':
