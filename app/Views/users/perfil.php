@@ -23,13 +23,12 @@ $user = !empty($users) ? $users[0] : [];
 $isAdmin = ($_SESSION['role'] ?? 1) == 1;
 
 // Verificar si hay solicitudes pendientes
-/*
 $pendingChanges = [];
 if (!$isAdmin && isset($user['idPartner'])) {
     require_once __DIR__ . '/../Models/UserChangeRequest.php';
-    //$changeRequestModel = new UserChangeRequest();
+    $changeRequestModel = new UserChangeRequest();
     $pendingChanges = $changeRequestModel->getPendingByPartner($user['idPartner']);
-}*/
+}
 
 // Start output buffering for the content
 ob_start();
@@ -41,10 +40,12 @@ ob_start();
             <?= strtoupper(substr($_SESSION['username'] ?? 'AU', 0, 2)) ?>
         </div>
         <div class="profile-actions">
+            <?php if (!$isAdmin): ?>
             <button class="btn btn-primary" onclick="editProfile()">
                 <i class="fas fa-edit"></i>
                 Editar Perfil
             </button>
+            <?php endif; ?>
         </div>
     </div>
     <div class="profile-header-info">
@@ -74,6 +75,7 @@ ob_start();
         </div>
         <div class="profile-grid">
             <?php if ($isAdmin): ?>
+                <!-- Vista para administradores (sin cambios) -->
                 <div class="profile-field">
                     <label class="field-label">Nombre de Usuario</label>
                     <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
@@ -87,6 +89,7 @@ ob_start();
                     <div class="field-value"><?= htmlspecialchars($user['idUser'] ?? $_SESSION['user_id'] ?? 'N/A') ?></div>
                 </div>
             <?php else: ?>
+                <!-- Vista para socios (con capacidad de edición) -->
                 <div class="profile-field">
                     <label class="field-label">Nombre Completo</label>
                     <div class="field-value" id="field-name"><?= htmlspecialchars($user['name'] ?? 'No disponible') ?></div>
@@ -189,6 +192,146 @@ ob_start();
     </div>
     <?php endif; ?>
 </div>
+
+<!-- Modal para confirmar envío de cambios -->
+<div class="modal fade" id="confirmChangesModal" tabindex="-1" role="dialog" aria-labelledby="confirmChangesModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmChangesModalLabel">Confirmar cambios</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas enviar estos cambios para su aprobación?</p>
+                <div id="changes-summary"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitChanges()">Enviar solicitud</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables para almacenar los cambios
+let changes = {};
+
+function editProfile() {
+    // Mostrar campos de edición
+    document.querySelectorAll('.field-value').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('.field-edit').forEach(el => {
+        el.style.display = 'block';
+    });
+    document.querySelector('.edit-actions').style.display = 'block';
+}
+
+function cancelEdit() {
+    // Ocultar campos de edición
+    document.querySelectorAll('.field-value').forEach(el => {
+        el.style.display = 'block';
+    });
+    document.querySelectorAll('.field-edit').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.querySelector('.edit-actions').style.display = 'none';
+    changes = {};
+}
+
+function collectChanges() {
+    changes = {};
+    
+    // Verificar cada campo editable
+    const fields = [
+        {id: 'name', field: 'name', value: document.getElementById('edit-name').value},
+        {id: 'ci', field: 'CI', value: document.getElementById('edit-ci').value},
+        {id: 'phone', field: 'cellPhoneNumber', value: document.getElementById('edit-phone').value},
+        {id: 'address', field: 'address', value: document.getElementById('edit-address').value},
+        {id: 'birthday', field: 'birthday', value: document.getElementById('edit-birthday').value}
+    ];
+    
+    fields.forEach(item => {
+        const currentValue = document.getElementById(`field-${item.id}`).textContent.trim();
+        if (item.value !== currentValue) {
+            changes[item.field] = {
+                old: currentValue,
+                new: item.value
+            };
+        }
+    });
+    
+    return changes;
+}
+
+function saveChanges() {
+    const changes = collectChanges();
+    
+    if (Object.keys(changes).length === 0) {
+        alert('No has realizado ningún cambio.');
+        return;
+    }
+    
+    // Mostrar resumen de cambios en el modal
+    let summaryHtml = '<ul>';
+    for (const field in changes) {
+        const fieldName = getFieldDisplayName(field);
+        summaryHtml += `<li><strong>${fieldName}:</strong> "${changes[field].old}" → "${changes[field].new}"</li>`;
+    }
+    summaryHtml += '</ul>';
+    
+    document.getElementById('changes-summary').innerHTML = summaryHtml;
+    $('#confirmChangesModal').modal('show');
+}
+
+function getFieldDisplayName(field) {
+    const fieldNames = {
+        'name': 'Nombre completo',
+        'CI': 'Cédula de identidad',
+        'cellPhoneNumber': 'Teléfono',
+        'address': 'Dirección',
+        'birthday': 'Fecha de nacimiento'
+    };
+    
+    return fieldNames[field] || field;
+}
+
+function submitChanges() {
+    $('#confirmChangesModal').modal('hide');
+    
+    // Enviar cambios al servidor
+    fetch('<?= u('users/request-changes') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            changes: changes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Solicitud de cambios enviada correctamente. Espera la aprobación del administrador.');
+            location.reload();
+        } else {
+            alert('Error al enviar la solicitud: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar la solicitud.');
+    });
+}
+
+function changePassword() {
+    // Implementar cambio de contraseña
+    alert('Funcionalidad de cambio de contraseña');
+}
+</script>
 
 <?php
 // Get the buffered content
