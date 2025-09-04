@@ -28,6 +28,44 @@ class UserController extends BaseController
         ]);
     }
 
+    public function editProfile(): void
+    {
+        $this->startSession();
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
+        }
+
+        require_once __DIR__ . '/../Models/Usuario.php';
+        require_once __DIR__ . '/../Models/Competence.php';
+        
+        // Obtener datos del usuario
+        $userModel = new \Usuario();
+        $users = $userModel->getUserProfile((int)($_SESSION['role'] ?? 0), (int)($_SESSION['user_id'] ?? 0));
+        
+        // Obtener opciones del menú para la barra lateral
+        $roleId = (int)($_SESSION['role'] ?? 2);
+        $menuOptions = (new \Competence())->getByRole($roleId);
+        
+        $this->view('users/editar_perfil', [
+            'users' => $users,
+            'menuOptions' => $menuOptions,
+            'currentPath' => 'users/profile/edit',
+            'roleId' => $roleId
+        ]);
+    }
+
+    public function updateProfile(): void
+    {
+        $this->startSession();
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
+        }
+
+        // Aquí iría la lógica para actualizar el perfil
+        // Por ahora solo redirigimos de vuelta al perfil
+        $this->redirect('users/profile');
+    }
+
     public function listUsers(): void
     {
         $this->startSession();
