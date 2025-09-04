@@ -30,10 +30,30 @@ $router->addRoute('POST', '/reset-password', 'AuthController', 'resetPassword');
 $router->addRoute('GET', '/change-password', 'AuthController', 'changePassword');
 $router->addRoute('POST', '/change-password', 'AuthController', 'changePassword');
 
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE CONTRIBUTION
+|--------------------------------------------------------------------------
+*/
+
+// In index.php, under RUTAS DEL PAYMENT or a new section
+$router->addRoute('GET', '/contribution/list', 'ContributionController', 'list');
+$router->addRoute('POST', '/contribution/list', 'ContributionController', 'list'); // Add POST route$router->addRoute('GET', '/contribution/create', 'ContributionController', 'create');
+$router->addRoute('POST', '/contribution/create', 'ContributionController', 'create');
+$router->addRoute('GET', '/contribution/edit/([0-9]+)', 'ContributionController', 'update');
+$router->addRoute('POST', '/contribution/edit/([0-9]+)', 'ContributionController', 'update');
+$router->addRoute('GET', '/contribution/delete/([0-9]+)', 'ContributionController', 'delete');
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE ONLINEPARTNER
+|--------------------------------------------------------------------------
+*/
+
 // Registro de socio
-$router->addRoute('GET', '/partner/register', 'AuthController', 'registerPartner');
-$router->addRoute('POST', '/partner/register', 'AuthController', 'registerPartner');
-$router->addRoute('GET', '/partner/register/success', 'AuthController', 'registerPartner'); // página simple de éxito
+$router->addRoute('GET', '/partner/register', 'OnlinePartnerController', 'registerPartner');
+$router->addRoute('POST', '/partner/register', 'OnlinePartnerController', 'registerPartner');
+$router->addRoute('GET', '/partner/register/success', 'OnlinePartnerController', 'registerPartner'); // página simple de éxito
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +100,20 @@ $router->addRoute('POST', '/partner/manage', 'PartnerController', 'manageRegistr
 
 // Exportar lista de socios a PDF
 $router->addRoute('GET', '/partner/export-pdf', 'PartnerController', 'export');
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DEL PAYMENT
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS DEL PAYMENT
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 
 /*
 |--------------------------------------------------------------------------

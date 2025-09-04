@@ -11,6 +11,10 @@ if (!function_exists('u')) {
 if (!function_exists('asset')) {
     function asset(string $path): string { return u($path); }
 }
+
+$maxBirthday = date('Y-m-d', strtotime('-18 years'));   // máximo permitido (18+)
+$minBirthday = date('Y-m-d', strtotime('-120 years'));  // mínimo razonable
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -150,8 +154,16 @@ if (!function_exists('asset')) {
                     </div>
                     <div class="form-group">
                         <label for="birthday">Fecha de Nacimiento</label>
-                        <input type="date" name="birthday" id="birthday" required>
+                        <input type="date" name="birthday" id="birthday" required min="<?= $minBirthday ?>" max="<?= $maxBirthday ?>">
                     </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ciPhoto">Foto del CI (JPEG/PNG, máx 2MB)</label>
+                        <input type="file" name="ciPhoto" id="ciPhoto" accept="image/*" required>
+                    </div>
+                    
                 </div>
 
                 <!-- Fecha de registro: se envía y se mantiene en el DOM pero OCULTA -->
@@ -160,6 +172,9 @@ if (!function_exists('asset')) {
                     <input type="text" id="dateRegistration_view" value="<?= date('Y-m-d H:i') ?> (automática)" readonly>
                     <small class="hint">Se guardará automáticamente al enviar. No es editable.</small>
                 </div>
+                <div class="g-recaptcha" data-sitekey="6Lf4Pb0rAAAAANwvyOXxEqIguKcFGo3uLgewa41b"></div>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    
                 <!-- Valor real que viaja en el POST -->
                 <input type="hidden" name="dateRegistration" value="<?= date('Y-m-d H:i:s') ?>">
 
