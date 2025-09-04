@@ -1,0 +1,60 @@
+# ========================================
+# Archivos sensibles y de configuración
+# ========================================
+.env
+config.php
+config/*.php
+*.sql
+*.bak
+*.tmp
+
+# ========================================
+# Archivos del sistema operativo
+# ========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================================
+# Logs y cachés
+# ========================================
+*.log
+logs/
+cache/
+tmp/
+*.swp
+
+# ========================================
+# IDEs y editores
+# ========================================
+# VSCode
+.vscode/
+# PHPStorm / JetBrains
+.idea/
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+# Otros
+*.sublime-project
+*.sublime-workspace
+
+# ========================================
+# Dependencias (si usas Composer o npm)
+# ========================================
+vendor/
+node_modules/
+
+# ========================================
+# Archivos de subida y almacenamiento
+# ========================================
+uploads/
+storage/
+
+Add-Content .gitignore "`n.env"
+
+
+.env
