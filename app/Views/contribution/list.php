@@ -67,7 +67,7 @@ ob_start();
 </div>
 
 <!-- Métricas -->
-<div class="dashboard-cards" style="margin-bottom:16px;">
+<!-- <div class="dashboard-cards" style="margin-bottom:16px;">
     <div class="card">
         <div class="card-header">
             <div class="card-icon success"><i class="fas fa-calendar"></i></div>
@@ -112,7 +112,7 @@ ob_start();
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Tabla de contribuciones -->
 <?php if (!empty($contributions) && is_array($contributions)): ?>
