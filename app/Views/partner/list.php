@@ -58,9 +58,15 @@ ob_start();
       />
     </div>
 
-    <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
-      <i class="fas fa-plus"></i> Nuevo Socio
-    </a>
+    <div style="display:flex;gap:12px;">
+      <button id="exportPdfBtn" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
+        <i class="fas fa-file-pdf"></i> Exportar PDF
+      </button>
+      
+      <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
+        <i class="fas fa-plus"></i> Nuevo Socio
+      </a>
+    </div>
   </div>
 
   <!-- Métricas (misma rejilla de cards que en dashboard) -->
@@ -294,6 +300,144 @@ ob_start();
       // primera renderizada
       render();
     })();
+  </script>
+
+  <!-- Add required library for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+  // Wait for the DOM to be fully loaded
+  document.addEventListener('DOMContentLoaded', function() {
+      // Add click event to the export button
+      document.getElementById('exportPdfBtn').addEventListener('click', async function() {
+          // Show loading state
+          const button = this;
+          const originalText = button.innerHTML;
+          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+          button.disabled = true;
+          
+          try {
+              // Fetch all partners from the server
+              const response = await fetch('export-pdf', {
+                  method: 'GET',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest'
+                  },
+                  credentials: 'same-origin'
+              });
+              
+              const result = await response.json();
+              
+              if (!result.success) {
+                  console.error('Error del servidor:', result.error);
+                  throw new Error('Error al generar el PDF: ' + (result.error || 'Error desconocido'));
+              }
+              
+              const partners = result.data || [];
+              
+              if (partners.length === 0) {
+                  throw new Error('No se encontraron socios para exportar');
+              }
+              
+              // Create a new PDF document
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF();
+              
+              // Add title and date
+              doc.setFontSize(20);
+              doc.text('Lista Completa de Socios', 15, 15);
+              
+              doc.setFontSize(10);
+              doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
+              
+              // Table headers
+              const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono'];
+              const columnPositions = [15, 55, 90, 125, 185];
+              
+              // Add table headers
+              doc.setFontSize(10);
+              doc.setFont('helvetica', 'bold');
+              headers.forEach((header, i) => {
+                  doc.text(header, columnPositions[i], 35);
+              });
+              
+              // Add horizontal line
+              doc.setDrawColor(0);
+              doc.setLineWidth(0.5);
+              doc.line(15, 37, 200, 37);
+              
+              // Add table rows
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(8);
+              
+              let y = 45;
+              partners.forEach((partner, index) => {
+                  if (y > 270) { // Check if we need a new page
+                      doc.addPage();
+                      y = 20;
+                      
+                      // Add headers to new page
+                      doc.setFontSize(10);
+                      doc.setFont('helvetica', 'bold');
+                      headers.forEach((header, i) => {
+                          doc.text(header, columnPositions[i], y);
+                      });
+                      doc.line(15, y + 2, 200, y + 2);
+                      y = 30;
+                      doc.setFont('helvetica', 'normal');
+                      doc.setFontSize(8);
+                  }
+                  
+                  const row = [
+                      partner.name || 'N/A',
+                      partner.CI || 'N/A',
+                      partner.login || 'N/A',
+                      partner.email || 'N/A',
+                      partner.cellPhoneNumber || 'N/A'
+                  ];
+                  
+                  // Add row data
+                  row.forEach((cell, i) => {
+                      doc.text(cell, columnPositions[i], y);
+                  });
+                  
+                  y += 7; // Row height
+                  
+                  // Add light horizontal line between rows
+                  if (index < partners.length - 1) {
+                      doc.setDrawColor(200);
+                      doc.setLineWidth(0.1);
+                      doc.line(15, y - 2, 200, y - 2);
+                      doc.setDrawColor(0);
+                  }
+              });
+              
+              // Add page numbers
+              const pageCount = doc.internal.getNumberOfPages();
+              for (let i = 1; i <= pageCount; i++) {
+                  doc.setPage(i);
+                  doc.setFontSize(8);
+                  doc.text(
+                      `Página ${i} de ${pageCount}`,
+                      doc.internal.pageSize.width - 30,
+                      doc.internal.pageSize.height - 10
+                  );
+              }
+              
+              // Save the PDF
+              doc.save('socios_completo_' + new Date().toISOString().split('T')[0] + '.pdf');
+              
+          } catch (error) {
+              console.error('Error al generar el PDF:', error);
+              alert('Error al generar el PDF. Por favor, intente nuevamente.');
+          } finally {
+              // Restore button state
+              button.innerHTML = originalText;
+              button.disabled = false;
+          }
+      });
+  });
   </script>
 <?php
 $content = ob_get_clean();

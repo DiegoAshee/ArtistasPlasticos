@@ -100,6 +100,50 @@ class PartnerController extends BaseController
         $this->view('partner/create', $viewData);
     }
 
+    public function export(): void
+    {
+        try {
+            $this->startSession();
+            
+            // Verificar autenticación
+            if (!isset($_SESSION['user_id'])) {
+                throw new Exception('No autorizado: Sesión no iniciada');
+            }
+            
+            // Obtener todos los socios
+            require_once __DIR__ . '/../Models/Partner.php';
+            $partnerModel = new \Partner();
+            
+            if (!method_exists($partnerModel, 'getAllSocios')) {
+                throw new Exception('El método getAllSocios no existe en el modelo Partner');
+            }
+            
+            $socios = $partnerModel->getAllSocios();
+            
+            if ($socios === false) {
+                throw new Exception('Error al obtener los socios de la base de datos');
+            }
+            
+            // Configurar cabeceras para respuesta JSON
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $socios
+            ]);
+            exit;
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            exit;
+        }
+    }
+
     public function listSocios(): void
     {
         $this->startSession();

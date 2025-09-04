@@ -67,6 +67,9 @@ $router->addRoute('GET', '/partner/delete/([0-9]+)', 'PartnerController', 'delet
 $router->addRoute('GET', '/partner/manage', 'PartnerController', 'manageRegistrations');
 $router->addRoute('POST', '/partner/manage', 'PartnerController', 'manageRegistrations');
 
+// Exportar lista de socios a PDF
+$router->addRoute('GET', '/partner/export-pdf', 'PartnerController', 'export');
+
 /*
 |--------------------------------------------------------------------------
 | MANEJO DE ERRORES
