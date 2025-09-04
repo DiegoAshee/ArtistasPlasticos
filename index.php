@@ -49,6 +49,8 @@ $router->addRoute('GET', '/dashboard', 'DashboardController', 'dashboard');
 */
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
 $router->addRoute('GET', '/users/profile', 'UserController', 'userProfile');
+$router->addRoute('GET', '/users/profile/edit', 'UserController', 'editProfile');
+$router->addRoute('POST', '/users/profile/update', 'UserController', 'updateProfile');
 
 /*
 |--------------------------------------------------------------------------

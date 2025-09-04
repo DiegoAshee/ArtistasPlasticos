@@ -32,10 +32,10 @@ ob_start();
             <?= strtoupper(substr($_SESSION['username'] ?? 'AU', 0, 2)) ?>
         </div>
         <div class="profile-actions">
-            <button class="btn btn-primary" onclick="editProfile()">
+            <a href="<?= u('users/profile/edit') ?>" class="btn btn-primary">
                 <i class="fas fa-edit"></i>
                 Editar Perfil
-            </button>
+            </a>
         </div>
     </div>
     <div class="profile-header-info">
@@ -56,20 +56,24 @@ ob_start();
             </h3>
         </div>
         <div class="profile-grid">
+            <!-- Información común para todos los usuarios -->
+            <div class="profile-field">
+                <label class="field-label">Nombre de Usuario</label>
+                <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
+            </div>
+            <div class="profile-field">
+                <label class="field-label">Correo Electrónico</label>
+                <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'No disponible') ?></div>
+            </div>
+            
             <?php if ($isAdmin): ?>
-                <div class="profile-field">
-                    <label class="field-label">Nombre de Usuario</label>
-                    <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
-                </div>
-                <div class="profile-field">
-                    <label class="field-label">Correo Electrónico</label>
-                    <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></div>
-                </div>
+                <!-- Información adicional solo para administradores -->
                 <div class="profile-field">
                     <label class="field-label">ID de Usuario</label>
                     <div class="field-value"><?= htmlspecialchars($user['idUser'] ?? $_SESSION['user_id'] ?? 'N/A') ?></div>
                 </div>
             <?php else: ?>
+                <!-- Información adicional para usuarios regulares -->
                 <div class="profile-field">
                     <label class="field-label">Nombre Completo</label>
                     <div class="field-value"><?= htmlspecialchars($user['name'] ?? 'No disponible') ?></div>
@@ -143,6 +147,8 @@ ob_start();
     </div>
     <?php endif; ?>
 </div>
+
+<!-- Se ha eliminado el modal de edición ya que ahora se usa una página dedicada en /users/profile/edit -->
 
 <?php
 // Get the buffered content
