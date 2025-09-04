@@ -59,7 +59,6 @@ class Competence
             if (empty($items)) {
                 $items = $this->fallbackForRole($roleId);
             }
-
             return $items;
         } catch (\PDOException $e) {
             error_log('Competence::getByRole error: ' . $e->getMessage());
@@ -97,6 +96,11 @@ class Competence
             case 'usuarios':
             case 'users':
                 return ['users/list', 'fas fa-users'];
+
+            case 'permisos':
+            case 'permissions':
+            case 'gestión de permisos':
+                return ['permissions', 'fas fa-user-lock'];
 
             case 'roles':
                 return ['roles', 'fas fa-user-shield'];

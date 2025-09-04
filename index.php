@@ -44,6 +44,15 @@ $router->addRoute('GET', '/dashboard', 'DashboardController', 'dashboard');
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS DE PERMISOS
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/permissions', 'PermissionController', 'index');
+$router->addRoute('GET', '/permissions/create', 'PermissionController', 'create');
+$router->addRoute('POST', '/permissions/update', 'PermissionController', 'update');
+
+/*
+|--------------------------------------------------------------------------
 | RUTAS DE USUARIOS
 |--------------------------------------------------------------------------
 */
@@ -86,4 +95,3 @@ set_exception_handler(function($e) {
 
 // Despachar la ruta
 $router->dispatch();
-

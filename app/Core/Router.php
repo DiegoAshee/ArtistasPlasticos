@@ -52,42 +52,20 @@ class Router {
             }
         }
 
-        $this->showError("404 - Página no encontrada: " . $requestPath);
+        $this->showError('Ruta no encontrada', 404);
     }
 
     private function getNormalizedPath() {
-        // Ruta solicitada sin query string
-        $uri = parse_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
-        if (!$uri) $uri = '/';
-
-        // Base path real (carpeta donde vive index.php): /pasantes/jcrojas
-        $basePath = rtrim(str_replace('\\', '/', dirname(isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '')), '/');
-
-        // Quitar prefijo de subcarpeta si existe
-        if ($basePath && $basePath !== '/') {
-            $pattern = '#^' . preg_quote($basePath, '#') . '#';
-            $uri = preg_replace($pattern, '', $uri);
-        }
-
-        if ($uri === '' || $uri === false) $uri = '/';
-        if ($uri !== '/' && substr($uri, -1) === '/') $uri = rtrim($uri, '/');
-
-        // Normalizar /index.php a /
-        if ($uri === '/index.php') $uri = '/';
-
-        return $uri;
+        $basePath = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = '/' . trim(str_replace($basePath, '', $uri), '/');
+        return $path === '' ? '/' : $path;
     }
 
-    private function showError($message) {
-        http_response_code(404);
-        $base = '/';
-        $config = __DIR__ . '/../Config/config.php';
-        if (is_file($config)) {
-            require_once $config;
-            if (defined('BASE_URL')) $base = rtrim(BASE_URL, '/') . '/';
-        }
-        echo "<h1>Error</h1>";
-        echo "<p>" . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . "</p>";
-        echo "<p><a href='" . htmlspecialchars($base . "login", ENT_QUOTES, 'UTF-8') . "'>Ir al Login</a></p>";
+    private function showError($message, $statusCode = 500) {
+        http_response_code($statusCode);
+        echo "<h1>Error $statusCode</h1>";
+        echo "<p>$message</p>";
+        exit;
     }
 }
