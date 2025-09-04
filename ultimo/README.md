@@ -1,2 +1,0 @@
-# ArtistasPlasticos
-Artistas Platicos Abap
