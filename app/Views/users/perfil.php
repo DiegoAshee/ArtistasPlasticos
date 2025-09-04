@@ -12,7 +12,7 @@ if (!function_exists('asset')) {
 
 // Set up variables for the layout
 $title = 'Mi Perfil';
-$currentPath = 'users/profile'; // Update this path to match your route
+$currentPath = 'users/profile';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Mi Perfil', 'url' => null],
@@ -21,6 +21,15 @@ $breadcrumbs = [
 // Obtener datos del usuario
 $user = !empty($users) ? $users[0] : [];
 $isAdmin = ($_SESSION['role'] ?? 1) == 1;
+
+// Verificar si hay solicitudes pendientes
+/*
+$pendingChanges = [];
+if (!$isAdmin && isset($user['idPartner'])) {
+    require_once __DIR__ . '/../Models/UserChangeRequest.php';
+    //$changeRequestModel = new UserChangeRequest();
+    $pendingChanges = $changeRequestModel->getPendingByPartner($user['idPartner']);
+}*/
 
 // Start output buffering for the content
 ob_start();
@@ -32,10 +41,10 @@ ob_start();
             <?= strtoupper(substr($_SESSION['username'] ?? 'AU', 0, 2)) ?>
         </div>
         <div class="profile-actions">
-            <a href="<?= u('users/profile/edit') ?>" class="btn btn-primary">
+            <button class="btn btn-primary" onclick="editProfile()">
                 <i class="fas fa-edit"></i>
                 Editar Perfil
-            </a>
+            </button>
         </div>
     </div>
     <div class="profile-header-info">
@@ -44,6 +53,14 @@ ob_start();
         <p class="profile-email"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></p>
     </div>
 </div>
+
+<!-- Pending Changes Notification -->
+<?php if (!empty($pendingChanges) && !$isAdmin): ?>
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    Tienes <strong><?= count($pendingChanges) ?></strong> solicitud(es) de cambio pendientes de aprobación por el administrador.
+</div>
+<?php endif; ?>
 
 <!-- Profile Content -->
 <div class="profile-content">
@@ -56,43 +73,54 @@ ob_start();
             </h3>
         </div>
         <div class="profile-grid">
-            <!-- Información común para todos los usuarios -->
-            <div class="profile-field">
-                <label class="field-label">Nombre de Usuario</label>
-                <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
-            </div>
-            <div class="profile-field">
-                <label class="field-label">Correo Electrónico</label>
-                <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'No disponible') ?></div>
-            </div>
-            
             <?php if ($isAdmin): ?>
-                <!-- Información adicional solo para administradores -->
+                <div class="profile-field">
+                    <label class="field-label">Nombre de Usuario</label>
+                    <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
+                </div>
+                <div class="profile-field">
+                    <label class="field-label">Correo Electrónico</label>
+                    <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></div>
+                </div>
                 <div class="profile-field">
                     <label class="field-label">ID de Usuario</label>
                     <div class="field-value"><?= htmlspecialchars($user['idUser'] ?? $_SESSION['user_id'] ?? 'N/A') ?></div>
                 </div>
             <?php else: ?>
-                <!-- Información adicional para usuarios regulares -->
                 <div class="profile-field">
                     <label class="field-label">Nombre Completo</label>
-                    <div class="field-value"><?= htmlspecialchars($user['name'] ?? 'No disponible') ?></div>
+                    <div class="field-value" id="field-name"><?= htmlspecialchars($user['name'] ?? 'No disponible') ?></div>
+                    <div class="field-edit" style="display: none;">
+                        <input type="text" id="edit-name" class="form-control" value="<?= htmlspecialchars($user['name'] ?? '') ?>">
+                    </div>
                 </div>
                 <div class="profile-field">
                     <label class="field-label">Cédula de Identidad</label>
-                    <div class="field-value"><?= htmlspecialchars($user['CI'] ?? 'No disponible') ?></div>
+                    <div class="field-value" id="field-ci"><?= htmlspecialchars($user['CI'] ?? 'No disponible') ?></div>
+                    <div class="field-edit" style="display: none;">
+                        <input type="text" id="edit-ci" class="form-control" value="<?= htmlspecialchars($user['CI'] ?? '') ?>">
+                    </div>
                 </div>
                 <div class="profile-field">
                     <label class="field-label">Teléfono</label>
-                    <div class="field-value"><?= htmlspecialchars($user['cellPhoneNumber'] ?? 'No disponible') ?></div>
+                    <div class="field-value" id="field-phone"><?= htmlspecialchars($user['cellPhoneNumber'] ?? 'No disponible') ?></div>
+                    <div class="field-edit" style="display: none;">
+                        <input type="text" id="edit-phone" class="form-control" value="<?= htmlspecialchars($user['cellPhoneNumber'] ?? '') ?>">
+                    </div>
                 </div>
                 <div class="profile-field">
                     <label class="field-label">Dirección</label>
-                    <div class="field-value"><?= htmlspecialchars($user['address'] ?? 'No disponible') ?></div>
+                    <div class="field-value" id="field-address"><?= htmlspecialchars($user['address'] ?? 'No disponible') ?></div>
+                    <div class="field-edit" style="display: none;">
+                        <textarea id="edit-address" class="form-control"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
+                    </div>
                 </div>
                 <div class="profile-field">
                     <label class="field-label">Fecha de Nacimiento</label>
-                    <div class="field-value"><?= htmlspecialchars($user['birthday'] ?? 'No disponible') ?></div>
+                    <div class="field-value" id="field-birthday"><?= htmlspecialchars($user['birthday'] ?? 'No disponible') ?></div>
+                    <div class="field-edit" style="display: none;">
+                        <input type="date" id="edit-birthday" class="form-control" value="<?= htmlspecialchars($user['birthday'] ?? '') ?>">
+                    </div>
                 </div>
                 <div class="profile-field">
                     <label class="field-label">Fecha de Registro</label>
@@ -108,6 +136,20 @@ ob_start();
                 <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></div>
             </div>
         </div>
+        
+        <!-- Edit Actions (solo para socios) -->
+        <?php if (!$isAdmin): ?>
+        <div class="edit-actions" style="display: none; margin-top: 20px;">
+            <button class="btn btn-success" onclick="saveChanges()">
+                <i class="fas fa-paper-plane"></i>
+                Enviar solicitud de cambios
+            </button>
+            <button class="btn btn-secondary" onclick="cancelEdit()">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </button>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Security Information -->
@@ -147,8 +189,6 @@ ob_start();
     </div>
     <?php endif; ?>
 </div>
-
-<!-- Se ha eliminado el modal de edición ya que ahora se usa una página dedicada en /users/profile/edit -->
 
 <?php
 // Get the buffered content

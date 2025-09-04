@@ -73,7 +73,7 @@ class Competence
      */
     private function mapNameToRouteAndIcon(string $name): array
     {
-        $n = mb_strtolower(trim($name), 'UTF-8');
+        $n = mb_strtolower(trim($name), encoding: 'UTF-8');
 
         switch ($n) {
             case 'dashboard':
