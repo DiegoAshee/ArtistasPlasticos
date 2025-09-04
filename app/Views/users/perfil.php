@@ -23,12 +23,13 @@ $user = !empty($users) ? $users[0] : [];
 $isAdmin = ($_SESSION['role'] ?? 1) == 1;
 
 // Verificar si hay solicitudes pendientes
+/*
 $pendingChanges = [];
 if (!$isAdmin && isset($user['idPartner'])) {
     require_once __DIR__ . '/../Models/UserChangeRequest.php';
     $changeRequestModel = new UserChangeRequest();
     $pendingChanges = $changeRequestModel->getPendingByPartner($user['idPartner']);
-}
+}*/
 
 // Start output buffering for the content
 ob_start();
