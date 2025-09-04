@@ -58,6 +58,8 @@ $router->addRoute('POST', '/permissions/update', 'PermissionController', 'update
 */
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
 $router->addRoute('GET', '/users/profile', 'UserController', 'userProfile');
+$router->addRoute('GET', '/users/profile/edit', 'UserController', 'editProfile');
+$router->addRoute('POST', '/users/profile/update', 'UserController', 'updateProfile');
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +77,9 @@ $router->addRoute('GET', '/partner/delete/([0-9]+)', 'PartnerController', 'delet
 // gestión de registros de socios pendientes
 $router->addRoute('GET', '/partner/manage', 'PartnerController', 'manageRegistrations');
 $router->addRoute('POST', '/partner/manage', 'PartnerController', 'manageRegistrations');
+
+// Exportar lista de socios a PDF
+$router->addRoute('GET', '/partner/export-pdf', 'PartnerController', 'export');
 
 /*
 |--------------------------------------------------------------------------

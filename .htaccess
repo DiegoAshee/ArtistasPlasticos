@@ -1,5 +1,5 @@
 RewriteEngine On
-RewriteBase /pasantes/drejas/
+RewriteBase /pasantes/jcrojas/
 DirectoryIndex index.php
 
 # Si el recurso existe, no reescribir
