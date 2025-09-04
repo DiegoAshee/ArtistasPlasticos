@@ -6,6 +6,13 @@ require_once __DIR__ . '/../Config/config.php'; // Para BASE_URL
 
 class BaseController
 {
+
+    public function __construct()
+    {
+        // Arrancar la sesión en todos los controladores
+        $this->startSession();
+    }
+
     // ===== Helpers base =====
     protected function startSession(): void
     {
