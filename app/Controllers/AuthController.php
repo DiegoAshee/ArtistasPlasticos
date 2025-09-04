@@ -298,49 +298,6 @@ class AuthController extends BaseController
         $this->view('change_password');
     }
 
-    // ====== REGISTRO PÚBLICO DE SOCIO ======
-    public function registerPartner(): void
-    {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            $name            = (string)($_POST['name'] ?? '');
-            $ci              = (string)($_POST['ci'] ?? '');
-            $cellPhoneNumber = (string)($_POST['cellPhoneNumber'] ?? '');
-            $address         = (string)($_POST['address'] ?? '');
-            $birthday        = (string)($_POST['birthday'] ?? '');
-            $email           = (string)($_POST['email'] ?? '');
-
-            // Validaciones
-            if ($name === '' || $ci === '' || $cellPhoneNumber === '' || $address === '' || $birthday === '' || $email === '') {
-                $error = "Todos los campos son obligatorios.";
-            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $error = "El correo no tiene un formato válido.";
-            } else {
-                require_once __DIR__ . '/../Models/PartnerOnline.php';
-                $partnerOnlineModel = new \PartnerOnline();
-
-                // (Opcional) comprobar duplicados básicos
-                if ($partnerOnlineModel->emailExists($email)) {
-                    $error = "Este correo ya tiene una solicitud registrada.";
-                } elseif ($partnerOnlineModel->ciExists($ci)) {
-                    $error = "Ya existe una solicitud con ese CI.";
-                } else {
-                    // El modelo pondrá NOW() en dateCreation y dateRegistration
-                    $ok = $partnerOnlineModel->create($name, $ci, $cellPhoneNumber, $address, $birthday, $email);
-                    if ($ok) {
-                        $this->redirect('partner/register?success=1');
-                        return;
-                    }
-                    $error = "Error al enviar la solicitud.";
-                }
-            }
-        } elseif (isset($_GET['success'])) {
-            $success = "Solicitud enviada con éxito. Será revisada por un administrador.";
-            $this->view('partner/register', ['success' => $success]);
-            return;
-        }
-
-        $this->view('partner/register', isset($error) ? ['error' => $error] : []);
-    }
 
     /**
      * Enviar correo de primer inicio de sesión con seguridad.

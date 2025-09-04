@@ -97,4 +97,35 @@ class PartnerOnline {
             return false;
         }
     }
+    public function emailExistsAnywhere(string $email): bool {
+        try {
+            $sql = "SELECT 
+                    (EXISTS(SELECT 1 FROM partneronline WHERE email = :e1)
+                    OR EXISTS(SELECT 1 FROM user          WHERE email = :e2)) AS ex";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':e1', $email);
+            $stmt->bindValue(':e2', $email);
+            $stmt->execute();
+            return (bool)$stmt->fetchColumn();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::emailExistsAnywhere error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function ciExistsAnywhere(string $ci): bool {
+        try {
+            $sql = "SELECT 
+                    (EXISTS(SELECT 1 FROM partneronline WHERE CI = :c1)
+                    OR EXISTS(SELECT 1 FROM partner       WHERE ci = :c2)) AS ex";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':c1', $ci);
+            $stmt->bindValue(':c2', $ci);
+            $stmt->execute();
+            return (bool)$stmt->fetchColumn();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::ciExistsAnywhere error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
