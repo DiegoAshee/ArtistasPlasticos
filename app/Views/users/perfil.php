@@ -29,11 +29,33 @@ if (!$isAdmin && isset($user['idPartner'])) {
     require_once __DIR__ . '/../Models/UserChangeRequest.php';
     $changeRequestModel = new UserChangeRequest();
     $pendingChanges = $changeRequestModel->getPendingByPartner($user['idPartner']);
-}*/
+}
+*/
+// Verificar si hay un mensaje de éxito en la sesión (para la notificación de solicitud enviada)
+$showSuccessNotification = false;
+$successMessageText = '';
+if (isset($_SESSION['success'])) {
+    $showSuccessNotification = true;
+    $successMessageText = $_SESSION['success'];
+    unset($_SESSION['success']); // Limpiar el mensaje después de mostrarlo
+}
 
 // Start output buffering for the content
 ob_start();
 ?>
+
+<?php if ($showSuccessNotification): ?>
+    <div class="alert alert-success">
+        <strong>Éxito!</strong> <?= htmlspecialchars($successMessageText) ?>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($successMessage) && !$showSuccessNotification): ?>
+    <div class="alert alert-success">
+        <strong>Éxito!</strong> <?= htmlspecialchars($successMessage) ?>
+    </div>
+<?php endif; ?>
+
 <!-- Profile Header -->
 <div class="profile-header">
     <div class="profile-avatar-section">
@@ -42,10 +64,10 @@ ob_start();
         </div>
         <div class="profile-actions">
             <?php if (!$isAdmin): ?>
-            <button class="btn btn-primary" onclick="editProfile()">
+            <a href="<?= u('users/profile/edit') ?>" class="btn btn-primary">
                 <i class="fas fa-edit"></i>
                 Editar Perfil
-            </button>
+            </a>
             <?php endif; ?>
         </div>
     </div>
@@ -55,6 +77,7 @@ ob_start();
         <p class="profile-email"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></p>
     </div>
 </div>
+
 
 <!-- Pending Changes Notification -->
 <?php if (!empty($pendingChanges) && !$isAdmin): ?>

@@ -128,4 +128,45 @@ class PartnerOnline {
             return false;
         }
     }
+
+
+
+    //modulo modificación de daos por parte del socio
+
+     // Crear una solicitud de cambio
+    public function createChangeRequest($name, $ci, $cellPhoneNumber, $address, $birthday, $email, $idUser) {
+        try {
+            $query = "INSERT INTO " . self::TBL . " 
+                (name, ci, cellPhoneNumber, address, birthday, email, dateCreation, dateRegistration, idUser)
+                VALUES (:name, :ci, :cellPhoneNumber, :address, :birthday, :email, NOW(), NOW(), :idUser)";
+            
+            $stmt = $this->db->prepare($query);
+            
+            // Vincular parámetros con los valores proporcionados
+            $stmt->bindParam(':name', $name);
+            $stmt->bindParam(':ci', $ci);
+            $stmt->bindParam(':cellPhoneNumber', $cellPhoneNumber);
+            $stmt->bindParam(':address', $address);
+            $stmt->bindParam(':birthday', $birthday);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':idUser', $idUser, PDO::PARAM_INT);
+            
+            // Ejecutar la consulta
+            $stmt->execute();
+            
+            // Retornar el ID de la solicitud creada
+            return $this->db->lastInsertId();
+        } catch (PDOException $e) {
+            // Si ocurre un error, lo registramos
+            error_log("Error al crear solicitud: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+
+
+
+
+
 }

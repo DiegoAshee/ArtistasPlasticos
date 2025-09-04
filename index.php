@@ -117,6 +117,15 @@ $router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS DEL PARNERT ONLINE
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('POST', '/partnerOnline/createRequest', 'PartnerOnlineController', 'createRequest');
+
+
+
+/*
+|--------------------------------------------------------------------------
 | MANEJO DE ERRORES
 |--------------------------------------------------------------------------
 */
