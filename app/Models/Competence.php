@@ -106,7 +106,7 @@ class Competence
                 return ['permissions', 'fas fa-user-lock'];
 
             case 'roles':
-                return ['roles', 'fas fa-user-shield'];
+                return ['role/list', 'fas fa-user-shield'];
 
             case 'historial pagos':
             case 'historial de pagos':
