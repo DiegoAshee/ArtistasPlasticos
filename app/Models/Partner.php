@@ -35,12 +35,28 @@ class Partner {
     }
     public function getAllSocios() {
         try {
-            $query = "SELECT p.*, u.login, u.email FROM " . self::TBL . " p 
+            $query = "SELECT 
+                        p.idPartner,
+                        p.name,
+                        p.CI,
+                        p.cellPhoneNumber,
+                        p.address,
+                        DATE_FORMAT(p.dateCreation, '%Y-%m-%d %H:%i:%s') as dateCreation,
+                        DATE_FORMAT(p.birthday, '%Y-%m-%d') as birthday,
+                        DATE_FORMAT(p.dateRegistration, '%Y-%m-%d') as dateRegistration,
+                        u.login,
+                        u.email
+                      FROM " . self::TBL . " p 
                       JOIN " . self::TBL2 . " u ON p.idPartner = u.idPartner 
                       WHERE u.idRol = 2";
             $stmt = $this->db->prepare($query);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Log the result for debugging
+            error_log('Socios data: ' . print_r($result, true));
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Error al obtener socios: " . $e->getMessage());
             return [];
