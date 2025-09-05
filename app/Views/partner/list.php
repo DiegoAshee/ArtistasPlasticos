@@ -69,8 +69,8 @@ ob_start();
     </div>
   </div>
 
-  <!-- Métricas (misma rejilla de cards que en dashboard) -->
-  <div class="dashboard-cards" style="margin-bottom:16px;">
+  Métricas (misma rejilla de cards que en dashboard)
+  <!-- <div class="dashboard-cards" style="margin-bottom:16px;">
     <div class="card">
       <div class="card-header">
         <div class="card-icon success"><i class="fas fa-users"></i></div>
@@ -115,7 +115,7 @@ ob_start();
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Tabla de socios -->
   <?php if (!empty($socios) && is_array($socios)): ?>
