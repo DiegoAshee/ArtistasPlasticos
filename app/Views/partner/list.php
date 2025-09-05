@@ -365,7 +365,7 @@ ob_start();
               // Table headers - adjust positions for better fit in landscape
               const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
               // Adjusted positions to fit all columns in landscape
-              const columnPositions = [10, 50, 75, 100, 135, 170, 210, 235, 260];
+              const columnPositions = [10, 40, 70, 100, 130, 160, 200, 225, 250];
               
               // Add table headers
               doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
@@ -381,7 +381,27 @@ ob_start();
               
               // Add table rows
               doc.setFont('helvetica', 'normal');
-              doc.setFontSize(6); // Reducir tamaño de fuente para filas
+              doc.setFontSize(6); // Reduced font size for rows
+              // Enable text wrapping for long text
+              const wrapText = (text, maxWidth) => {
+                  if (!text) return [''];
+                  const words = text.toString().split(' ');
+                  const lines = [];
+                  let currentLine = words[0] || '';
+                  
+                  for (let i = 1; i < words.length; i++) {
+                      const word = words[i];
+                      const width = doc.getTextWidth(currentLine + ' ' + word);
+                      if (width < maxWidth) {
+                          currentLine += ' ' + word;
+                      } else {
+                          lines.push(currentLine);
+                          currentLine = word;
+                      }
+                  }
+                  lines.push(currentLine);
+                  return lines;
+              };
               
               let y = 45;
               // Configurar orientación horizontal para mejor ajuste
@@ -431,7 +451,7 @@ ob_start();
                   
                   console.log('Generated row:', row);
                   
-                  // Add row data
+                  // Add row data with text wrapping
                   row.forEach((cell, i) => {
                       const columnWidth = i < columnPositions.length - 1 ? 
                           columnPositions[i + 1] - columnPositions[i] - 5 : 
