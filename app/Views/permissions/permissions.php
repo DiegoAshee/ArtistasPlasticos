@@ -1,6 +1,4 @@
 <?php
-// Helper functions for URL generation
-
 // Check if user is logged in and has admin role
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
     header('Location: /dashboard');
@@ -14,6 +12,10 @@ $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Permisos', 'url' => null],
 ];
+
+// Get the permissions and roles from the controller
+$permissions = $permissions ?? [];
+$roles = $roles ?? [];
 
 // Start output buffering
 ob_start();
@@ -43,54 +45,59 @@ ob_start();
         color: var(--dark-brown);
         font-size: 1.75rem;
         font-weight: 600;
-        margin: 0;
-        padding: 0;
-        line-height: 1.2;
+        margin: 0 0 1.5rem 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--soft-brown);
+        position: relative;
     }
 
     .permissions-title:after {
         content: '';
         position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
+        bottom: -2px;
+        left: 0;
         width: 80px;
         height: 3px;
-        background: var(--primary);
-        border-radius: 2px;
+        background: var(--dark-brown);
     }
 
     .permissions-table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin-top: 1.5rem;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
         font-size: 0.95rem;
-        background: var(--bg-surface);
-        border-radius: var(--radius);
+        background: #fff;
+        border-radius: 8px;
         overflow: hidden;
-        color: var(--soft-brown);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .permissions-table th {
         background-color: var(--soft-brown);
-        color: var(--light-cream);
+        color: white;
         padding: 1rem;
         text-align: left;
         font-weight: 500;
         text-transform: uppercase;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         letter-spacing: 0.5px;
-        border: none;
+    }
+
+    .permissions-table th:first-child {
+        border-top-left-radius: 8px;
+    }
+
+    .permissions-table th:last-child {
+        border-top-right-radius: 8px;
     }
 
     .permissions-table td {
         padding: 1rem;
-        border-bottom: 1px solid var(--soft-brown);
+        border-bottom: 1px solid #eee;
         vertical-align: middle;
-        color: var(--soft-brown);
-        background-color: var(--bg-surface);
-        transition: var(--transition);
+        color: #555;
+        background-color: #fff;
+        transition: all 0.2s ease;
     }
 
     .permissions-table tr:last-child td {
@@ -98,6 +105,73 @@ ob_start();
     }
 
     .permissions-table tr:hover td {
+        background-color: #f9f9f9;
+    }
+
+    .permission-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .btn-save {
+        background-color: var(--dark-brown);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-save:hover {
+        background-color: var(--soft-brown);
+        transform: translateY(-1px);
+    }
+
+    .btn-save:active {
+        transform: translateY(0);
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+
+    .alert-success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #c8e6c9;
+    }
+
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border: 1px solid #ffcdd2;
+    }
+
+    .no-permissions {
+        padding: 2rem;
+        text-align: center;
+        color: #777;
+        font-style: italic;
+    }
         background-color: rgba(139, 115, 85, 0.1);
         color: var(--soft-brown);
     }
@@ -195,9 +269,6 @@ ob_start();
     <div class="permissions-container">
         <div class="header-actions">
             <h1 class="permissions-title">Gestión de Permisos</h1>
-            <a href=<?= u('permissions/create') ?> class="btn-create">
-                <i class="fas fa-plus"></i> Nuevo Permiso
-            </a>
         </div>
         
         <?php if (isset($_SESSION['success'])): ?>
@@ -219,23 +290,44 @@ ob_start();
                 <thead>
                     <tr>
                         <th>Menú Opción</th>
-                        <th class="text-center">Rol Socio</th>
-                        <th class="text-center">Rol Administrador</th>
+                        <?php foreach ($roles as $role): ?>
+                            <th class="text-center"><?= htmlspecialchars($role['rol']) ?></th>
+                        <?php endforeach; ?>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($permissions)): ?>
-                        <?php foreach ($permissions as $permission): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($permission['Menu Opcion'] ?? '') ?></td>
-                                <td class="text-center checkmark"><?= $permission['Rol Socio'] ?? '' ?></td>
-                                <td class="text-center checkmark"><?= $permission['Rol Admin'] ?? '' ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
+                    <?php if (empty($permissions)): ?>
                         <tr>
-                            <td colspan="3" class="no-permissions">No se encontraron permisos configurados</td>
+                            <td colspan="<?= count($roles) + 1 ?>" class="no-permissions">No hay opciones de menú configuradas.</td>
                         </tr>
+                    <?php else: ?>
+                        <form action="<?= u('permissions/update') ?>" method="post">
+                            <?php foreach ($permissions as $permission): ?>
+                                <tr>
+                                    <td>
+                                        <?= htmlspecialchars($permission['name']) ?>
+                                        <input type="hidden" name="permissions[<?= $permission['id'] ?>][id]" value="<?= $permission['id'] ?>">
+                                    </td>
+                                    
+                                    <?php foreach ($roles as $role): ?>
+                                        <td class="text-center">
+                                            <input type="checkbox" 
+                                                   class="permission-checkbox" 
+                                                   name="permissions[<?= $permission['id'] ?>][roles][<?= $role['idRol'] ?>]" 
+                                                   value="1"
+                                                   <?= !empty($permission['roles'][$role['idRol']]) ? 'checked' : '' ?>>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr>
+                                <td colspan="<?= count($roles) + 1 ?>" class="text-right">
+                                    <button type="submit" class="btn-save">
+                                        <i class="fas fa-save"></i> Guardar Cambios
+                                    </button>
+                                </td>
+                            </tr>
+                        </form>
                     <?php endif; ?>
                 </tbody>
             </table>
