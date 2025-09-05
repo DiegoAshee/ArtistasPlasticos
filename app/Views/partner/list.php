@@ -69,6 +69,54 @@ ob_start();
     </div>
   </div>
 
+  Métricas (misma rejilla de cards que en dashboard)
+  <!-- <div class="dashboard-cards" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon success"><i class="fas fa-users"></i></div>
+        <div class="card-menu"><i class="fas fa-ellipsis-v"></i></div>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Total Socios</div>
+        <div class="card-value" id="totalSocios"><?= (int)$totalSocios ?></div>
+        <div class="card-change positive">
+          <i class="fas fa-arrow-up"></i>
+          <span>Actualizado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon primary"><i class="fas fa-calendar-check"></i></div>
+        <div class="card-menu"><i class="fas fa-ellipsis-v"></i></div>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Nuevos este año</div>
+        <div class="card-value"><?= (int)$nuevosEsteAnio ?></div>
+        <div class="card-change">
+          <i class="fas fa-clock"></i>
+          <span><?= date('Y') ?></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon warning"><i class="fas fa-database"></i></div>
+        <div class="card-menu"><i class="fas fa-ellipsis-v"></i></div>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Accesos rápidos</div>
+        <div class="card-value">
+          <a href="<?= u('dashboard') ?>" class="dropdown-item" style="padding:6px 10px;border-radius:8px;background:var(--surface-elevated);text-decoration:none;">
+            <i class="fas fa-chart-pie"></i> Ir al Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
   <!-- Tabla de socios -->
   <?php if (!empty($socios) && is_array($socios)): ?>
     <div class="table-container">
@@ -161,13 +209,269 @@ ob_start();
 
   <!-- Buscador en vivo + paginación -->
   <script>
-    // (tu script de búsqueda y paginación va aquí, sin cambios)
+    (function(){
+      const input = document.getElementById('searchInput');
+      const table = document.getElementById('tablaSocios');
+      if (!table) return;
+
+      const tbody = table.querySelector('tbody');
+      const allRows = Array.from(tbody.querySelectorAll('tr'));
+
+      // estado
+      let currentPage = 1;
+      const pageSizeSelect = document.getElementById('pageSize');
+      let pageSize = parseInt(pageSizeSelect ? pageSizeSelect.value : '20', 10);
+
+      // inicializa data-match para todas las filas
+      allRows.forEach(tr => tr.dataset.match = '1');
+
+      // helpers
+      function filteredRows(){
+        return allRows.filter(tr => tr.dataset.match !== '0');
+      }
+
+      function totalPages(){
+        const total = filteredRows().length;
+        return Math.max(1, Math.ceil(total / pageSize));
+      }
+
+      function clampPage(){
+        const tp = totalPages();
+        if (currentPage > tp) currentPage = tp;
+        if (currentPage < 1)  currentPage = 1;
+      }
+
+      function render(){
+        clampPage();
+        const fr = filteredRows();
+        const start = (currentPage - 1) * pageSize;
+        const end   = start + pageSize;
+
+        // ocultar todo
+        allRows.forEach(tr => tr.style.display = 'none');
+        // mostrar solo el rango visible
+        fr.slice(start, end).forEach(tr => tr.style.display = '');
+
+        // actualizar métricas
+        const totalEl = document.getElementById('totalSocios');
+        if (totalEl) totalEl.textContent = String(fr.length);
+
+        const pageInfo = document.getElementById('pageInfo');
+        if (pageInfo) pageInfo.textContent = `Página ${currentPage} de ${totalPages()} (${fr.length} registros)`;
+      }
+
+      // búsqueda en vivo
+      if (input) {
+        input.addEventListener('input', function(){
+          const term = this.value.trim().toLowerCase();
+          allRows.forEach(tr => {
+            const ok = tr.textContent.toLowerCase().includes(term);
+            tr.dataset.match = ok ? '1' : '0';
+          });
+          currentPage = 1; // vuelve al inicio
+          render();
+        });
+      }
+
+      // paginación
+      function goFirst(){ currentPage = 1; render(); }
+      function goPrev(){ currentPage -= 1; render(); }
+      function goNext(){ currentPage += 1; render(); }
+      function goLast(){ currentPage = totalPages(); render(); }
+
+      const btnFirst = document.getElementById('firstPage');
+      const btnPrev  = document.getElementById('prevPage');
+      const btnNext  = document.getElementById('nextPage');
+      const btnLast  = document.getElementById('lastPage');
+
+      if (btnFirst) btnFirst.addEventListener('click', goFirst);
+      if (btnPrev)  btnPrev.addEventListener('click',  goPrev);
+      if (btnNext)  btnNext.addEventListener('click',  goNext);
+      if (btnLast)  btnLast.addEventListener('click',  goLast);
+
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function(){
+          pageSize = parseInt(this.value, 10) || 20;
+          currentPage = 1;
+          render();
+        });
+      }
+
+      // primera renderizada
+      render();
+    })();
   </script>
 
-  <!-- Exportación PDF -->
+  <!-- Add required library for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script>
-    // (tu script de exportación PDF va aquí, sin cambios)
+  // Wait for the DOM to be fully loaded
+  document.addEventListener('DOMContentLoaded', function() {
+      // Add click event to the export button
+      document.getElementById('exportPdfBtn').addEventListener('click', async function() {
+          // Show loading state
+          const button = this;
+          const originalText = button.innerHTML;
+          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+          button.disabled = true;
+          
+          try {
+              // Fetch all partners from the server
+              const response = await fetch('export-pdf', {
+                  method: 'GET',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest'
+                  },
+                  credentials: 'same-origin'
+              });
+              
+              const result = await response.json();
+              
+              if (!result.success) {
+                  console.error('Error del servidor:', result.error);
+                  throw new Error('Error al generar el PDF: ' + (result.error || 'Error desconocido'));
+              }
+              
+              const partners = result.data || [];
+              
+              // Log the received data for debugging
+              console.log('Partners data received:', partners);
+              
+              if (partners.length === 0) {
+                  throw new Error('No se encontraron socios para exportar');
+              }
+              
+              // Log the first partner to check field names
+              if (partners.length > 0) {
+                  console.log('First partner data:', partners[0]);
+                  console.log('Available fields in first partner:', Object.keys(partners[0]));
+              }
+              
+              // Create a new PDF document
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF({
+                  orientation: 'landscape'
+              });
+              
+              // Add title and date
+              doc.setFontSize(20);
+              doc.text('Lista Completa de Socios', 15, 15);
+              
+              doc.setFontSize(10);
+              doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
+              
+              // Table headers - adjust positions for better fit in landscape
+              const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
+              // Adjusted positions to fit all columns in landscape
+              const columnPositions = [10, 50, 75, 100, 135, 170, 210, 235, 260];
+              
+              // Add table headers
+              doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
+              doc.setFont('helvetica', 'bold');
+              headers.forEach((header, i) => {
+                  doc.text(header, columnPositions[i], 35);
+              });
+              
+              // Add horizontal line
+              doc.setDrawColor(0);
+              doc.setLineWidth(0.5);
+              doc.line(15, 37, 300, 37); // Ajustar ancho de línea
+              
+              // Add table rows
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(6); // Reducir tamaño de fuente para filas
+              
+              let y = 45;
+              // Configurar orientación horizontal para mejor ajuste
+              doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
+              partners.forEach((partner, index) => {
+                  if (y > 270) { // Check if we need a new page
+                      doc.addPage();
+                      y = 20;
+                      
+                      // Add headers to new page
+                      doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
+                      doc.setFont('helvetica', 'bold');
+                      headers.forEach((header, i) => {
+                          doc.text(header, columnPositions[i], y);
+                      });
+                      doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
+                      y = 30;
+                      doc.setFont('helvetica', 'normal');
+                      doc.setFontSize(8);
+                  }
+                  
+                  const formatDate = (dateString) => {
+                      if (!dateString) return 'N/A';
+                      try {
+                          const date = new Date(dateString);
+                          return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
+                      } catch (e) {
+                          console.error('Error formatting date:', dateString, e);
+                          return dateString || 'N/A';
+                      }
+                  };
+                  
+                  // Log each partner's data for debugging
+                  console.log('Processing partner:', partner);
+                  
+                  const row = [
+                      partner.name || 'N/A',
+                      partner.CI || 'N/A',
+                      partner.login || 'N/A',
+                      partner.email || 'N/A',
+                      partner.cellPhoneNumber || 'N/A',
+                      partner.address || 'N/A',
+                      formatDate(partner.birthday),
+                      formatDate(partner.dateRegistration),
+                      formatDate(partner.dateCreation)
+                  ];
+                  
+                  console.log('Generated row:', row);
+                  
+                  // Add row data
+                  row.forEach((cell, i) => {
+                      doc.text(cell, columnPositions[i], y);
+                  });
+                  
+                  y += 7; // Row height
+                  
+                  // Add light horizontal line between rows
+                  if (index < partners.length - 1) {
+                      doc.setDrawColor(200);
+                      doc.setLineWidth(0.1);
+                      doc.line(15, y - 2, 200, y - 2);
+                      doc.setDrawColor(0);
+                  }
+              });
+              
+              // Add page numbers
+              const pageCount = doc.internal.getNumberOfPages();
+              for (let i = 1; i <= pageCount; i++) {
+                  doc.setPage(i);
+                  doc.setFontSize(8);
+                  doc.text(
+                      `Página ${i} de ${pageCount}`,
+                      doc.internal.pageSize.width - 30,
+                      doc.internal.pageSize.height - 10
+                  );
+              }
+              
+              // Save the PDF
+              doc.save('socios_completo_' + new Date().toISOString().split('T')[0] + '.pdf');
+              
+          } catch (error) {
+              console.error('Error al generar el PDF:', error);
+              alert('Error al generar el PDF. Por favor, intente nuevamente.');
+          } finally {
+              // Restore button state
+              button.innerHTML = originalText;
+              button.disabled = false;
+          }
+      });
+  });
   </script>
 <?php
 $content = ob_get_clean();
