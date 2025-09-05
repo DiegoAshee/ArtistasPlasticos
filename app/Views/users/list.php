@@ -225,7 +225,7 @@ ob_start();
 </div>
 
 <!-- Métricas -->
-<div class="dashboard-cards" style="margin-bottom: 20px;">
+<!-- <div class="dashboard-cards" style="margin-bottom: 20px;">
     <div class="card">
         <div class="card-header">
             <div class="card-icon primary"><i class="fas fa-user-shield"></i></div>
@@ -272,7 +272,7 @@ ob_start();
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Tabla de usuarios -->
 <?php if (!empty($users) && is_array($users)): ?>
