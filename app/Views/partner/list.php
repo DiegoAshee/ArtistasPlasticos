@@ -339,9 +339,6 @@ ob_start();
               // Log the received data for debugging
               console.log('Partners data received:', partners);
               
-              // Log the received data for debugging
-              console.log('Partners data received:', partners);
-              
               if (partners.length === 0) {
                   throw new Error('No se encontraron socios para exportar');
               }
@@ -352,17 +349,8 @@ ob_start();
                   console.log('Available fields in first partner:', Object.keys(partners[0]));
               }
               
-              // Log the first partner to check field names
-              if (partners.length > 0) {
-                  console.log('First partner data:', partners[0]);
-                  console.log('Available fields in first partner:', Object.keys(partners[0]));
-              }
-              
               // Create a new PDF document
               const { jsPDF } = window.jspdf;
-              const doc = new jsPDF({
-                  orientation: 'landscape'
-              });
               const doc = new jsPDF({
                   orientation: 'landscape'
               });
@@ -377,10 +365,9 @@ ob_start();
               // Table headers - adjust positions for better fit in landscape
               const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
               // Adjusted positions to fit all columns in landscape
-              const columnPositions = [10, 40, 70, 100, 130, 160, 200, 225, 250];
+              const columnPositions = [10, 50, 75, 100, 135, 170, 210, 235, 260];
               
               // Add table headers
-              doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
               doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
               doc.setFont('helvetica', 'bold');
               headers.forEach((header, i) => {
@@ -391,35 +378,12 @@ ob_start();
               doc.setDrawColor(0);
               doc.setLineWidth(0.5);
               doc.line(15, 37, 300, 37); // Ajustar ancho de línea
-              doc.line(15, 37, 300, 37); // Ajustar ancho de línea
               
               // Add table rows
               doc.setFont('helvetica', 'normal');
-              doc.setFontSize(6); // Reduced font size for rows
-              // Enable text wrapping for long text
-              const wrapText = (text, maxWidth) => {
-                  if (!text) return [''];
-                  const words = text.toString().split(' ');
-                  const lines = [];
-                  let currentLine = words[0] || '';
-                  
-                  for (let i = 1; i < words.length; i++) {
-                      const word = words[i];
-                      const width = doc.getTextWidth(currentLine + ' ' + word);
-                      if (width < maxWidth) {
-                          currentLine += ' ' + word;
-                      } else {
-                          lines.push(currentLine);
-                          currentLine = word;
-                      }
-                  }
-                  lines.push(currentLine);
-                  return lines;
-              };
+              doc.setFontSize(6); // Reducir tamaño de fuente para filas
               
               let y = 45;
-              // Configurar orientación horizontal para mejor ajuste
-              doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
               // Configurar orientación horizontal para mejor ajuste
               doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
               partners.forEach((partner, index) => {
@@ -429,31 +393,15 @@ ob_start();
                       
                       // Add headers to new page
                       doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
-                      doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
                       doc.setFont('helvetica', 'bold');
                       headers.forEach((header, i) => {
                           doc.text(header, columnPositions[i], y);
                       });
                       doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
-                      doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
                       y = 30;
                       doc.setFont('helvetica', 'normal');
                       doc.setFontSize(8);
                   }
-                  
-                  const formatDate = (dateString) => {
-                      if (!dateString) return 'N/A';
-                      try {
-                          const date = new Date(dateString);
-                          return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
-                      } catch (e) {
-                          console.error('Error formatting date:', dateString, e);
-                          return dateString || 'N/A';
-                      }
-                  };
-                  
-                  // Log each partner's data for debugging
-                  console.log('Processing partner:', partner);
                   
                   const formatDate = (dateString) => {
                       if (!dateString) return 'N/A';
@@ -483,7 +431,7 @@ ob_start();
                   
                   console.log('Generated row:', row);
                   
-                  // Add row data with text wrapping
+                  // Add row data
                   row.forEach((cell, i) => {
                       const columnWidth = i < columnPositions.length - 1 ? 
                           columnPositions[i + 1] - columnPositions[i] - 5 : 
