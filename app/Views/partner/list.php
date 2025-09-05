@@ -336,13 +336,24 @@ ob_start();
               
               const partners = result.data || [];
               
+              // Log the received data for debugging
+              console.log('Partners data received:', partners);
+              
               if (partners.length === 0) {
                   throw new Error('No se encontraron socios para exportar');
               }
               
+              // Log the first partner to check field names
+              if (partners.length > 0) {
+                  console.log('First partner data:', partners[0]);
+                  console.log('Available fields in first partner:', Object.keys(partners[0]));
+              }
+              
               // Create a new PDF document
               const { jsPDF } = window.jspdf;
-              const doc = new jsPDF();
+              const doc = new jsPDF({
+                  orientation: 'landscape'
+              });
               
               // Add title and date
               doc.setFontSize(20);
@@ -351,12 +362,13 @@ ob_start();
               doc.setFontSize(10);
               doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
               
-              // Table headers
-              const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono'];
-              const columnPositions = [15, 55, 90, 125, 185];
+              // Table headers - adjust positions for better fit in landscape
+              const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
+              // Adjusted positions to fit all columns in landscape
+              const columnPositions = [10, 50, 75, 100, 135, 170, 210, 235, 260];
               
               // Add table headers
-              doc.setFontSize(10);
+              doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
               doc.setFont('helvetica', 'bold');
               headers.forEach((header, i) => {
                   doc.text(header, columnPositions[i], 35);
@@ -365,37 +377,59 @@ ob_start();
               // Add horizontal line
               doc.setDrawColor(0);
               doc.setLineWidth(0.5);
-              doc.line(15, 37, 200, 37);
+              doc.line(15, 37, 300, 37); // Ajustar ancho de línea
               
               // Add table rows
               doc.setFont('helvetica', 'normal');
-              doc.setFontSize(8);
+              doc.setFontSize(6); // Reducir tamaño de fuente para filas
               
               let y = 45;
+              // Configurar orientación horizontal para mejor ajuste
+              doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
               partners.forEach((partner, index) => {
                   if (y > 270) { // Check if we need a new page
                       doc.addPage();
                       y = 20;
                       
                       // Add headers to new page
-                      doc.setFontSize(10);
+                      doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
                       doc.setFont('helvetica', 'bold');
                       headers.forEach((header, i) => {
                           doc.text(header, columnPositions[i], y);
                       });
-                      doc.line(15, y + 2, 200, y + 2);
+                      doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
                       y = 30;
                       doc.setFont('helvetica', 'normal');
                       doc.setFontSize(8);
                   }
+                  
+                  const formatDate = (dateString) => {
+                      if (!dateString) return 'N/A';
+                      try {
+                          const date = new Date(dateString);
+                          return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
+                      } catch (e) {
+                          console.error('Error formatting date:', dateString, e);
+                          return dateString || 'N/A';
+                      }
+                  };
+                  
+                  // Log each partner's data for debugging
+                  console.log('Processing partner:', partner);
                   
                   const row = [
                       partner.name || 'N/A',
                       partner.CI || 'N/A',
                       partner.login || 'N/A',
                       partner.email || 'N/A',
-                      partner.cellPhoneNumber || 'N/A'
+                      partner.cellPhoneNumber || 'N/A',
+                      partner.address || 'N/A',
+                      formatDate(partner.birthday),
+                      formatDate(partner.dateRegistration),
+                      formatDate(partner.dateCreation)
                   ];
+                  
+                  console.log('Generated row:', row);
                   
                   // Add row data
                   row.forEach((cell, i) => {

@@ -212,7 +212,7 @@ ob_start();
 
 .form-control, .form-select {
     background-color: var(--lighter);
-    color: var(--text);
+    color: black;
 }
 
 .form-control:focus, .form-select:focus {
