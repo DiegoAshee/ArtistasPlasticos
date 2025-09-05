@@ -86,7 +86,7 @@ if (!function_exists('asset')) {
         .input-field:focus{
             border-color:var(--cream-400); box-shadow:0 0 0 3px rgba(207,196,176,.2); background:#fff;
         }
-        .btn-login{ background-color:var(--cream-400); color:var(--cream-900); transition:all .3s; }
+        .btn-login{ background-color:var(--cream-500); color:var(--cream-900); transition:all .3s; }
         .btn-login:hover{ background-color:var(--cream-500); }
         .divider{ display:flex; align-items:center; text-align:center; color:var(--cream-600); }
         .divider::before,.divider::after{ content:''; flex:1; border-bottom:1px solid var(--cream-200); }
