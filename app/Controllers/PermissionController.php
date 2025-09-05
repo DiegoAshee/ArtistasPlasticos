@@ -16,39 +16,71 @@ class PermissionController extends BaseController
 
     public function index()
     {
-        // Verificar si el usuario está autenticado y tiene rol de administrador (rol = 1)
+        // Solo administradores (rol = 1)
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
             $this->redirect('dashboard');
             return;
         }
 
-        $db = $this->db;
-        
-        // Consulta dinámica de permisos por roles
-        $query = "
-            SELECT 
-                c.menuOption AS 'Menu Opcion',
-                MAX(CASE WHEN r.rol = 'Socio' THEN '✔' ELSE '' END) AS 'Rol Socio',
-                MAX(CASE WHEN r.rol = 'Administrador' THEN '✔' ELSE '' END) AS 'Rol Admin'
-            FROM competence c
-            LEFT JOIN permission p ON c.idCompetence = p.idCompetence
-            LEFT JOIN rol r ON p.idRol = r.idRol
-            GROUP BY c.menuOption
-            ORDER BY c.idCompetence
-        ";
-        
-        $stmt = $db->query($query);
-        $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $db = $this->db;
 
-        $data = [
-            'title'       => 'Gestión de Permisos',
-            'permissions' => $permissions,
-            'currentPath' => 'permissions',
-            'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)
-        ];
+            // 1️⃣ Obtener todos los roles dinámicamente
+            $rolesQuery = $db->query("SELECT idRol, rol FROM rol ORDER BY idRol");
+            $roles = $rolesQuery->fetchAll(PDO::FETCH_ASSOC);
 
-        // Renderizar la vista
-        $this->view('permissions/permissions', $data);
+            // 2️⃣ Obtener todas las opciones de menú (competencias)
+            $competencesQuery = $db->query("SELECT idCompetence, menuOption FROM competence ORDER BY menuOption");
+            $competences = $competencesQuery->fetchAll(PDO::FETCH_ASSOC);
+
+            // 3️⃣ Obtener los permisos actuales
+            $permissionsQuery = $db->query("
+                SELECT p.idCompetence, p.idRol 
+                FROM permission p
+                INNER JOIN competence c ON p.idCompetence = c.idCompetence
+                INNER JOIN rol r ON p.idRol = r.idRol
+            ");
+            $permissions = $permissionsQuery->fetchAll(PDO::FETCH_ASSOC);
+
+            // 4️⃣ Construir arreglo de permisos para la vista
+            $permissionsView = [];
+            
+            // Inicializar la matriz de permisos
+            foreach ($competences as $menu) {
+                $permissionsView[$menu['idCompetence']] = [
+                    'id' => $menu['idCompetence'],
+                    'name' => $menu['menuOption'],
+                    'roles' => []
+                ];
+                
+                // Inicializar todos los roles como no seleccionados
+                foreach ($roles as $role) {
+                    $permissionsView[$menu['idCompetence']]['roles'][$role['idRol']] = false;
+                }
+            }
+
+            // Marcar los permisos existentes
+            foreach ($permissions as $permission) {
+                if (isset($permissionsView[$permission['idCompetence']])) {
+                    $permissionsView[$permission['idCompetence']]['roles'][$permission['idRol']] = true;
+                }
+            }
+
+            $data = [
+                'title'       => 'Gestión de Permisos',
+                'permissions' => $permissionsView,
+                'roles'       => $roles,
+                'currentPath' => 'permissions',
+                'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)
+            ];
+
+            // Renderizar la vista
+            $this->view('permissions/permissions', $data);
+        } catch (Exception $e) {
+            error_log('Error in PermissionController::index(): ' . $e->getMessage());
+            $_SESSION['error'] = 'Error al cargar la página de permisos';
+            $this->redirect('dashboard');
+        }
     }
 
     public function create()
@@ -93,26 +125,62 @@ class PermissionController extends BaseController
 
     public function update()
     {
+        // Solo administradores (rol = 1)
+        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
+            $this->redirect('dashboard');
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permissions'])) {
             $permissions = $_POST['permissions'];
             
             try {
                 $db = $this->db;
-                $db->query('DELETE FROM role_permissions');
                 
-                $stmt = $db->prepare('INSERT INTO role_permissions (role_id, menu_id) VALUES (?, ?)');
+                // Iniciar transacción para asegurar la integridad de los datos
+                $db->beginTransaction();
                 
-                foreach ($permissions as $menuId => $roles) {
-                    foreach ($roles as $roleId => $value) {
-                        $stmt->execute([$roleId, $menuId]);
+                // 1. Eliminar todos los permisos existentes
+                $db->query('DELETE FROM permission');
+                
+                // 2. Insertar los nuevos permisos
+                $stmt = $db->prepare('INSERT INTO permission (idCompetence, idRol) VALUES (?, ?)');
+                
+                foreach ($permissions as $permission) {
+                    $competenceId = (int)$permission['id'];
+                    
+                    if (isset($permission['roles']) && is_array($permission['roles'])) {
+                        foreach ($permission['roles'] as $roleId => $value) {
+                            if ($value == '1') {
+                                $roleId = (int)$roleId;
+                                $stmt->execute([$competenceId, $roleId]);
+                            }
+                        }
                     }
                 }
                 
+                // Confirmar la transacción
+                $db->commit();
+                
                 $_SESSION['success'] = 'Permisos actualizados correctamente';
             } catch (PDOException $e) {
-                $_SESSION['error'] = 'Error al actualizar los permisos: ' . $e->getMessage();
+                // Revertir en caso de error
+                if (isset($db) && $db->inTransaction()) {
+                    $db->rollBack();
+                }
+                error_log('Error al actualizar permisos: ' . $e->getMessage());
+                $_SESSION['error'] = 'Error al actualizar los permisos. Por favor, inténtelo de nuevo.';
+            } catch (Exception $e) {
+                if (isset($db) && $db->inTransaction()) {
+                    $db->rollBack();
+                }
+                error_log('Error inesperado: ' . $e->getMessage());
+                $_SESSION['error'] = 'Ocurrió un error inesperado. Por favor, contacte al administrador.';
             }
             
+            $this->redirect('permissions');
+        } else {
+            // Si no es una petición POST o no vienen permisos, redirigir
             $this->redirect('permissions');
         }
     }

@@ -137,6 +137,10 @@ class Competence
 
             case 'mis pagos':
                 return ['partner/payments', 'fas fa-file-invoice'];
+            
+            // Agregamos la opción para "competencias"
+            case 'competencias':
+                return ['competence/list', 'fas fa-cogs'];
 
             default:
                 // Si aparece algo desconocido, devuelve link inerte
