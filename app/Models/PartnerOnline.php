@@ -17,26 +17,38 @@ class PartnerOnline {
      * Las fechas (dateCreation, dateRegistration) se fijan con NOW() desde SQL.
      * dateConfirmation e idUser quedan NULL hasta que se acepte/rechace.
      */
-    public function create(string $name, string $ci, string $cellPhoneNumber, string $address, string $birthday, ?string $email = null) {
-        try {
-            $sql = "INSERT INTO " . self::TBL . " 
-                    (name, CI, cellPhoneNumber, address, dateCreation, birthday, dateRegistration, dateConfirmation, idUser, email)
-                    VALUES
-                    (:name, :ci, :cellPhoneNumber, :address, NOW(), :birthday, NOW(), NULL, NULL, :email)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':name', $name);
-            $stmt->bindValue(':ci', $ci);
-            $stmt->bindValue(':cellPhoneNumber', $cellPhoneNumber);
-            $stmt->bindValue(':address', $address);
-            $stmt->bindValue(':birthday', $birthday);
-            $stmt->bindValue(':email', $email);
-            $stmt->execute();
-            return $this->db->lastInsertId();
-        } catch (\PDOException $e) {
-            error_log("PartnerOnline::create error: " . $e->getMessage());
-            return false;
-        }
+    public function create(
+    string $name,
+    string $ci,
+    string $cellPhoneNumber,
+    string $address,
+    string $birthday,
+    ?string $email,
+    ?string $frontImageURL,
+    ?string $backImageURL
+) {
+    try {
+        $sql = "INSERT INTO " . self::TBL . " 
+                (name, ci, cellPhoneNumber, address, dateCreation, birthday, 
+                 dateRegistration, dateConfirmation, idUser, email, frontImageURL, backImageURL)
+                VALUES
+                (:name, :ci, :cellPhoneNumber, :address, NOW(), :birthday, NOW(), NULL, NULL, :email, :frontImage, :backImage)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':name', $name);
+        $stmt->bindValue(':ci', $ci);
+        $stmt->bindValue(':cellPhoneNumber', $cellPhoneNumber);
+        $stmt->bindValue(':address', $address);
+        $stmt->bindValue(':birthday', $birthday);
+        $stmt->bindValue(':email', $email);
+        $stmt->bindValue(':frontImage', $frontImageURL);
+        $stmt->bindValue(':backImage', $backImageURL);
+        $stmt->execute();
+        return $this->db->lastInsertId();
+    } catch (\PDOException $e) {
+        error_log("PartnerOnline::create error: " . $e->getMessage());
+        return false;
     }
+}
 
     public function getAll(): array {
         try {

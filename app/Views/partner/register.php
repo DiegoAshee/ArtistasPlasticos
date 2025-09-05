@@ -124,7 +124,7 @@ $minBirthday = date('Y-m-d', strtotime('-120 years'));  // mínimo razonable
         <?php endif; ?>
 
         <?php if (!isset($success)): ?>
-            <form method="POST" action="<?= u('partner/register') ?>" autocomplete="off" novalidate>
+            <form method="POST" action="<?= u('partner/register') ?>" enctype="multipart/form-data" autocomplete="off" novalidate>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="name">Nombre Completo</label>
@@ -160,10 +160,13 @@ $minBirthday = date('Y-m-d', strtotime('-120 years'));  // mínimo razonable
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="ciPhoto">Foto del CI (JPEG/PNG, máx 2MB)</label>
-                        <input type="file" name="ciPhoto" id="ciPhoto" accept="image/*" required>
+                        <label for="frontImage">CI (Frontal)</label>
+                        <input type="file" name="frontImage" id="frontImage" accept="image/*" required>
                     </div>
-                    
+                    <div class="form-group">
+                        <label for="backImage">CI (Posterior)</label>
+                        <input type="file" name="backImage" id="backImage" accept="image/*" required>
+                    </div>
                 </div>
 
                 <!-- Fecha de registro: se envía y se mantiene en el DOM pero OCULTA -->
