@@ -64,6 +64,15 @@ $router->addRoute('GET', '/dashboard', 'DashboardController', 'dashboard');
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS DEL ROLE
+|--------------------------------------------------------------------------
+*/
+// Define routes
+$router->addRoute('GET', '/role/list', 'RoleController', 'list');
+$router->addRoute('POST', '/role/list', 'RoleController', 'list'); // Add POST route
+
+/*
+|--------------------------------------------------------------------------
 | RUTAS DE PERMISOS
 |--------------------------------------------------------------------------
 */
