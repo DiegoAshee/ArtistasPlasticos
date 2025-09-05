@@ -31,6 +31,20 @@ $router->addRoute('GET', '/change-password', 'AuthController', 'changePassword')
 $router->addRoute('POST', '/change-password', 'AuthController', 'changePassword');
 
 /*
+|-------------------------------------------------------------------------- 
+| RUTAS DE COMPETENCIA (MENÚ)
+|-------------------------------------------------------------------------- 
+*/
+
+// Ver la lista de competencias
+$router->addRoute('GET', '/competence/list', 'CompetenceController', 'listAll');
+$router->addRoute('GET', '/competence/create', 'CompetenceController', 'create');  // Vista para crear
+$router->addRoute('POST', '/competence/create', 'CompetenceController', 'create'); // Enviar formulario de creación
+$router->addRoute('GET', '/competence/edit/([0-9]+)', 'CompetenceController', 'update');  // Vista para editar
+$router->addRoute('POST', '/competence/edit/([0-9]+)', 'CompetenceController', 'update'); // Enviar formulario de edición
+$router->addRoute('GET', '/competence/delete/([0-9]+)', 'CompetenceController', 'delete');
+
+/*
 |--------------------------------------------------------------------------
 | RUTAS DE CONTRIBUTION
 |--------------------------------------------------------------------------
