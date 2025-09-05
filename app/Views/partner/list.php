@@ -306,239 +306,163 @@ ob_start();
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <script>
-  // Wait for the DOM to be fully loaded
-  document.addEventListener('DOMContentLoaded', function() {
-      // Add click event to the export button
-      document.getElementById('exportPdfBtn').addEventListener('click', async function() {
-          // Show loading state
-          const button = this;
-          const originalText = button.innerHTML;
-          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
-          button.disabled = true;
-          
-          try {
-              // Fetch all partners from the server
-              const response = await fetch('export-pdf', {
-                  method: 'GET',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'X-Requested-With': 'XMLHttpRequest'
-                  },
-                  credentials: 'same-origin'
-              });
-              
-              const result = await response.json();
-              
-              if (!result.success) {
-                  console.error('Error del servidor:', result.error);
-                  throw new Error('Error al generar el PDF: ' + (result.error || 'Error desconocido'));
-              }
-              
-              const partners = result.data || [];
-              
-              // Log the received data for debugging
-              console.log('Partners data received:', partners);
-              
-              // Log the received data for debugging
-              console.log('Partners data received:', partners);
-              
-              if (partners.length === 0) {
-                  throw new Error('No se encontraron socios para exportar');
-              }
-              
-              // Log the first partner to check field names
-              if (partners.length > 0) {
-                  console.log('First partner data:', partners[0]);
-                  console.log('Available fields in first partner:', Object.keys(partners[0]));
-              }
-              
-              // Log the first partner to check field names
-              if (partners.length > 0) {
-                  console.log('First partner data:', partners[0]);
-                  console.log('Available fields in first partner:', Object.keys(partners[0]));
-              }
-              
-              // Create a new PDF document
-              const { jsPDF } = window.jspdf;
-              const doc = new jsPDF({
-                  orientation: 'landscape'
-              });
-              const doc = new jsPDF({
-                  orientation: 'landscape'
-              });
-              
-              // Add title and date
-              doc.setFontSize(20);
-              doc.text('Lista Completa de Socios', 15, 15);
-              
-              doc.setFontSize(10);
-              doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
-              
-              // Table headers - adjust positions for better fit in landscape
-              const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
-              // Adjusted positions to fit all columns in landscape
-              const columnPositions = [10, 40, 70, 100, 130, 160, 200, 225, 250];
-              
-              // Add table headers
-              doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
-              doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
-              doc.setFont('helvetica', 'bold');
-              headers.forEach((header, i) => {
-                  doc.text(header, columnPositions[i], 35);
-              });
-              
-              // Add horizontal line
-              doc.setDrawColor(0);
-              doc.setLineWidth(0.5);
-              doc.line(15, 37, 300, 37); // Ajustar ancho de línea
-              doc.line(15, 37, 300, 37); // Ajustar ancho de línea
-              
-              // Add table rows
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(6); // Reduced font size for rows
-              // Enable text wrapping for long text
-              const wrapText = (text, maxWidth) => {
-                  if (!text) return [''];
-                  const words = text.toString().split(' ');
-                  const lines = [];
-                  let currentLine = words[0] || '';
-                  
-                  for (let i = 1; i < words.length; i++) {
-                      const word = words[i];
-                      const width = doc.getTextWidth(currentLine + ' ' + word);
-                      if (width < maxWidth) {
-                          currentLine += ' ' + word;
-                      } else {
-                          lines.push(currentLine);
-                          currentLine = word;
-                      }
-                  }
-                  lines.push(currentLine);
-                  return lines;
-              };
-              
-              let y = 45;
-              // Configurar orientación horizontal para mejor ajuste
-              doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
-              // Configurar orientación horizontal para mejor ajuste
-              doc.setPage(doc.internal.pageSize.width > doc.internal.pageSize.height ? 0 : 1);
-              partners.forEach((partner, index) => {
-                  if (y > 270) { // Check if we need a new page
-                      doc.addPage();
-                      y = 20;
-                      
-                      // Add headers to new page
-                      doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
-                      doc.setFontSize(8); // Reducir tamaño de fuente para cabeceras
-                      doc.setFont('helvetica', 'bold');
-                      headers.forEach((header, i) => {
-                          doc.text(header, columnPositions[i], y);
-                      });
-                      doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
-                      doc.line(15, y + 2, 300, y + 2); // Ajustar ancho de línea
-                      y = 30;
-                      doc.setFont('helvetica', 'normal');
-                      doc.setFontSize(8);
-                  }
-                  
-                  const formatDate = (dateString) => {
-                      if (!dateString) return 'N/A';
-                      try {
-                          const date = new Date(dateString);
-                          return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
-                      } catch (e) {
-                          console.error('Error formatting date:', dateString, e);
-                          return dateString || 'N/A';
-                      }
-                  };
-                  
-                  // Log each partner's data for debugging
-                  console.log('Processing partner:', partner);
-                  
-                  const formatDate = (dateString) => {
-                      if (!dateString) return 'N/A';
-                      try {
-                          const date = new Date(dateString);
-                          return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
-                      } catch (e) {
-                          console.error('Error formatting date:', dateString, e);
-                          return dateString || 'N/A';
-                      }
-                  };
-                  
-                  // Log each partner's data for debugging
-                  console.log('Processing partner:', partner);
-                  
-                  const row = [
-                      partner.name || 'N/A',
-                      partner.CI || 'N/A',
-                      partner.login || 'N/A',
-                      partner.email || 'N/A',
-                      partner.cellPhoneNumber || 'N/A',
-                      partner.address || 'N/A',
-                      formatDate(partner.birthday),
-                      formatDate(partner.dateRegistration),
-                      formatDate(partner.dateCreation)
-                  ];
-                  
-                  console.log('Generated row:', row);
-                  
-                  // Add row data with text wrapping
-                  row.forEach((cell, i) => {
-                      const columnWidth = i < columnPositions.length - 1 ? 
-                          columnPositions[i + 1] - columnPositions[i] - 5 : 
-                          30; // Default width for last column
-                      
-                      if (i === 5) { // Special handling for address column
-                          const lines = wrapText(cell, columnWidth);
-                          lines.forEach((line, lineIndex) => {
-                              doc.text(line, columnPositions[i], y + (lineIndex * 3));
-                          });
-                          if (lines.length > 1) y += (lines.length - 1) * 3; // Adjust y for wrapped text
-                      } else {
-                          doc.text(cell, columnPositions[i], y);
-                      }
-                  });
-                  
-                  // Adjust row height based on content
-                  const addressLines = wrapText(row[5], 30).length; // Check how many lines the address took
-                  const rowHeight = Math.max(7, 5 + (addressLines - 1) * 3); // Base height + extra for wrapped text
-                  
-                  // Add light horizontal line between rows
-                  if (index < partners.length - 1) {
-                      doc.setDrawColor(200);
-                      doc.setLineWidth(0.1);
-                      doc.line(15, y - 2, 200, y - 2);
-                      doc.setDrawColor(0);
-                  }
-              });
-              
-              // Add page numbers
-              const pageCount = doc.internal.getNumberOfPages();
-              for (let i = 1; i <= pageCount; i++) {
-                  doc.setPage(i);
-                  doc.setFontSize(8);
-                  doc.text(
-                      `Página ${i} de ${pageCount}`,
-                      doc.internal.pageSize.width - 30,
-                      doc.internal.pageSize.height - 10
-                  );
-              }
-              
-              // Save the PDF
-              doc.save('socios_completo_' + new Date().toISOString().split('T')[0] + '.pdf');
-              
-          } catch (error) {
-              console.error('Error al generar el PDF:', error);
-              alert('Error al generar el PDF. Por favor, intente nuevamente.');
-          } finally {
-              // Restore button state
-              button.innerHTML = originalText;
-              button.disabled = false;
-          }
-      });
-  });
-  </script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('exportPdfBtn').addEventListener('click', async function() {
+        const button = this;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+        button.disabled = true;
+
+        try {
+            const response = await fetch('export-pdf', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error('Error al generar el PDF: ' + (result.error || 'Error desconocido'));
+            }
+
+            const partners = result.data || [];
+            if (partners.length === 0) {
+                throw new Error('No se encontraron socios para exportar');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+
+            doc.setFontSize(20);
+            doc.text('Lista Completa de Socios', 15, 15);
+
+            doc.setFontSize(10);
+            doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
+
+            const headers = ['Nombre', 'CI', 'Usuario', 'Correo', 'Teléfono', 'Dirección', 'F. Nac.', 'F. Reg.', 'F. Creación'];
+            const columnPositions = [10, 40, 70, 100, 130, 160, 200, 225, 250];
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            headers.forEach((header, i) => {
+                doc.text(header, columnPositions[i], 35);
+            });
+
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.5);
+            doc.line(15, 37, 300, 37);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6);
+
+            const wrapText = (text, maxWidth) => {
+                if (!text) return [''];
+                const words = text.toString().split(' ');
+                const lines = [];
+                let currentLine = words[0] || '';
+                for (let i = 1; i < words.length; i++) {
+                    const word = words[i];
+                    const width = doc.getTextWidth(currentLine + ' ' + word);
+                    if (width < maxWidth) {
+                        currentLine += ' ' + word;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                lines.push(currentLine);
+                return lines;
+            };
+
+            let y = 45;
+            partners.forEach((partner, index) => {
+                if (y > 185) { // Ajusta el límite según tamaño de página
+                    doc.addPage();
+                    y = 20;
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'bold');
+                    headers.forEach((header, i) => {
+                        doc.text(header, columnPositions[i], y);
+                    });
+                    doc.line(15, y + 2, 300, y + 2);
+                    y = 30;
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(6);
+                }
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return 'N/A';
+                    try {
+                        const date = new Date(dateString);
+                        return isNaN(date.getTime()) ? dateString : date.toLocaleDateString();
+                    } catch (e) {
+                        return dateString || 'N/A';
+                    }
+                };
+
+                const row = [
+                    partner.name || 'N/A',
+                    partner.ci || 'N/A', // corregido: 'ci' minúscula
+                    partner.login || 'N/A',
+                    partner.email || 'N/A',
+                    partner.cellPhoneNumber || 'N/A',
+                    partner.address || 'N/A',
+                    formatDate(partner.birthday),
+                    formatDate(partner.dateRegistration),
+                    formatDate(partner.dateCreation)
+                ];
+
+                let maxLines = 1;
+                row.forEach((cell, i) => {
+                    const columnWidth = i < columnPositions.length - 1 ?
+                        columnPositions[i + 1] - columnPositions[i] - 5 :
+                        30;
+                    let lines = [cell];
+                    if (i === 5) { // address
+                        lines = wrapText(cell, columnWidth);
+                    }
+                    lines.forEach((line, lineIndex) => {
+                        doc.text(line, columnPositions[i], y + (lineIndex * 3));
+                    });
+                    if (lines.length > maxLines) maxLines = lines.length;
+                });
+
+                y += maxLines * 5;
+
+                if (index < partners.length - 1) {
+                    doc.setDrawColor(200);
+                    doc.setLineWidth(0.1);
+                    doc.line(15, y - 2, 300, y - 2);
+                    doc.setDrawColor(0);
+                }
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(
+                    `Página ${i} de ${pageCount}`,
+                    doc.internal.pageSize.width - 30,
+                    doc.internal.pageSize.height - 10
+                );
+            }
+
+            doc.save('socios_completo_' + new Date().toISOString().split('T')[0] + '.pdf');
+
+        } catch (error) {
+            alert('Error al generar el PDF. Por favor, intente nuevamente.');
+        } finally {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 
