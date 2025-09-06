@@ -222,6 +222,4 @@ class OnlinePartnerController extends BaseController
             return false;
         }
     }
-    
-
 }
