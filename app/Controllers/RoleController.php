@@ -23,7 +23,9 @@ class RoleController extends BaseController
         $roleModel = new Role();
         $roles = $roleModel->getAll();
 
-        $error = null;
+        $error = $_SESSION['role_error'] ?? null;
+        unset($_SESSION['role_error']); // Clear the error after reading it
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = \Database::singleton()->getConnection();
             $db->beginTransaction();
@@ -49,9 +51,9 @@ class RoleController extends BaseController
                     }
                 } elseif (isset($_POST['action']) && $_POST['action'] === 'delete') {
                     $id = (int)($_POST['id'] ?? 0);
-                    $role = $roleModel->findById($id);
-                    if (!$role || !$roleModel->delete($id)) {
-                        throw new \Exception("Rol no encontrado o no se pudo eliminar");
+                    $result = $roleModel->delete($id);
+                    if ($result === false) {
+                        throw new \Exception("Rol no encontrado");
                     }
                 }
                 $db->commit();
@@ -60,12 +62,12 @@ class RoleController extends BaseController
             } catch (\Throwable $e) {
                 $db->rollBack();
                 error_log("Transaction failed: " . $e->getMessage());
-                $error = "Error: " . $e->getMessage();
+                $_SESSION['role_error'] = $e->getMessage(); // Store error in session
             }
         }
 
         $this->view('role/list', [
-            'roles' => $roles, // Changed to lowercase for consistency
+            'roles' => $roles,
             'menuOptions' => $menuOptions,
             'roleId' => $roleId,
             'error' => $error,

@@ -69,6 +69,8 @@ $router->addRoute('GET', '/partner/register', 'OnlinePartnerController', 'regist
 $router->addRoute('POST', '/partner/register', 'OnlinePartnerController', 'registerPartner');
 $router->addRoute('GET', '/partner/register/success', 'OnlinePartnerController', 'registerPartner'); // página simple de éxito
 
+$router->addRoute('GET', '/partner/verify', 'OnlinePartnerController', 'verifyEmail');
+
 /*
 |--------------------------------------------------------------------------
 | RUTAS DEL DASHBOARD
