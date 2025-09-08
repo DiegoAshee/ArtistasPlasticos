@@ -42,13 +42,24 @@ class Competence
             $items = [];
 
             foreach ($rows as $row) {
+                //antiguo metodo imprime el nombre de la base de datos tal cual
+                /*
                 $name = trim((string)($row['name'] ?? ''));
+                [$url, $icon] = $this->mapNameToRouteAndIcon($name);
+                if ($url === '')  { $url  = '#'; }
+                if ($icon === '') { $icon = 'fas fa-circle'; }
+                */
+                
+                // Formatear nombres compuestos (ej: "SolicitudesPendientes" → "Solicitudes Pendientes")
+                $name = trim((string)($row['name'] ?? ''));
+                $displayName = $this->formatMenuName($name);
+                
                 [$url, $icon] = $this->mapNameToRouteAndIcon($name);
                 if ($url === '')  { $url  = '#'; }
                 if ($icon === '') { $icon = 'fas fa-circle'; }
 
                 $items[] = [
-                    'name'    => ($name !== '' ? $name : 'Opción'),
+                    'name'    => ($displayName !== '' ? $displayName : 'Opción'),
                     'url'     => $url,                  // relativo, sin slash inicial
                     'icon'    => $icon,
                     'section' => $this->inferSection($url, $name),
@@ -66,6 +77,45 @@ class Competence
             return $this->fallbackForRole($roleId);
         }
     }
+
+
+
+
+    //metodo para que tenga mejor visualizacion de salida las opciones de menu
+    // Añade este nuevo método para formatear nombres de menú
+    private function formatMenuName(string $name): string
+    {
+        // Convertir "SolicitudesPendientes" a "Solicitudes Pendientes"
+        $formatted = preg_replace('/([a-z])([A-Z])/', '$1 $2', $name);
+        
+        // Capitalizar palabras
+        $formatted = ucwords(strtolower($formatted));
+        
+        // Casos especiales
+        $specialCases = [
+            'ci' => 'CI',
+            'url' => 'URL',
+            'bd' => 'BD',
+            'id' => 'ID'
+        ];
+        
+        foreach ($specialCases as $short => $long) {
+            $formatted = preg_replace("/\b$short\b/i", $long, $formatted);
+        }
+        
+        return $formatted;
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Mapea el texto del menú (name) → [rutaRelativa, icono]

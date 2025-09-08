@@ -261,6 +261,15 @@ public function approve(): void
         // puedes setear un flash si usas sesiones de mensajes
     }
 
+    //mensajes para los alerts
+     if ($stmt->execute()) {
+        $_SESSION['success'] = "Solicitud aprobada correctamente";
+    } else {
+        $_SESSION['error'] = "Error al aprobar la solicitud";
+    }
+
+
+
     $this->redirect('partnerOnline/pending');
 }
 
@@ -282,6 +291,16 @@ public function reject(): void
     } catch (\Throwable $e) {
         error_log('reject error: ' . $e->getMessage());
     }
+
+
+    //mensajes para los alerts
+     if ($model->delete($id)) {
+        $_SESSION['success'] = "Solicitud rechazada correctamente";
+    } else {
+        $_SESSION['error'] = "Error al rechazar la solicitud";
+    }
+
+
 
     $this->redirect('partnerOnline/pending');
 }

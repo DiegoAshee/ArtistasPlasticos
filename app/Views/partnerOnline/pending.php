@@ -11,6 +11,12 @@ $breadcrumbs = [
 $registrations = $registrations ?? [];
 $changes       = $changes ?? [];
 
+// Obtener mensajes flash de la sesión
+$flashSuccess = $_SESSION['success'] ?? null;
+$flashError = $_SESSION['error'] ?? null;
+// Limpiar los mensajes flash después de obtenerlos
+unset($_SESSION['success'], $_SESSION['error']);
+
 // ---- Contenido ----
 ob_start();
 ?>
@@ -25,7 +31,16 @@ ob_start();
     .table-container { background:#cfc4b0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:auto; }
     .section-title { display:flex; align-items:center; gap:8px; margin: 8px 0 12px; }
     .badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:.85rem; background:#fff; }
+    .btn-action { border:none; color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; transition:all 0.3s ease; }
+    .btn-approve { background:#28a745; }
+    .btn-approve:hover { background:#218838; }
+    .btn-reject { background:#dc3545; }
+    .btn-reject:hover { background:#c82333; }
   </style>
+
+  <!-- Incluir SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 
   <h1 style="margin:0 0 10px;">Bandeja de pendientes</h1>
 
@@ -70,15 +85,15 @@ ob_start();
             <td><?= htmlspecialchars($r['dateCreation'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
             <td>Registro nuevo</td>
             <td>
-            <form action="<?= u('partnerOnline/approve') ?>" method="post" style="display:inline;">
+            <form action="<?= u('partnerOnline/approve') ?>" method="post" class="approve-form" style="display:inline;">
                 <input type="hidden" name="id" value="<?= (int)($r['idPartnerOnline'] ?? 0) ?>">
-                <button type="submit" style="background:#28a745;border:none;color:#fff;padding:6px 10px;border-radius:8px;cursor:pointer;">
+                <button type="submit" class="btn-action btn-approve">
                 <i class="fas fa-check"></i> Aceptar
                 </button>
             </form>
-            <form action="<?= u('partnerOnline/reject') ?>" method="post" style="display:inline;margin-left:6px;" onsubmit="return confirm('¿Rechazar esta solicitud?');">
+            <form action="<?= u('partnerOnline/reject') ?>" method="post" class="reject-form" style="display:inline;margin-left:6px;">
                 <input type="hidden" name="id" value="<?= (int)($r['idPartnerOnline'] ?? 0) ?>">
-                <button type="submit" style="background:#dc3545;border:none;color:#fff;padding:6px 10px;border-radius:8px;cursor:pointer;">
+                <button type="submit" class="btn-action btn-reject">
                 <i class="fas fa-times"></i> Rechazar
                 </button>
             </form>
@@ -86,7 +101,6 @@ ob_start();
         </tr>
         <?php endforeach; endif; ?>
         </tbody>
-
     </table>
   </div>
 
@@ -98,7 +112,6 @@ ob_start();
 
   <div class="table-container">
     <table class="modern-table" style="width:100%;">
-      
         <thead>
             <tr>
                 <th>ID</th>
@@ -128,15 +141,15 @@ ob_start();
                 <td><?= htmlspecialchars($c['dateCreation'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 <td>Modificación</td>
                 <td>
-                <form action="<?= u('partnerOnline/approve') ?>" method="post" style="display:inline;">
+                <form action="<?= u('partnerOnline/approve') ?>" method="post" class="approve-form" style="display:inline;">
                     <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
-                    <button type="submit" style="background:#28a745;border:none;color:#fff;padding:6px 10px;border-radius:8px;cursor:pointer;">
+                    <button type="submit" class="btn-action btn-approve">
                     <i class="fas fa-check"></i> Aceptar
                     </button>
                 </form>
-                <form action="<?= u('partnerOnline/reject') ?>" method="post" style="display:inline;margin-left:6px;" onsubmit="return confirm('¿Rechazar esta solicitud?');">
+                <form action="<?= u('partnerOnline/reject') ?>" method="post" class="reject-form" style="display:inline;margin-left:6px;">
                     <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
-                    <button type="submit" style="background:#dc3545;border:none;color:#fff;padding:6px 10px;border-radius:8px;cursor:pointer;">
+                    <button type="submit" class="btn-action btn-reject">
                     <i class="fas fa-times"></i> Rechazar
                     </button>
                 </form>
@@ -144,11 +157,75 @@ ob_start();
             </tr>
             <?php endforeach; endif; ?>
             </tbody>
-
-
-
     </table>
   </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Interceptar formularios de aceptación
+    document.querySelectorAll('.approve-form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+          title: '¿Aprobar solicitud?',
+          text: "Esta acción no se puede deshacer",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#28a745',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Sí, aprobar',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.submit();
+          }
+        });
+      });
+    });
+
+    // Interceptar formularios de rechazo
+    document.querySelectorAll('.reject-form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+          title: '¿Rechazar solicitud?',
+          text: "Esta acción no se puede deshacer",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#dc3545',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Sí, rechazar',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.submit();
+          }
+        });
+      });
+    });
+
+    // Mostrar alertas de éxito/error si hay mensajes flash
+    <?php if (!empty($flashSuccess)): ?>
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: '<?= addslashes($flashSuccess) ?>',
+        timer: 3000,
+        showConfirmButton: false
+      });
+    <?php endif; ?>
+
+    <?php if (!empty($flashError)): ?>
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: '<?= addslashes($flashError) ?>'
+      });
+    <?php endif; ?>
+  });
+  </script>
 <?php
 $content = ob_get_clean();
 
