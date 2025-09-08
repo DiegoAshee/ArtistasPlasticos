@@ -120,9 +120,9 @@ ob_start();
         <table id="tablaContribuciones" class="modern-table" style="width:100%; border-collapse:separate; border-spacing:0;">
             <thead>
                 <tr>
-                    <th><i class="fas fa-money-bill-wave"></i> Monto</th>
                     <th><i class="fas fa-calendar"></i> Mes/Año</th>
                     <th><i class="fas fa-sticky-note"></i> Notas</th>
+                    <th><i class="fas fa-money-bill-wave"></i> Monto</th>
                     <th><i class="fas fa-clock"></i> F. Creación</th>
                     <th><i class="fas fa-sync-alt"></i> F. Actualización</th>
                     <th><i class="fas fa-cogs"></i> Acciones</th>
@@ -131,7 +131,6 @@ ob_start();
             <tbody>
                 <?php foreach ($contributions as $contribution): ?>
                     <tr>
-                        <td><?= htmlspecialchars(number_format($contribution['amount'], 2)) ?></td>
                         <td><span class="date-badge"><?= htmlspecialchars($contribution['monthYear'] ?? '-') ?></span></td>
                         <td title="<?= htmlspecialchars($contribution['notes'] ?? '') ?>">
                             <?php
@@ -140,6 +139,7 @@ ob_start();
                                 echo (mb_strlen($notes, 'UTF-8') > 30) ? mb_substr($notes, 0, 30, 'UTF-8') . '…' : $notes;
                             ?>
                         </td>
+                        <td><?= htmlspecialchars(number_format($contribution['amount'], 2)) ?></td>
                         <td><span class="date-badge"><?= !empty($contribution['dateCreation']) ? date('d/m/Y', strtotime($contribution['dateCreation'])) : '-' ?></span></td>
                         <td><span class="date-badge"><?= !empty($contribution['dateUpdate']) ? date('d/m/Y', strtotime($contribution['dateUpdate'])) : '-' ?></span></td>
                         <td class="actions">

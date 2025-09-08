@@ -18,37 +18,82 @@ class PartnerOnline {
      * dateConfirmation e idUser quedan NULL hasta que se acepte/rechace.
      */
     public function create(
-    string $name,
-    string $ci,
-    string $cellPhoneNumber,
-    string $address,
-    string $birthday,
-    ?string $email,
-    ?string $frontImageURL,
-    ?string $backImageURL
-) {
-    try {
-        $sql = "INSERT INTO " . self::TBL . " 
-                (name, ci, cellPhoneNumber, address, dateCreation, birthday, 
-                 dateRegistration, dateConfirmation, idUser, email, frontImageURL, backImageURL)
-                VALUES
-                (:name, :ci, :cellPhoneNumber, :address, NOW(), :birthday, NOW(), NULL, NULL, :email, :frontImage, :backImage)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':name', $name);
-        $stmt->bindValue(':ci', $ci);
-        $stmt->bindValue(':cellPhoneNumber', $cellPhoneNumber);
-        $stmt->bindValue(':address', $address);
-        $stmt->bindValue(':birthday', $birthday);
-        $stmt->bindValue(':email', $email);
-        $stmt->bindValue(':frontImage', $frontImageURL);
-        $stmt->bindValue(':backImage', $backImageURL);
-        $stmt->execute();
-        return $this->db->lastInsertId();
-    } catch (\PDOException $e) {
-        error_log("PartnerOnline::create error: " . $e->getMessage());
-        return false;
+        string $name,
+        string $ci,
+        string $cellPhoneNumber,
+        string $address,
+        string $birthday,
+        ?string $email,
+        ?string $frontImageURL,
+        ?string $backImageURL,
+        string $verificationToken,
+        string $tokenExpiresAt
+    ) {
+        try {
+            $sql = "INSERT INTO " . self::TBL . " 
+                    (name, ci, cellPhoneNumber, address, dateCreation, birthday, 
+                     dateRegistration, dateConfirmation, idUser,idPartner, email, frontImageURL, backImageURL,
+                     verificationtoken, tokenexpiresat, isverified)
+                    VALUES
+                    (:name, :ci, :cellPhoneNumber, :address, NOW(), :birthday, NOW(), NULL, NULL, NULL, 
+                     :email, :frontImage, :backImage, :verificationToken, :tokenExpiresAt, 0)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':name', $name);
+            $stmt->bindValue(':ci', $ci);
+            $stmt->bindValue(':cellPhoneNumber', $cellPhoneNumber);
+            $stmt->bindValue(':address', $address);
+            $stmt->bindValue(':birthday', $birthday);
+            $stmt->bindValue(':email', $email);
+            $stmt->bindValue(':frontImage', $frontImageURL);
+            $stmt->bindValue(':backImage', $backImageURL);
+            $stmt->bindValue(':verificationToken', $verificationToken);
+            $stmt->bindValue(':tokenExpiresAt', $tokenExpiresAt);
+            $stmt->execute();
+            return $this->db->lastInsertId();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::create error: " . $e->getMessage());
+            return false;
+        }
     }
-}
+
+    /**
+     * Deletes unverified records with expired tokens.
+     */
+    public function deleteExpiredUnverified(): void {
+        try {
+            $sql = "DELETE FROM " . self::TBL . " WHERE isverified = 0 AND tokenexpiresat < NOW()";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::deleteExpiredUnverified error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verifies a token and marks the record as verified.
+     */
+    public function verifyToken(string $token): ?array {
+        try {
+            $sql = "SELECT * FROM " . self::TBL . " WHERE verificationtoken = :token AND isverified = 0 AND tokenexpiresat > NOW() LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':token', $token);
+            $stmt->execute();
+            $record = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($record) {
+                // Mark as verified
+                $sql = "UPDATE " . self::TBL . " SET isverified = 1, verificationtoken = NULL, tokenexpiresat = NULL WHERE idPartnerOnline = :id";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bindValue(':id', $record['idPartnerOnline'], \PDO::PARAM_INT);
+                $stmt->execute();
+                return $record;
+            }
+            return null;
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::verifyToken error: " . $e->getMessage());
+            return null;
+        }
+    }
 
     public function getAll(): array {
         try {
@@ -174,11 +219,5 @@ class PartnerOnline {
             return false;
         }
     }
-
-
-
-
-
-
 
 }

@@ -63,6 +63,22 @@ class Role {
 
     public function delete($id): bool {
         try {
+            // Check if there are users with this role
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE idRol = :id");
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $userCount = $stmt->fetchColumn();
+
+            if ($userCount > 0) {
+                throw new PDOException("No se puede eliminar el rol porque hay usuarios asignados. Cambie el rol de los usuarios primero.");
+            }
+
+            // Delete related permissions first
+            $stmt = $this->db->prepare("DELETE FROM `permission` WHERE idRol = :id");
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            // Then delete the role
             $query = "DELETE FROM " . self::TBL . " WHERE idRol = :id";
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
