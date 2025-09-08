@@ -34,6 +34,7 @@ ob_start();
         background: #fff; margin: 15% auto; padding: 20px; width: 300px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
     .close { float: right; font-size: 20px; cursor: pointer; }
+    .error-message { color: red; margin-top: 10px; }
 </style>
 
 <!-- Barra de acciones -->
@@ -74,9 +75,9 @@ ob_start();
                                 <button class="btn btn-sm btn-outline open-update-modal" data-id="<?= (int)($role['idRol'] ?? 0) ?>" data-role="<?= htmlspecialchars($role['rol'] ?? '') ?>" title="Editar" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; border:1px solid #e1e5e9; color:#333; background:none; cursor:pointer;">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <!-- <button class="btn btn-sm btn-danger open-delete-modal" data-id="<?= (int)($role['idRol'] ?? 0) ?>" title="Eliminar" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; background:#e74c3c; color:#fff; margin-left:6px; border:none; cursor:pointer;">
+                                <button class="btn btn-sm btn-danger open-delete-modal" data-id="<?= (int)($role['idRol'] ?? 0) ?>" title="Eliminar" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; background:#e74c3c; color:#fff; margin-left:6px; border:none; cursor:pointer;">
                                     <i class="fas fa-trash"></i>
-                                </button> -->
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -100,7 +101,7 @@ ob_start();
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Nuevo Rol</h2>
-        <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+        <?php if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
         <form method="POST" action="<?= u('role/list') ?>">
             <input type="hidden" name="action" value="create">
             
@@ -117,7 +118,7 @@ ob_start();
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Editar Rol</h2>
-        <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+        <?php if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
         <form method="POST" action="<?= u('role/list') ?>">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="updateId">
@@ -134,14 +135,16 @@ ob_start();
 <div id="deleteModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2>Eliminar Rol</h2>
-        <p>¿Estás seguro de que deseas eliminar este rol?</p>
-        <form method="POST" action="<?= u('role/list') ?>">
+        <h2 id="deleteModalTitle">Eliminar Rol</h2>
+        <p id="deleteMessage">¿Estás seguro de que deseas eliminar este rol?</p>
+        <div id="deleteError" class="error-message" style="display: none;">No se puede eliminar el rol porque hay usuarios asignados. Cambie el rol de los usuarios primero.</div>
+        <form method="POST" action="<?= u('role/list') ?>" id="deleteForm">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="deleteId">
-            <button type="submit" style="background:#e74c3c; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-right:10px;">Sí, eliminar</button>
+            <button type="submit" id="confirmDeleteBtn" style="background:#e74c3c; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-right:10px;">Sí, eliminar</button>
             <button type="button" class="close" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Cancelar</button>
         </form>
+        <button id="acceptBtn" style="display: none; background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Aceptar</button>
     </div>
 </div>
 
@@ -178,13 +181,18 @@ ob_start();
         const openUpdateBtns = document.querySelectorAll('.open-update-modal');
         const openDeleteBtns = document.querySelectorAll('.open-delete-modal');
         const closeBtns = document.getElementsByClassName('close');
+        const deleteModalTitle = document.getElementById('deleteModalTitle');
+        const deleteMessage = document.getElementById('deleteMessage');
+        const deleteError = document.getElementById('deleteError');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const deleteForm = document.getElementById('deleteForm');
+        const acceptBtn = document.getElementById('acceptBtn');
 
         if (!openCreateBtn) console.error('Create button not found');
         if (!createModal) console.error('Create modal not found');
 
         if (openCreateBtn && createModal) {
             openCreateBtn.addEventListener('click', () => {
-                console.log('Opening create modal');
                 createModal.style.display = 'block';
             });
         }
@@ -192,7 +200,6 @@ ob_start();
         openUpdateBtns.forEach(btn => {
             if (btn) {
                 btn.addEventListener('click', () => {
-                    console.log('Opening update modal for ID:', btn.getAttribute('data-id'));
                     const id = btn.getAttribute('data-id');
                     const role = btn.getAttribute('data-role');
                     document.getElementById('updateId').value = id;
@@ -205,37 +212,75 @@ ob_start();
         openDeleteBtns.forEach(btn => {
             if (btn) {
                 btn.addEventListener('click', () => {
-                    console.log('Opening delete modal for ID:', btn.getAttribute('data-id'));
                     const id = btn.getAttribute('data-id');
                     document.getElementById('deleteId').value = id;
+                    deleteModalTitle.textContent = 'Eliminar Rol';
+                    deleteMessage.style.display = 'block';
+                    deleteError.style.display = 'none';
+                    deleteForm.style.display = 'block';
+                    acceptBtn.style.display = 'none';
                     deleteModal.style.display = 'block';
                 });
             }
         });
 
         Array.from(closeBtns).forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    console.log('Closing modal');
-                    createModal.style.display = 'none';
-                    updateModal.style.display = 'none';
-                    deleteModal.style.display = 'none';
-                });
-            }
+            btn.addEventListener('click', () => {
+                createModal.style.display = 'none';
+                updateModal.style.display = 'none';
+                deleteModal.style.display = 'none';
+                deleteError.style.display = 'none';
+                deleteForm.style.display = 'block';
+                acceptBtn.style.display = 'none';
+            });
+        });
+
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', () => {
+                deleteModal.style.display = 'none';
+                deleteError.style.display = 'none';
+                deleteForm.style.display = 'block';
+            });
+        }
+
+        // Check for error after page load or form submission
+        <?php if (isset($error) && !empty($error)): ?>
+            deleteModalTitle.textContent = 'No se puede eliminar el rol';
+            deleteError.style.display = 'block';
+            deleteMessage.style.display = 'none';
+            deleteForm.style.display = 'none';
+            acceptBtn.style.display = 'block';
+            deleteModal.style.display = 'block'; // Force modal to show on error
+        <?php endif; ?>
+
+        // Handle form submission response
+        deleteForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent default form submission for now
+            const formData = new FormData(deleteForm);
+            fetch('<?= u('role/list') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Replace the current page content with the response
+                document.open();
+                document.write(html);
+                document.close();
+                // Reinitialize the script after reload
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
         });
 
         window.addEventListener('click', (event) => {
-            if (event.target === createModal) {
-                console.log('Clicked outside create modal');
-                createModal.style.display = 'none';
-            }
-            if (event.target === updateModal) {
-                console.log('Clicked outside update modal');
-                updateModal.style.display = 'none';
-            }
+            if (event.target === createModal) createModal.style.display = 'none';
+            if (event.target === updateModal) updateModal.style.display = 'none';
             if (event.target === deleteModal) {
-                console.log('Clicked outside delete modal');
                 deleteModal.style.display = 'none';
+                deleteError.style.display = 'none';
+                deleteForm.style.display = 'block';
+                acceptBtn.style.display = 'none';
             }
         });
     });
