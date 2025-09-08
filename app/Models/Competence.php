@@ -142,6 +142,12 @@ class Competence
             case 'competencias':
                 return ['competence/list', 'fas fa-cogs'];
 
+            // === NUEVOS alias para la bandeja de solicitudes ===
+            case 'solicitudespedientes':       // sin espacio
+            case 'solicitudespendientes':      // por si acaso
+            case 'pendientes de socios':
+                return ['partnerOnline/pending', 'fas fa-inbox'];
+
             default:
                 // Si aparece algo desconocido, devuelve link inerte
                 return ['', 'fas fa-circle'];
@@ -159,6 +165,17 @@ class Competence
         if ($u === 'dashboard' || $u === 'analytics') {
             return 'Principal';
         }
+
+
+
+         // ← añade esta línea para partneronline/*
+        if ($u === 'partneronline/pending' || strpos($u, 'partneronline/') === 0) {
+            return 'Gestión';
+        }
+
+
+
+
         if (strpos($u, 'partner/') === 0 || strpos($u, 'users/list') === 0 || $n === 'usuarios') {
             return 'Gestión';
         }

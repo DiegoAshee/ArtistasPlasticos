@@ -145,6 +145,15 @@ $router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 */
 $router->addRoute('POST', '/partnerOnline/createRequest', 'PartnerOnlineController', 'createRequest');
 
+// Bandeja de pendientes de partneronline (solo vista/mostrar)
+// Bandeja de solicitudes pendientes (solo lectura)
+$router->addRoute('GET', '/partnerOnline/pending', 'PartnerOnlineController', 'pending');
+
+
+//aprobar o rechazar solicitudes 
+// Acciones sobre solicitudes (POST)
+$router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
+$router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
 
 
 /*
