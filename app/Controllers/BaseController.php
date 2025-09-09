@@ -43,6 +43,28 @@ class BaseController
     // ====== Vistas ======
     protected function view(string $view, array $data = []): void
     {
+        // Default menu options
+        $defaultData = [
+            'menuOptions' => [
+                [
+                    'section' => 'Menú',
+                    'name' => 'Dashboard',
+                    'url' => 'dashboard',
+                    'icon' => 'fas fa-home'
+                ],
+                [
+                    'section' => 'Menú',
+                    'name' => 'Competencias',
+                    'url' => 'competence/competence_list',
+                    'icon' => 'fas fa-list'
+                ]
+            ],
+            'currentPath' => $_SERVER['REQUEST_URI'] ?? ''
+        ];
+
+        // Merge with provided data (allows overriding defaults)
+        $data = array_merge($defaultData, $data);
+        
         if (!empty($data)) extract($data);
         $viewPath = __DIR__ . '/../Views/' . $view . '.php';
         if (is_file($viewPath)) {

@@ -1,18 +1,28 @@
 <?php
 // Check if user is logged in and has admin role
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-    header('Location: /dashboard');
+    header('Location: ' . u('dashboard'));
     exit;
 }
 
 // Set up variables for the layout
-$title = 'Crear Nueva Competencia - Asociación de Artistas';
-$currentPath = 'competence/create';
+$title = 'Editar Competencia - Asociación de Artistas';
+$currentPath = 'competence/update';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Competencias', 'url' => u('competence/competence_list')],
-    ['label' => 'Nueva Competencia', 'url' => null],
+    ['label' => 'Editar Competencia', 'url' => null],
 ];
+
+// Get the competence data
+$competence = $competence ?? null;
+$menuOptions = $menuOptions ?? [];
+
+if (!$competence) {
+    $_SESSION['error'] = 'No se encontró la competencia solicitada';
+    header('Location: ' . u('competence/competence_list'));
+    exit;
+}
 
 // Start output buffering
 ob_start();
@@ -241,7 +251,7 @@ ob_start();
         <div class="page-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="page-title">
-                    <i class="fas fa-plus-circle me-2"></i>Nueva Competencia
+                    <i class="fas fa-edit me-2"></i>Editar Competencia
                 </h1>
                 <a href="<?= u('competence/competence_list') ?>" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i> Volver al listado
@@ -293,10 +303,12 @@ ob_start();
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Información de la Competencia</h2>
-                <p class="text-muted mb-0">Complete el formulario para crear una nueva competencia</p>
+                <p class="text-muted mb-0">Modifique los campos que desee actualizar</p>
             </div>
             <div class="card-body">
-                <form method="POST" action="<?= u('competence/create') ?>" class="needs-validation" novalidate>
+                <form method="POST" action="<?= u('competence/update/' . $competence['idCompetence']) ?>" class="needs-validation" novalidate>
+                    <input type="hidden" name="_method" value="PUT">
+                    
                     <div class="mb-4">
                         <label for="menu_option" class="form-label">
                             Nombre de la Competencia <span class="text-danger">*</span>
@@ -309,7 +321,7 @@ ob_start();
                                    class="form-control" 
                                    id="menu_option" 
                                    name="menu_option" 
-                                   value="<?= htmlspecialchars($formData['menu_option'] ?? '') ?>" 
+                                   value="<?= htmlspecialchars($competence['menuOption'] ?? '') ?>" 
                                    placeholder="Ej: Menú" 
                                    required>
                         </div>
@@ -317,14 +329,18 @@ ob_start();
                     </div>
 
                     <div class="form-actions">
-                        <button type="reset" class="btn btn-light">
-                            <i class="fas fa-undo me-2"></i>Limpiar
-                        </button>
+                        <a href="<?= u('competence/competence_list') ?>" class="btn btn-danger">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Guardar Competencia
+                            <i class="fas fa-save me-2"></i>Guardar Cambios
                         </button>
                     </div>
                 </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -332,7 +348,7 @@ ob_start();
 
 <!-- Form Validation Script -->
 <script>
-// Example starter JavaScript for disabling form submissions if there are invalid fields
+// Handle form validation
 (function () {
     'use strict'
     
@@ -347,11 +363,12 @@ ob_start();
                     event.preventDefault()
                     event.stopPropagation()
                 }
-
                 form.classList.add('was-validated')
             }, false)
         })
 })()
+
+// Menu option selection is now handled by a simple text input
 </script>
 
 <?php

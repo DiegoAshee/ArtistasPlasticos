@@ -149,8 +149,8 @@
 
 .input-wrapper input:focus {
     outline: none;
-    border-color: #818cf8;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    border-color: #dee2e6;
+    box-shadow: none;
 }
 
 /* Password Field */
