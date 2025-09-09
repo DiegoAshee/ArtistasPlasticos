@@ -308,7 +308,7 @@ ob_start();
           Solo última aportación
         </label>
       </div>
-      <button type="submit" class="btn-primary"><i class="fas fa-search"></i> Buscar</button>
+      <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
       <a href="<?= u('cobros/debidas') ?>" class="btn"><i class="fas fa-eraser"></i> Limpiar</a>
     </form>
 

@@ -284,13 +284,13 @@ ob_start();
         <label>Hasta</label>
         <input type="date" name="to" value="<?= htmlspecialchars($filters['to']) ?>">
       </div>
-      <button type="submit" class="btn-primary"><i class="fas fa-search"></i> Buscar</button>
+      <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
       <a href="<?= u('cobros/list') ?>" class="btn"><i class="fas fa-eraser"></i> Limpiar</a>
     </form>
 
     <div style="margin-left:auto;display:flex;gap:10px;">
       <a href="<?= u('cobros/debidas') ?>" class="btn"><i class="fas fa-list-alt"></i> Ver Debidas</a>
-      <a href="<?= u('cobros/create') ?>" class="btn-primary"><i class="fas fa-plus-circle"></i> Nuevo Cobro</a>
+      <a href="<?= u('cobros/create') ?>" class="btn"><i class="fas fa-plus-circle"></i> Nuevo Cobro</a>
     </div>
   </div>
 
@@ -331,8 +331,10 @@ ob_start();
           <td><span class="status-paid">Pagado</span></td>
           <td style="white-space: nowrap;">
             <a href="<?= u('cobros/edit/' . (int)($r['idPayment'] ?? 0)) ?>" title="Editar" class="btn"><i class="fas fa-edit"></i></a>
-            <a href="<?= u('cobros/delete/' . (int)($r['idPayment'] ?? 0)) ?>" title="Eliminar"
-               class="btn btn-danger" onclick="return confirm('¿Eliminar este cobro?');">
+            <a href="#" title="Eliminar"
+               class="btn btn-danger delete-btn" 
+               data-id="<?= (int)($r['idPayment'] ?? 0) ?>"
+               data-name="<?= htmlspecialchars($r['partnerName'] ?? 'este cobro') ?>">
               <i class="fas fa-trash"></i>
             </a>
           </td>
@@ -369,5 +371,96 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+// Add delete confirmation modal
+ob_start();
+?>
+<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center;">
+  <div style="background:white;padding:25px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+    <h3 style="margin-top:0;color:#2a2a2a;">Confirmar eliminación</h3>
+    <p>¿Estás seguro de que deseas eliminar <span id="deleteItemName"></span>?</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button id="cancelDelete" class="btn" style="background:#f1f1f1;">Cancelar</button>
+      <button id="confirmDelete" class="btn btn-danger">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('deleteModal');
+  const deleteButtons = document.querySelectorAll('.delete-btn');
+  const deleteItemName = document.getElementById('deleteItemName');
+  const cancelBtn = document.getElementById('cancelDelete');
+  const confirmBtn = document.getElementById('confirmDelete');
+  
+  let deleteUrl = '';
+  
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const id = this.getAttribute('data-id');
+      const name = this.getAttribute('data-name');
+      deleteUrl = '<?= u('cobros/delete/') ?>' + id;
+      deleteItemName.textContent = name;
+      modal.style.display = 'flex';
+    });
+  });
+  
+  cancelBtn.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+  
+  confirmBtn.addEventListener('click', function() {
+    window.location.href = deleteUrl;
+  });
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
+</script>
+
+<style>
+#deleteModal {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#deleteModal h3 {
+  font-size: 1.3em;
+  margin-bottom: 15px;
+}
+
+#deleteModal p {
+  margin: 10px 0 20px;
+  color: #4a4a4a;
+  line-height: 1.5;
+}
+
+#deleteModal .btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#deleteModal .btn:hover {
+  filter: brightness(0.95);
+}
+
+#deleteModal .btn-danger {
+  background: #e74c3c;
+  border: 1px solid #e74c3c;
+  color: white;
+}
+</style>
+<?php
+$modalContent = ob_get_clean();
+$content .= $modalContent;
+
 include __DIR__ . '/../layouts/app.php';
 ?>

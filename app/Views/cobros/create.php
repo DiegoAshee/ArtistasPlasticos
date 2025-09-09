@@ -121,7 +121,7 @@ ob_start();
     </div>
 
     <div style="margin-top:16px;display:flex;gap:10px;">
-      <button type="submit" class="btn-primary" id="submitBtn" disabled>
+      <button type="submit" class="btn" id="submitBtn" disabled>
         <i class="fas fa-save"></i> Guardar
       </button>
       <a href="<?= u('cobros/list') ?>" class="btn">Cancelar</a>
