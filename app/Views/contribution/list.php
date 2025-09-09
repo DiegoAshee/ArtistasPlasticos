@@ -39,12 +39,152 @@ ob_start();
     .table-container { background: #cfc4b0; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.06); overflow: auto; }
 
     .modal {
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;
+        display: none; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(0,0,0,0.6); 
+        z-index: 1000;
+        backdrop-filter: blur(3px);
     }
     .modal-content {
-        background: #fff; margin: 15% auto; padding: 20px; width: 300px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        background: #bbae97;
+        margin: 10% auto; 
+        padding: 25px 30px; 
+        width: 400px; 
+        border-radius: 12px; 
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        border: 1px solid #d7cbb5;
+        color: #2a2a2a;
+        position: relative;
     }
-    .close { float: right; font-size: 20px; cursor: pointer; }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #d7cbb5;
+        border-radius: 8px;
+        background: #f8f5f0;
+        font-size: 15px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-control:focus {
+        border-color: #a49884;
+        box-shadow: 0 0 0 3px rgba(164, 152, 132, 0.2);
+        outline: none;
+    }
+    .form-control-static {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        font-weight: 500;
+        background: #f8f5f0;
+        border-radius: 6px;
+        border: 1px solid #d7cbb5;
+    }
+    .text-muted {
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+    .modal h2 {
+        color: #2a2a2a;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        border-bottom: 2px solid #d7cbb5;
+        padding-bottom: 10px;
+    }
+    .close { 
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #5d5344;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+        transition: all 0.2s;
+    }
+    .close:hover {
+        color: #2a2a2a;
+        transform: scale(1.1);
+    }
+    .error-message { 
+        color: #e74c3c; 
+        margin: 10px 0; 
+        padding: 8px 12px;
+        background-color: rgba(231, 76, 60, 0.1);
+        border-radius: 4px;
+        border-left: 3px solid #e74c3c;
+    }
+    .modal label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2a2a2a;
+    }
+    .modal input[type="text"],
+    .modal input[type="number"],
+    .modal select,
+    .modal textarea {
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 15px;
+        border: 2px solid #d7cbb5;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 15px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .modal input[type="text"]:focus,
+    .modal input[type="number"]:focus,
+    .modal select:focus,
+    .modal textarea:focus {
+        border-color: #a49884;
+        box-shadow: 0 0 0 3px rgba(164, 152, 132, 0.2);
+        outline: none;
+    }
+    .modal button[type="submit"],
+    .modal button:not(.close) {
+        background: #dccaaf;
+        color: #2a2a2a;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .modal button[type="submit"]:hover:not(:disabled),
+    .modal button:not(.close):hover:not(:disabled) {
+        background: #d1b894;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .modal button[type="submit"]:active:not(:disabled),
+    .modal button:not(.close):active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    #confirmDeleteBtn {
+        background: #e74c3c !important;
+        color: white !important;
+    }
+    #confirmDeleteBtn:hover {
+        background: #c0392b !important;
+    }
 </style>
 
 <!-- Barra de acciones -->
@@ -201,13 +341,25 @@ ob_start();
             ?>
             <input type="hidden" name="notes" value="Cuota mensual <?= htmlspecialchars($monthName) ?> <?= htmlspecialchars($year) ?>">
 
-            <label>Mes/Año: <span style="color:#666; font-weight:bold;"><?= htmlspecialchars($defaultMonthYear) ?></span> (Automático)</label><br>
-            <label>Notas: <span style="color:#666; font-weight:bold;">Cuota mensual <?= htmlspecialchars($monthName) ?> <?= htmlspecialchars($year) ?></span> (Automático)</label><br>
+            <div class="form-group">
+                <label>Mes/Año</label>
+                <div class="form-control-static"><?= htmlspecialchars($defaultMonthYear) ?> <small class="text-muted">(Automático)</small></div>
+            </div>
+            
+            <div class="form-group">
+                <label>Notas</label>
+                <div class="form-control-static">Cuota mensual <?= htmlspecialchars($monthName) ?> <?= htmlspecialchars($year) ?> <small class="text-muted">(Automático)</small></div>
+            </div>
 
-            <label for="amount">Monto (predeterminado: <?= htmlspecialchars(number_format($defaultAmount, 2)) ?>):</label>
-            <input type="number" step="0.01" name="amount" id="amount" value="<?= htmlspecialchars(number_format($defaultAmount, 2)) ?>" required style="width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px;">
+            <div class="form-group">
+                <label for="amount">Monto</label>
+                <input type="number" step="0.01" name="amount" id="amount" class="form-control" value="<?= htmlspecialchars(number_format($defaultAmount, 2)) ?>" required>
+                <small class="form-text text-muted">Valor predeterminado: <?= htmlspecialchars(number_format($defaultAmount, 2)) ?></small>
+            </div>
 
-            <button type="submit" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Crear</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-submit">Crear</button>
+            </div>
         </form>
     </div>
 </div>
@@ -222,13 +374,26 @@ ob_start();
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="updateId">
 
-            <label>Mes/Año: <span style="color:#666; font-weight:bold;" id="updateMonthYear"></span> (Fijo)</label><br>
-            <label>Notas: <span style="color:#666; font-weight:bold;" id="updateNotes"></span> (Fijo)</br>
+            <div class="form-group">
+                <label>Mes/Año</label>
+                <div class="form-control-static" id="updateMonthYear"></div>
+                <small class="text-muted">(No editable)</small>
+            </div>
 
-            <label for="updateAmount">Monto:</label>
-            <input type="number" step="0.01" name="amount" id="updateAmount" required style="width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px;">
+            <div class="form-group">
+                <label>Notas</label>
+                <div class="form-control-static" id="updateNotes"></div>
+                <small class="text-muted">(No editable)</small>
+            </div>
 
-            <button type="submit" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Guardar</button>
+            <div class="form-group">
+                <label for="updateAmount">Monto</label>
+                <input type="number" step="0.01" name="amount" id="updateAmount" class="form-control" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-submit">Guardar Cambios</button>
+            </div>
         </form>
     </div>
 </div>
@@ -239,12 +404,16 @@ ob_start();
         <span class="close">&times;</span>
         <h2>Eliminar Contribución</h2>
         <p>¿Estás seguro de que deseas eliminar esta contribución?</p>
-        <form method="POST" action="<?= u('contribution/list') ?>">
+        <form method="POST" action="<?= u('contribution/list') ?>" id="deleteForm">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="deleteId">
-            <button type="submit" style="background:#e74c3c; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-right:10px;">Sí, eliminar</button>
-            <button type="button" class="close" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Cancelar</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="submit" id="confirmDeleteBtn">Sí, eliminar</button>
+            </div>
         </form>
+        <div id="acceptBtnContainer" style="display: none; text-align: right; margin-top: 20px;">
+            <button id="acceptBtn" class="close">Aceptar</button>
+        </div>
     </div>
 </div>
 
