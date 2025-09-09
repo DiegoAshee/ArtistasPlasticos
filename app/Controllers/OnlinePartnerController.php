@@ -382,7 +382,7 @@ class OnlinePartnerController extends BaseController
                 $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
 
                 $mail->isHTML(true);
-                $mail->Subject = 'Confirmación de Registro - Asociación de Artistas';
+                $mail->Subject = 'Confirmación de Registro de Solicitud - Asociación de Artistas';
                 $mail->Body    = "
                     <h2>¡Hola " . htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8') . "!</h2>
                     <p>Tu registro fue recibido exitosamente en la Asociación de Artistas.</p>
