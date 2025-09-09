@@ -112,20 +112,33 @@ ob_start();
               <td><span class="date-badge"><?= !empty($socio['dateCreation'])     ? date('d/m/Y', strtotime($socio['dateCreation']))     : '-' ?></span></td>
               <td><span class="date-badge"><?= !empty($socio['birthday'])         ? date('d/m/Y', strtotime($socio['birthday']))         : '-' ?></span></td>
               <td><span class="date-badge"><?= !empty($socio['dateRegistration']) ? date('d/m/Y', strtotime($socio['dateRegistration'])) : '-' ?></span></td>
-              <td class="actions">
+             <td class="actions">
                 <div class="action-buttons">
-                  <a href="<?= u('partner/edit/' . (int)($socio['idPartner'] ?? 0)) ?>" class="btn btn-sm btn-outline" title="Editar" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #e1e5e9;color:#333;text-decoration:none;">
+                  <a href="<?= u('partner/edit/' . (int)($socio['idPartner'] ?? 0)) ?>" 
+                    class="btn btn-sm btn-outline" 
+                    title="Editar" 
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #e1e5e9;color:#333;text-decoration:none;">
                     <i class="fas fa-edit"></i>
                   </a>
+
                   <a href="<?= u('partner/delete/' . (int)($socio['idPartner'] ?? 0)) ?>"
-                     class="btn btn-sm btn-danger"
-                     title="Eliminar"
-                     onclick="return confirm('¿Seguro que desea eliminar este socio?');"
-                     style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;text-decoration:none;margin-left:6px;">
+                    class="btn btn-sm btn-danger"
+                    title="Eliminar"
+                    onclick="return confirm('¿Seguro que desea eliminar este socio?');"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;text-decoration:none;margin-left:6px;">
                     <i class="fas fa-trash"></i>
+                  </a>
+
+                  <!-- NUEVO: Ver deudas de este socio -->
+                  <a href="<?= u('cobros/debidas?idPartner=' . (int)($socio['idPartner'] ?? 0)) ?>"
+                    class="btn btn-sm"
+                    title="Ver deudas"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#f39c12;color:#fff;text-decoration:none;margin-left:6px;">
+                    <i class="fas fa-money-bill-wave"></i>
                   </a>
                 </div>
               </td>
+
             </tr>
           <?php endforeach; ?>
         </tbody>

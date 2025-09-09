@@ -28,6 +28,7 @@ class CobroController extends BaseController
             'from'           => $_GET['from']           ?? '',
             'to'             => $_GET['to']             ?? '',
             'onlyLatest'     => isset($_GET['onlyLatest']) ? 1 : 0,
+            'idPartner'      => $_GET['idPartner']      ?? '',   // <-- AÑADIR ESTO
         ];
     }
 
@@ -174,6 +175,8 @@ class CobroController extends BaseController
 
     echo json_encode(['success' => true, 'data' => $data]);
 }
+
+
 
 
 

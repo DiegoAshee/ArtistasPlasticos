@@ -211,6 +211,16 @@ public function searchDebidas(array $f = [], int $page = 1, int $pageSize = 20, 
         $params[':q'] = $this->like($f['q']);
     }
 
+    //para el boton de la lista de socios
+    // Filtro por socio específico (opcional)
+    if (!empty($f['idPartner'])) {
+        // según tu estilo, añádelo al $searchFilter para que se aplique en COUNT y SELECT
+        $searchFilter .= " AND pr.idPartner = :pid";
+        $params[':pid'] = (int)$f['idPartner'];
+    }
+
+
+
     // Consulta para el total
     $sqlCount = "
         SELECT COUNT(*)
