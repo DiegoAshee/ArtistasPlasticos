@@ -89,7 +89,7 @@ ob_start();
     </div>
 
     <div style="margin-top:16px;display:flex;gap:10px;">
-      <button type="submit" class="btn-primary">
+      <button type="submit" class="btn">
         <i class="fas fa-save"></i> Guardar cambios
       </button>
       <a href="<?= u('cobros/list') ?>" class="btn">Cancelar</a>
