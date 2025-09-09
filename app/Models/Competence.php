@@ -198,6 +198,15 @@ class Competence
             case 'pendientes de socios':
                 return ['partnerOnline/pending', 'fas fa-inbox'];
 
+
+            //Cobros 
+            // mapNameToRouteAndIcon()
+            case 'cobros':
+            case 'recibos':
+            case 'ingresos':
+                return ['cobros/list', 'fas fa-receipt'];
+
+
             default:
                 // Si aparece algo desconocido, devuelve link inerte
                 return ['', 'fas fa-circle'];
@@ -223,8 +232,11 @@ class Competence
             return 'Gestión';
         }
 
-
-
+        //cobros
+        if (strpos($u, 'cobros/') === 0) {
+            return 'Gestión';
+        }
+        
 
         if (strpos($u, 'partner/') === 0 || strpos($u, 'users/list') === 0 || $n === 'usuarios') {
             return 'Gestión';

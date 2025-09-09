@@ -158,6 +158,28 @@ $router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', '
 $router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
 
 
+
+//cobros
+/* RUTAS DE COBROS (módulo nuevo, sin chocar con Payment*) */
+/* RUTAS DE COBROS */
+$router->addRoute('GET',  '/cobros/list',            'CobroController', 'pagadas'); // alias
+$router->addRoute('GET',  '/cobros/pagadas',         'CobroController', 'pagadas');
+$router->addRoute('GET',  '/cobros/debidas',         'CobroController', 'debidas');
+
+$router->addRoute('GET',  '/cobros/create',          'CobroController', 'create');
+$router->addRoute('POST', '/cobros/create',          'CobroController', 'create');
+$router->addRoute('GET',  '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
+$router->addRoute('POST', '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
+$router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete');
+
+// AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
+$router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
+
+/**/ 
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | MANEJO DE ERRORES
