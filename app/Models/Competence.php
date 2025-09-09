@@ -136,7 +136,8 @@ class Competence
                 return ['ayuda', 'fas fa-question-circle'];
 
             case 'mis pagos':
-                return ['partner/payments', 'fas fa-file-invoice'];
+            case 'pagos':
+                return ['partner/payment', 'fas fa-file-invoice'];
             
             // Agregamos la opción para "competencias"
             case 'competencias':

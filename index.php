@@ -147,7 +147,14 @@ $router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 */
 $router->addRoute('POST', '/partnerOnline/createRequest', 'PartnerOnlineController', 'createRequest');
 
-
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE PAGOS DE SOCIOS (NUEVAS)
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
+$router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
+//$router->addRoute('GET', '/partner/export-pdf-payments', 'PartnerPaymentController', 'exportPDF'); // Opcional, implementar export
 
 /*
 |--------------------------------------------------------------------------

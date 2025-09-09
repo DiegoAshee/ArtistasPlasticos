@@ -54,9 +54,7 @@ class Usuario
 
     public function findById(int $id): ?array {
         try {
-            $sql = "SELECT idUser, login, email, name, idRol, idPartner, google_id, picture,
-                           firstLogin, created_at, updated_at
-                    FROM " . self::TABLE . "
+            $sql = "SELECT * FROM " . self::TABLE . "
                     WHERE idUser = :id LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
@@ -123,9 +121,7 @@ class Usuario
     /** NUEVO: listado seguro (sin campos sensibles) */
     public function getAllUsers(): array {
         try {
-            $sql = "SELECT idUser, login, email, name, idRol, idPartner, google_id, picture,
-                           firstLogin, created_at, updated_at
-                    FROM " . self::TABLE . "
+            $sql = "SELECT * FROM " . self::TABLE . "
                     ORDER BY created_at DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
