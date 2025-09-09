@@ -71,15 +71,6 @@ class Payment {
         error_log("Error al obtener historial: " . $e->getMessage());
         return [];
     }
-
-
-    
-    
-
-
-
-
-
 }
 
     // Procesar pago (actualizar o insertar pago)

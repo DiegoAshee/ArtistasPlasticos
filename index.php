@@ -216,7 +216,7 @@ $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsAp
 */
 $router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
 $router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
-//$router->addRoute('GET', '/partner/export-pdf-payments', 'PartnerPaymentController', 'exportPDF'); // Opcional, implementar export
+//$router->addRoute('GET', '/partner/export-pdf-payments', 'PartnerPaymentController', 'exportPDF'); // Opcional, implementar export/*
 
 /*
 |--------------------------------------------------------------------------
