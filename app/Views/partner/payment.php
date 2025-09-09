@@ -53,7 +53,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- Resumen en Cards -->
-<!-- <div class="summary-cards">
+<div class="summary-cards">
     <div class="summary-card pending">
         <h3>Total Pendiente</h3>
         <p style="font-size: 24px; font-weight: bold; color: #e74c3c;">$<?= number_format($totals['pending'], 2) ?></p>
@@ -62,7 +62,7 @@ ob_start();
         <h3>Total Pagado</h3>
         <p style="font-size: 24px; font-weight: bold; color: #27ae60;">$<?= number_format($totals['paid'], 2) ?></p>
     </div>
-</div> -->
+</div>
 
 <!-- Sección Pagos Pendientes -->
 <div class="table-container">
@@ -146,7 +146,7 @@ ob_start();
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2><i class="fas fa-credit-card"></i> Realizar Pago</h2>
-        <form method="POST" action="<?= u('partner/payment') ?>" id="payForm">
+        <form method="POST" action="<?= u('partner/payments') ?>" id="payForm">
             <input type="hidden" name="action" value="pay">
             <input type="hidden" name="idPayment" id="payId">
             <input type="hidden" name="idContribution" id="payId">
@@ -156,15 +156,15 @@ ob_start();
             <label for="paymentType">Método de Pago:</label>
             <select name="paymentType" id="paymentType" required style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px;">
                 <!-- Opciones de paymenttype, cargar dinámicamente si es necesario -->
-                
+                <option value="1">Tarjeta de Crédito</option>
                 <option value="2">Transferencia Bancaria</option>
-                <option value="3">Pago Efectivo</option>
+                <option value="3">Efectivo</option>
             </select>
 
             <!-- Aquí integrar pasarela real, e.g., formulario Stripe -->
-            <!-- <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+            <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">
                 <p><strong>Nota:</strong> Este es un simulador. Integra tu pasarela de pagos aquí.</p>
-            </div> -->
+            </div>
 
             <button type="submit" style="background: #27ae60; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px;">
                 <i class="fas fa-lock"></i> Confirmar Pago
