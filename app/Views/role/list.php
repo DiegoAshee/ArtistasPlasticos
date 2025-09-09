@@ -28,13 +28,120 @@ ob_start();
     .table-container { background: #cfc4b0; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.06); overflow: auto; }
 
     .modal {
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;
+        display: none; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(0,0,0,0.6); 
+        z-index: 1000;
+        backdrop-filter: blur(3px);
     }
     .modal-content {
-        background: #fff; margin: 15% auto; padding: 20px; width: 300px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        background: #bbae97;
+        margin: 10% auto; 
+        padding: 30px; 
+        width: 380px; 
+        border-radius: 12px; 
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        border: 1px solid #d7cbb5;
+        color: #2a2a2a;
+        position: relative;
     }
-    .close { float: right; font-size: 20px; cursor: pointer; }
-    .error-message { color: red; margin-top: 10px; }
+    .modal h2 {
+        color: #2a2a2a;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        border-bottom: 2px solid #d7cbb5;
+        padding-bottom: 10px;
+    }
+    .close { 
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #5d5344;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+        transition: all 0.2s;
+    }
+    .close:hover {
+        color: #2a2a2a;
+        transform: scale(1.1);
+    }
+    .error-message { 
+        color: #e74c3c; 
+        margin: 10px 0; 
+        padding: 8px 12px;
+        background-color: rgba(231, 76, 60, 0.1);
+        border-radius: 4px;
+        border-left: 3px solid #e74c3c;
+    }
+    .modal label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2a2a2a;
+    }
+    .modal input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 15px;
+        border: 2px solid #d7cbb5;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 15px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .modal input[type="text"]:focus {
+        border-color: #bbae97;
+        box-shadow: 0 0 0 3px rgba(187, 174, 151, 0.2);
+        outline: none;
+    }
+    .modal button[type="submit"],
+    .modal button:not(.close) {
+        background: #dccaaf;
+        color: #2a2a2a;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .modal button[type="submit"]:hover:not(:disabled),
+    .modal button:not(.close):hover:not(:disabled) {
+        background: #d1b894;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .modal button[type="submit"]:active:not(:disabled),
+    .modal button:not(.close):active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .modal button[type="submit"]:active,
+    .modal button:not(.close):active {
+        transform: translateY(1px);
+    }
+    #confirmDeleteBtn {
+        background: #e74c3c !important;
+    }
+    #confirmDeleteBtn:hover {
+        background: #c0392b !important;
+    }
 </style>
 
 <!-- Barra de acciones -->
@@ -51,7 +158,7 @@ ob_start();
         />
     </div>
 
-    <button id="openCreateModal" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px; background:#bbae97; color:#fff; border:none; border-radius:12px; padding:10px 14px; text-decoration:none; font-weight:600;">
+    <button id="openCreateModal" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px; background:#e1cfb2; color:#fff; border:none; border-radius:12px; padding:10px 14px; text-decoration:none; font-weight:600;">
         <i class="fas fa-plus"></i> Nuevo Rol
     </button>
 </div>
@@ -108,7 +215,9 @@ ob_start();
             <label for="role">Rol: </label>
             <input type="text" name="role" id="role" required style="width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px;">
 
-            <button type="submit" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Crear</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+                <button type="submit">Crear</button>
+            </div>
         </form>
     </div>
 </div>
@@ -126,7 +235,9 @@ ob_start();
             <label for="updateRole">Rol:</label>
             <input type="text" name="role" id="updateRole" required style="width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px;">
 
-            <button type="submit" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Guardar</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="submit">Guardar Cambios</button>
+            </div>
         </form>
     </div>
 </div>
@@ -141,10 +252,13 @@ ob_start();
         <form method="POST" action="<?= u('role/list') ?>" id="deleteForm">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="deleteId">
-            <button type="submit" id="confirmDeleteBtn" style="background:#e74c3c; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-right:10px;">Sí, eliminar</button>
-            <button type="button" class="close" style="background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Cancelar</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="submit" id="confirmDeleteBtn">Sí, eliminar</button>
+            </div>
         </form>
-        <button id="acceptBtn" style="display: none; background:#bbae97; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; margin-top:10px;">Aceptar</button>
+        <div id="acceptBtnContainer" style="display: none; text-align: right; margin-top: 20px;">
+            <button id="acceptBtn" class="btn-accept">Aceptar</button>
+        </div>
     </div>
 </div>
 
