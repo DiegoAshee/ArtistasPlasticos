@@ -272,12 +272,14 @@ ob_start();
                 <td>Modificación</td>
                 <td class="action-cell">
                 <div class="action-buttons">
-                    <form action="<?= u('partnerOnline/approve') ?>" method="post" class="approve-form">
-                        <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
-                        <button type="submit" class="btn-action btn-approve" title="Aprobar modificación">
-                            <i class="fas fa-check"></i> Aceptar
+                      <form method="POST" action="<?= u('/partnerOnline/accept'); ?>" style="display:inline"
+                            onsubmit="return confirm('¿Crear socio y usuario para este registro?');">
+                        <input type="hidden" name="idPartnerOnline" value="<?= (int)$r['idPartnerOnline']; ?>">
+                        <button type="submit" class="btn btn-success btn-sm">
+                          <i class="fa fa-check"></i> Aceptar
                         </button>
-                    </form>
+                      </form>
+ 
                     <form action="<?= u('partnerOnline/reject') ?>" method="post" class="reject-form">
                         <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
                         <button type="submit" class="btn-action btn-reject" title="Rechazar modificación">

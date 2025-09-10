@@ -10,20 +10,30 @@ $breadcrumbs = [
 $rows     = $rows ?? [];
 $types    = $types ?? [];
 $contribs = $contribs ?? [];
-$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','from'=>'','to'=>''];
+$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','from'=>'','to'=>'','idPartner'=>''];
 
 $page      = (int)($page ?? 1);
 $pageSize  = (int)($pageSize ?? 20);
 $total     = (int)($total ?? 0);
 $totalPg   = (int)($totalPages ?? 1);
 
+// Obtener parámetros actuales para mantenerlos en la URL
+$currentQueryParams = $_GET;
+$currentUrl = u('cobros/list?' . http_build_query($currentQueryParams));
+
 // helper URL para paginación
-$mkUrl = function(int $p) use ($currentPath) {
-  $qs = $_GET;
+$mkUrl = function(int $p) use ($currentPath, $currentQueryParams) {
+  $qs = $currentQueryParams;
   $qs['page'] = $p;
   if (!isset($qs['pageSize'])) $qs['pageSize'] = 20;
   return u(($currentPath==='cobros/debidas'?'cobros/debidas':'cobros/list') . '?' . http_build_query($qs));
 };
+
+// Construir URL para el botón de deudas manteniendo el filtro de socio
+$deudasUrl = 'cobros/debidas';
+if (!empty($filters['idPartner'])) {
+  $deudasUrl .= '?idPartner=' . urlencode($filters['idPartner']);
+}
 
 ob_start();
 ?>
@@ -78,6 +88,17 @@ ob_start();
   #cobros-root .btn-danger:hover {
     background: #d62c1a !important;
     border-color: #d62c1a !important;
+  }
+  
+  #cobros-root .btn-pay {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #fff !important;
+  }
+  
+  #cobros-root .btn-pay:hover {
+    background: #218838 !important;
+    border-color: #218838 !important;
   }
   
   /* Badge mejorado */
@@ -248,6 +269,11 @@ ob_start();
   <div class="toolbar">
     <form method="get" action="<?= u('cobros/list') ?>" style="display:flex;flex-wrap:wrap;gap:16px;align-items:end;">
       <input type="hidden" name="page" value="1"><!-- reset al buscar -->
+      <!-- Mantener el filtro de socio si existe -->
+      <?php if (!empty($filters['idPartner'])): ?>
+        <input type="hidden" name="idPartner" value="<?= htmlspecialchars($filters['idPartner']) ?>">
+      <?php endif; ?>
+      
       <div>
         <label>Buscar</label>
         <input type="text" name="q" value="<?= htmlspecialchars($filters['q']) ?>" placeholder="Nombre, CI, tipo o aportación" style="min-width:240px;">
@@ -289,8 +315,11 @@ ob_start();
     </form>
 
     <div style="margin-left:auto;display:flex;gap:10px;">
-      <a href="<?= u('cobros/debidas') ?>" class="btn"><i class="fas fa-list-alt"></i> Ver Debidas</a>
-      <a href="<?= u('cobros/create') ?>" class="btn"><i class="fas fa-plus-circle"></i> Nuevo Cobro</a>
+      <a href="<?= u($deudasUrl) ?>" class="btn btn-pay">
+        <i class="fas fa-credit-card"></i> 
+        <?= !empty($filters['idPartner']) ? 'Ver Deudas del Socio' : 'Pagar Deudas' ?>
+      </a>
+      <a href="<?= u('cobros/socios') ?>" class="btn"><i class="fas fa-users"></i> Ver Socios</a>
     </div>
   </div>
 
@@ -326,15 +355,17 @@ ob_start();
           <td><?= htmlspecialchars($r['partnerCI']   ?? '') ?></td>
           <td><?= htmlspecialchars($r['paymentTypeName'] ?: ('Tipo #'.(int)($r['idPaymentType']??0))) ?></td>
           <td><?= htmlspecialchars($r['contributionName'] ?: ('Aporte #'.(int)($r['idContribution']??0))) ?></td>
-          <td><strong><?= number_format((float)($r['paidAmount'] ?? 0), 2, '.', ',') ?></strong></td>
+          <td><strong>Bs. <?= number_format((float)($r['paidAmount'] ?? 0), 2, '.', ',') ?></strong></td>
           <td><?= !empty($r['dateCreation']) ? date('d/m/Y H:i', strtotime($r['dateCreation'])) : '-' ?></td>
           <td><span class="status-paid">Pagado</span></td>
           <td style="white-space: nowrap;">
-            <a href="<?= u('cobros/edit/' . (int)($r['idPayment'] ?? 0)) ?>" title="Editar" class="btn"><i class="fas fa-edit"></i></a>
+            <a href="<?= u('cobros/edit/' . (int)($r['idPayment'] ?? 0) . '?return_url=' . urlencode($currentUrl)) ?>" 
+               title="Editar" class="btn"><i class="fas fa-edit"></i></a>
             <a href="#" title="Eliminar"
                class="btn btn-danger delete-btn" 
                data-id="<?= (int)($r['idPayment'] ?? 0) ?>"
-               data-name="<?= htmlspecialchars($r['partnerName'] ?? 'este cobro') ?>">
+               data-name="<?= htmlspecialchars($r['partnerName'] ?? 'este cobro') ?>"
+               data-return-url="<?= urlencode($currentUrl) ?>">
               <i class="fas fa-trash"></i>
             </a>
           </td>
@@ -395,13 +426,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const confirmBtn = document.getElementById('confirmDelete');
   
   let deleteUrl = '';
+  let returnUrl = '';
   
   deleteButtons.forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       const id = this.getAttribute('data-id');
       const name = this.getAttribute('data-name');
-      deleteUrl = '<?= u('cobros/delete/') ?>' + id;
+      returnUrl = this.getAttribute('data-return-url');
+      deleteUrl = '<?= u('cobros/delete/') ?>' + id + '?return_url=' + encodeURIComponent(returnUrl);
       deleteItemName.textContent = name;
       modal.style.display = 'flex';
     });
@@ -463,4 +496,3 @@ $modalContent = ob_get_clean();
 $content .= $modalContent;
 
 include __DIR__ . '/../layouts/app.php';
-?>

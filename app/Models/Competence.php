@@ -318,7 +318,7 @@ class Competence
             case 'cobros':
             case 'recibos':
             case 'ingresos':
-                return ['cobros/list', 'fas fa-receipt'];
+                return ['cobros/socios', 'fas fa-receipt'];
 
 
             default:
