@@ -9,34 +9,214 @@ $breadcrumbs = [
 ob_start();
 ?>
 <style>
-    /* Estilo similar a role/list.php: Colores crema/beige, tablas modernas */
-    .modern-table th, .modern-table td { padding: 10px 14px; line-height: 1.35; vertical-align: middle; }
-    .modern-table { border-collapse: separate; border-spacing: 0 6px; }
-    .modern-table thead th { position: sticky; top: 0; background: #bbae97; color: #2a2a2a; z-index: 2; }
-    .modern-table tbody tr { background: #d7cbb5; }
-    .modern-table tbody tr:nth-child(even) { background: #dccaaf; }
-    .modern-table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
-    .modern-table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+    :root {
+        --primary: #a49884;
+        --primary-dark: #a49884;
+        --bg-light: #f8fafc;
+        --text-dark: #2d3748;
+        --text-light: #ffffff;
+        --success: #10b981;
+        --warning: orange;
+        --danger:rgb(239, 216, 68);
+        --border-color: #cbd5e0;
+        --grid-bg: #a49884;
+    }
 
-    .table-container, .cards-container { background: #cfc4b0; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.06); overflow: auto; margin-bottom: 20px; padding: 20px; }
+    .modern-table th, .modern-table td { 
+        padding: 12px 16px; 
+        line-height: 1.5; 
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modern-table { 
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--grid-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        color: #2d3748;
+    }
+    
+    .modern-table thead th { 
+        position: sticky; 
+        top: 0; 
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: var(--text-light);
+        font-weight: 500;
+        text-align: left;
+    }
+    
+    .modern-table tbody tr { 
+        background: var(--grid-bg);
+        transition: all 0.2s ease;
+        color: #2d3748;
+    }
+    
+    .modern-table tbody tr:hover {
+        background-color: #b8ac98;
+    }
+    
+    .modern-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
-    .summary-cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-    .summary-card { flex: 1; min-width: 200px; background: #fff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,.05); }
-    .summary-card.pending { border-left: 5px solid #e74c3c; }
-    .summary-card.paid { border-left: 5px solid #27ae60; }
+    .table-container, .cards-container { 
+        background: #a49884;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 24px;
+        padding: 24px;
+        color: #2d3748;
+    }
 
-    .filter-container { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
-    .filter-select { padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; background: #fff; }
+    .summary-cards { 
+        display: flex; 
+        gap: 20px; 
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+    
+    .summary-card { 
+        flex: 1;
+        min-width: 220px;
+        background: #dccaaf;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .summary-card.pending { 
+        border-top: 4px solid var(--warning);
+    }
+    
+    .summary-card.paid { 
+        border-top: 4px solid var(--success);
+    }
 
-    .pay-btn { background: #27ae60; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-    .pay-btn:hover { background: #219a52; }
-    .pending-item { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .filter-container { 
+        display: flex; 
+        gap: 12px; 
+        align-items: center; 
+        margin-bottom: 20px;
+        padding: 0 8px;
+    }
+    
+    .filter-select { 
+        padding: 10px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
 
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-    .modal-content { background: #fff; margin: 10% auto; padding: 20px; width: 400px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
-    .close { float: right; font-size: 24px; cursor: pointer; color: #999; }
-    .error-message { color: #e74c3c; margin: 10px 0; background: #f8d7da; padding: 10px; border-radius: 4px; }
-    .success-message { color: #27ae60; margin: 10px 0; background: #d4edda; padding: 10px; border-radius: 4px; }
+    .pay-btn { 
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .pay-btn:hover { 
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgb(180, 168, 147);
+    }
+    
+    .pending-item { 
+        background:#dccaaf;
+        border-left: 4px solid var(--warning);
+        padding: 18px 24px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .pending-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .modal { 
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.7);
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+    
+    .modal-content { 
+        background: white;
+        margin: 10% auto;
+        padding: 28px;
+        width: 90%;
+        max-width: 480px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .close { 
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #94a3b8;
+        transition: color 0.2s ease;
+    }
+    
+    .close:hover {
+        color: var(--primary);
+    }
+    
+    .error-message { 
+        color: #b91c1c;
+        background: #fee2e2;
+        border-left: 4px solid #dc2626;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin: 16px 0;
+    }
+    
+    .success-message { 
+        color: #166534;
+        background: #dcfce7;
+        border-left: 4px solid #16a34a;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin: 16px 0;
+    }
 
     @media (max-width: 768px) {
         .summary-cards { flex-direction: column; }
@@ -145,15 +325,15 @@ ob_start();
 <div id="payModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2><i class="fas fa-credit-card"></i> Realizar Pago</h2>
+        <h2 style="color: #000;"><i class="fas fa-credit-card"></i> Realizar Pago</h2>
         <form method="POST" action="<?= u('partner/payments') ?>" id="payForm">
             <input type="hidden" name="action" value="pay">
             <input type="hidden" name="idPayment" id="payId">
             <input type="hidden" name="idContribution" id="payId">
-            <label for="amount">Monto a Pagar:</label>
+            <label for="amount" style="color: #000;">Monto a Pagar:</label>
             <input type="number" name="amount" id="amount" step="0.01" required style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px;" readonly>
 
-            <label for="paymentType">Método de Pago:</label>
+            <label for="paymentType" style="color: #000;">Método de Pago:</label>
             <select name="paymentType" id="paymentType" required style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px;">
                 <!-- Opciones de paymenttype, cargar dinámicamente si es necesario -->
                 <option value="1">Tarjeta de Crédito</option>
@@ -162,11 +342,11 @@ ob_start();
             </select>
 
             <!-- Aquí integrar pasarela real, e.g., formulario Stripe -->
-            <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <p><strong>Nota:</strong> Este es un simulador. Integra tu pasarela de pagos aquí.</p>
+            <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; color: #000;">
+                <p style="color: #000;"><strong style="color: #000;">Nota:</strong> Este es un simulador. Integra tu pasarela de pagos aquí.</p>
             </div>
 
-            <button type="submit" style="background: #27ae60; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px;">
+            <button type="submit" style="background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 500; transition: all 0.2s ease;">
                 <i class="fas fa-lock"></i> Confirmar Pago
             </button>
         </form>

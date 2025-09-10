@@ -28,6 +28,7 @@ ob_start();
       padding: 10px 14px;
       line-height: 1.35;
       vertical-align: middle;
+      color: #000000;
     }
     .modern-table { border-collapse: separate; border-spacing: 0 6px; }
     .modern-table thead th {
