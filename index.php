@@ -215,19 +215,20 @@ $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsAp
 $router->addRoute('GET', '/cobros/create-multiple', 'CobroController', 'createMultiple');
 $router->addRoute('POST', '/cobros/create-multiple', 'CobroController', 'createMultiple');
 
-
 //para recibo de multiples pagos
 $router->addRoute('GET', '/cobros/recibo', 'CobroController', 'recibo');
 /**/ 
-
 
 /*
 |--------------------------------------------------------------------------
 | RUTAS DE PAGOS DE SOCIOS (NUEVAS)
 |--------------------------------------------------------------------------
 */
-$router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
-$router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
+//$router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
+//$router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
+$router->addRoute('GET', '/partner/pending-payments', 'PartnerPaymentController', 'viewPendingPayments');
+$router->addRoute('GET', '/partner/payment-history', 'PartnerPaymentController', 'viewPaymentHistory');
+$router->addRoute('POST', '/partner/pending-payments', 'PartnerPaymentController', 'viewPendingPayments'); // Para procesar el pago
 //$router->addRoute('GET', '/partner/export-pdf-payments', 'PartnerPaymentController', 'exportPDF'); // Opcional, implementar export/*
 
 /*

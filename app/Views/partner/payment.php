@@ -336,9 +336,9 @@ ob_start();
             <label for="paymentType" style="color: #000;">Método de Pago:</label>
             <select name="paymentType" id="paymentType" required style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px;">
                 <!-- Opciones de paymenttype, cargar dinámicamente si es necesario -->
-                <option value="1">Tarjeta de Crédito</option>
+                
                 <option value="2">Transferencia Bancaria</option>
-                <option value="3">Efectivo</option>
+                <option value="3">Pago Efectivo</option>
             </select>
 
             <!-- Aquí integrar pasarela real, e.g., formulario Stripe -->
