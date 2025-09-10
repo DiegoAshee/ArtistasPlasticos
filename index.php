@@ -37,12 +37,14 @@ $router->addRoute('POST', '/change-password', 'AuthController', 'changePassword'
 */
 
 // Ver la lista de competencias
-$router->addRoute('GET', '/competence/list', 'CompetenceController', 'listAll');
+$router->addRoute('GET', '/competence/competence_list', 'CompetenceController', 'listAll');
 $router->addRoute('GET', '/competence/create', 'CompetenceController', 'create');  // Vista para crear
 $router->addRoute('POST', '/competence/create', 'CompetenceController', 'create'); // Enviar formulario de creación
-$router->addRoute('GET', '/competence/edit/([0-9]+)', 'CompetenceController', 'update');  // Vista para editar
-$router->addRoute('POST', '/competence/edit/([0-9]+)', 'CompetenceController', 'update'); // Enviar formulario de edición
-$router->addRoute('GET', '/competence/delete/([0-9]+)', 'CompetenceController', 'delete');
+$router->addRoute('GET', '/competence/update/([0-9]+)', 'CompetenceController', 'update');  // Vista para editar
+$router->addRoute('POST', '/competence/update/([0-9]+)', 'CompetenceController', 'update'); // Enviar formulario de edición
+// Delete a competence
+$router->addRoute('POST', '/competence/delete/([0-9]+)', 'CompetenceController', 'delete');
+$router->addRoute('GET', '/competence/delete/([0-9]+)', 'CompetenceController', 'delete'); // Keep GET for backward compatibility
 
 /*
 |--------------------------------------------------------------------------
@@ -135,6 +137,13 @@ $router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS DEL PAYMENT
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
+
+/*
+|--------------------------------------------------------------------------
 | RUTAS DEL PARNERT ONLINE
 |--------------------------------------------------------------------------
 */
@@ -168,8 +177,48 @@ $router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete'
 // AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
 $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
 
-/**/
+/**/ 
 
+
+// Bandeja de pendientes de partneronline (solo vista/mostrar)
+// Bandeja de solicitudes pendientes (solo lectura)
+$router->addRoute('GET', '/partnerOnline/pending', 'PartnerOnlineController', 'pending');
+
+
+
+//aprobar o rechazar solicitudes 
+// Acciones sobre solicitudes (POST)
+$router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
+$router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
+$router->addRoute('POST', '/partnerOnline/accept', 'PartnerOnlineController', 'accept');
+
+
+
+//cobros
+/* RUTAS DE COBROS (módulo nuevo, sin chocar con Payment*) */
+/* RUTAS DE COBROS */
+$router->addRoute('GET',  '/cobros/list',            'CobroController', 'pagadas'); // alias
+$router->addRoute('GET',  '/cobros/pagadas',         'CobroController', 'pagadas');
+$router->addRoute('GET',  '/cobros/debidas',         'CobroController', 'debidas');
+$router->addRoute('GET',  '/cobros/socios',          'CobroController', 'socios'); // NUEVA RUTA
+
+$router->addRoute('GET',  '/cobros/create',          'CobroController', 'create');
+$router->addRoute('POST', '/cobros/create',          'CobroController', 'create');
+$router->addRoute('GET',  '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
+$router->addRoute('POST', '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
+$router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete');
+
+// AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
+$router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
+
+//pagosmultiples
+$router->addRoute('GET', '/cobros/create-multiple', 'CobroController', 'createMultiple');
+$router->addRoute('POST', '/cobros/create-multiple', 'CobroController', 'createMultiple');
+
+
+//para recibo de multiples pagos
+$router->addRoute('GET', '/cobros/recibo', 'CobroController', 'recibo');
+/**/ 
 
 /*
 |--------------------------------------------------------------------------
