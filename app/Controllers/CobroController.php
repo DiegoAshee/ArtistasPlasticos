@@ -178,6 +178,233 @@ class CobroController extends BaseController
 
 
 
+// Añade este método en CobroController.php
+
+/*
+public function createMultiple(): void
+{
+    $this->ensureSession();
+    [$menuOptions, $roleId] = $this->menu();
+
+    $m = new \Cobro();
+    
+    // Obtener los datos de los pagos seleccionados (vienen por POST)
+    $selectedDebts = $_POST['selected_debts'] ?? [];
+    $debtsData = [];
+    $totalAmount = 0;
+    $partnerId = null;
+    $partnerName = '';
+
+    // Si no hay deudas seleccionadas, redirigir con error
+    if (empty($selectedDebts)) {
+        $_SESSION['error'] = 'No se seleccionaron deudas para pagar.';
+        $this->redirect('cobros/debidas');
+        return;
+    }
+
+    foreach ($selectedDebts as $debtKey) {
+        list($idPartner, $idContribution) = explode('-', $debtKey);
+        
+        // Obtener información detallada de cada deuda usando el modelo
+        $debtInfo = $m->getDebtDetails((int)$idPartner, (int)$idContribution);
+        
+        if ($debtInfo) {
+            $debtsData[] = $debtInfo;
+            $totalAmount += (float)$debtInfo['amount']; // Asegurar que sea float
+            
+            // Establecer información del socio
+            if ($partnerId === null) {
+                $partnerId = (int)$idPartner;
+                $partnerName = $debtInfo['partnerName'];
+            }
+        }
+    }
+
+    if (empty($debtsData)) {
+        $_SESSION['error'] = 'No se encontraron deudas válidas para pagar.';
+        $this->redirect('cobros/debidas');
+        return;
+    }
+
+    $types = $m->allTypes();
+
+    // Si se está confirmando el pago (segunda etapa)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
+        $idPaymentType = (int)($_POST['idPaymentType'] ?? 0);
+        
+        // Convertir el monto a float explícitamente
+        $paidAmount = (float)($_POST['paidAmount'] ?? 0);
+        
+        if ($idPaymentType <= 0) {
+            $error = 'Selecciona un tipo de pago válido.';
+        } else if ($paidAmount <= 0) {
+            $error = 'El monto a pagar debe ser mayor a cero.';
+        } else {
+            // Procesar cada pago individual
+            $successCount = 0;
+            $errors = [];
+            
+            foreach ($debtsData as $debt) {
+                $paymentId = $m->create(
+                    (int)$debt['idPartner'],
+                    $idPaymentType,
+                    (int)$debt['idContribution'],
+                    (float)$debt['amount'] // Asegurar que sea float
+                );
+                
+                if ($paymentId) {
+                    $successCount++;
+                } else {
+                    $errors[] = "Error al procesar pago para aportación #{$debt['idContribution']}";
+                }
+            }
+            
+            if ($successCount > 0) {
+                $message = "Se procesaron {$successCount} pagos correctamente.";
+                if (!empty($errors)) {
+                    $message .= " Errores: " . implode(', ', $errors);
+                }
+                $_SESSION['success'] = $message;
+                $this->redirect('cobros/list');
+                return;
+            } else {
+                $error = 'No se pudo procesar ningún pago. ' . implode(', ', $errors);
+            }
+        }
+    }
+
+    // Mostrar la vista de confirmación (primera etapa)
+    $this->view('cobros/create-multiple', [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'cobros/create-multiple',
+        'roleId' => $roleId,
+        
+        'debtsData' => $debtsData,
+        'totalAmount' => $totalAmount,
+        'partnerId' => $partnerId,
+        'partnerName' => $partnerName,
+        'types' => $types,
+        'error' => $error ?? null,
+        'selectedDebts' => $selectedDebts
+    ]);
+}
+*/
+
+
+public function createMultiple(): void
+{
+    $this->ensureSession();
+    [$menuOptions, $roleId] = $this->menu();
+
+    $m = new \Cobro();
+    
+    // Obtener los datos de los pagos seleccionados (vienen por POST)
+    $selectedDebts = $_POST['selected_debts'] ?? [];
+    $debtsData = [];
+    $totalAmount = 0;
+    $partnerId = null;
+    $partnerName = '';
+
+    // Si no hay deudas seleccionadas, redirigir con error
+    if (empty($selectedDebts)) {
+        $_SESSION['error'] = 'No se seleccionaron deudas para pagar.';
+        $this->redirect('cobros/debidas');
+        return;
+    }
+
+    foreach ($selectedDebts as $debtKey) {
+        list($idPartner, $idContribution) = explode('-', $debtKey);
+        
+        // Obtener información detallada de cada deuda usando el modelo
+        $debtInfo = $m->getDebtDetails((int)$idPartner, (int)$idContribution);
+        
+        if ($debtInfo) {
+            $debtsData[] = $debtInfo;
+            $totalAmount += (float)$debtInfo['amount']; // Asegurar que sea float
+            
+            // Establecer información del socio
+            if ($partnerId === null) {
+                $partnerId = (int)$idPartner;
+                $partnerName = $debtInfo['partnerName'];
+            }
+        }
+    }
+
+    if (empty($debtsData)) {
+        $_SESSION['error'] = 'No se encontraron deudas válidas para pagar.';
+        $this->redirect('cobros/debidas');
+        return;
+    }
+
+    $types = $m->allTypes();
+
+    // Si se está confirmando el pago (segunda etapa)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
+        $idPaymentType = (int)($_POST['idPaymentType'] ?? 0);
+        
+        // Convertir el monto a float explícitamente
+        $paidAmount = (float)($_POST['paidAmount'] ?? 0);
+        
+        if ($idPaymentType <= 0) {
+            $error = 'Selecciona un tipo de pago válido.';
+        } else if ($paidAmount <= 0) {
+            $error = 'El monto a pagar debe ser mayor a cero.';
+        } else {
+            // Procesar cada pago individual y almacenar los IDs
+            $successCount = 0;
+            $errors = [];
+            $paymentIds = []; // Para el recibo
+            
+            foreach ($debtsData as $debt) {
+                $paymentId = $m->create(
+                    (int)$debt['idPartner'],
+                    $idPaymentType,
+                    (int)$debt['idContribution'],
+                    (float)$debt['amount'] // Asegurar que sea float
+                );
+                
+                if ($paymentId) {
+                    $successCount++;
+                    $paymentIds[] = $paymentId; // Guardar para el recibo
+                } else {
+                    $errors[] = "Error al procesar pago para aportación #{$debt['idContribution']}";
+                }
+            }
+            
+            if ($successCount > 0) {
+                // Generar el recibo y redirigir
+                $_SESSION['success'] = "Se procesaron {$successCount} pagos correctamente.";
+                $_SESSION['receipt_payment_ids'] = $paymentIds; // Guardar para mostrar el recibo
+                
+                if (!empty($errors)) {
+                    $_SESSION['success'] .= " Errores: " . implode(', ', $errors);
+                }
+                
+                $this->redirect('cobros/recibo'); // Redirigir al recibo
+                return;
+            } else {
+                $error = 'No se pudo procesar ningún pago. ' . implode(', ', $errors);
+            }
+        }
+    }
+
+    // Mostrar la vista de confirmación (primera etapa)
+    $this->view('cobros/create-multiple', [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'cobros/create-multiple',
+        'roleId' => $roleId,
+        
+        'debtsData' => $debtsData,
+        'totalAmount' => $totalAmount,
+        'partnerId' => $partnerId,
+        'partnerName' => $partnerName,
+        'types' => $types,
+        'error' => $error ?? null,
+        'selectedDebts' => $selectedDebts
+    ]);
+}
+
+
 
 
     
@@ -237,6 +464,68 @@ class CobroController extends BaseController
         (new \Cobro())->delete((int)$id);
         $this->redirect('cobros/list');
     }
+
+    public function socios(): void {
+    $this->ensureSession();
+    [$menuOptions, $roleId] = $this->menu();
+
+    $m = new \Cobro();
+    $filters = $this->getFiltersFromGet();
+    [$page, $pageSize] = $this->getPaging();
+
+    $total = 0;
+    $rows = $m->listPartnersWithTotals($filters, $page, $pageSize, $total);
+
+    $totalPages = max(1, (int)ceil($total / $pageSize));
+
+    $this->view('cobros/socios', [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'cobros/socios',
+        'roleId' => $roleId,
+
+        'rows' => $rows,
+        'filters' => $filters,
+
+        'page' => $page,
+        'pageSize' => $pageSize,
+        'total' => $total,
+        'totalPages' => $totalPages,
+    ]);
+}
+
+//para recibo
+public function recibo(): void {
+    $this->ensureSession();
+    [$menuOptions, $roleId] = $this->menu();
+
+    // Obtener los IDs de los pagos desde la sesión
+    $paymentIds = $_SESSION['receipt_payment_ids'] ?? [];
+    
+    if (empty($paymentIds)) {
+        $_SESSION['error'] = 'No se encontró información del recibo.';
+        $this->redirect('cobros/socios');
+        return;
+    }
+
+    // Limpiar la sesión después de obtener los datos
+    unset($_SESSION['receipt_payment_ids']);
+
+    $m = new \Cobro();
+    $receiptData = $m->getReceiptData($paymentIds);
+    
+    if (!$receiptData) {
+        $_SESSION['error'] = 'Error al generar el recibo.';
+        $this->redirect('cobros/socios');
+        return;
+    }
+
+    $this->view('cobros/recibo', [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'cobros/recibo',
+        'roleId' => $roleId,
+        'receiptData' => $receiptData
+    ]);
+}
 
 
 

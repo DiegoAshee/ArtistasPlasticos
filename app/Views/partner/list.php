@@ -28,6 +28,7 @@ ob_start();
       padding: 10px 14px;
       line-height: 1.35;
       vertical-align: middle;
+      color: #000000;
     }
     .modern-table { border-collapse: separate; border-spacing: 0 6px; }
     .modern-table thead th {
@@ -129,13 +130,7 @@ ob_start();
                     <i class="fas fa-trash"></i>
                   </a>
 
-                  <!-- NUEVO: Ver deudas de este socio -->
-                  <a href="<?= u('cobros/debidas?idPartner=' . (int)($socio['idPartner'] ?? 0)) ?>"
-                    class="btn btn-sm"
-                    title="Ver deudas"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#f39c12;color:#fff;text-decoration:none;margin-left:6px;">
-                    <i class="fas fa-money-bill-wave"></i>
-                  </a>
+                  
                 </div>
               </td>
 

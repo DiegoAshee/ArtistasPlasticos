@@ -10,19 +10,42 @@ $breadcrumbs = [
 $rows     = $rows ?? [];
 $types    = $types ?? [];
 $contribs = $contribs ?? [];
-$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','onlyLatest'=>1];
+$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','onlyLatest'=>1, 'idPartner'=>''];
 
 $page      = (int)($page ?? 1);
 $pageSize  = (int)($pageSize ?? 20);
 $total     = (int)($total ?? 0);
 $totalPg   = (int)($totalPages ?? 1);
 
+// Obtener parámetros actuales para mantenerlos en la URL
+$currentQueryParams = $_GET;
+$currentUrl = u('cobros/debidas?' . http_build_query($currentQueryParams));
+
 // helper URL para paginación
-$mkUrl = function(int $p) use ($currentPath) {
-  $qs = $_GET;
+$mkUrl = function(int $p) use ($currentPath, $currentQueryParams) {
+  $qs = $currentQueryParams;
   $qs['page'] = $p;
   if (!isset($qs['pageSize'])) $qs['pageSize'] = 20;
   return u(($currentPath==='cobros/debidas'?'cobros/debidas':'cobros/list') . '?' . http_build_query($qs));
+};
+
+// Construir URL para el botón de pagadas manteniendo el filtro de socio
+$pagadasUrl = 'cobros/list';
+if (!empty($filters['idPartner'])) {
+  $pagadasUrl .= '?idPartner=' . urlencode($filters['idPartner']);
+}
+
+// Función para formatear fecha
+$formatDate = function($date) {
+    if (empty($date) || $date == '0000-00-00' || $date == '0000-00-00 00:00:00') {
+        return 'No registrada';
+    }
+    return date('d/m/Y', strtotime($date));
+};
+
+// Función segura para obtener valores del array
+$getSafe = function($array, $key, $default = '') {
+    return isset($array[$key]) ? $array[$key] : $default;
 };
 
 ob_start();
@@ -67,6 +90,17 @@ ob_start();
   #cobros-root .btn-primary:hover {
     background: #5a6268 !important;
     border-color: #5a6268 !important;
+  }
+  
+  #cobros-root .btn-success {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #fff !important;
+  }
+  
+  #cobros-root .btn-success:hover {
+    background: #218838 !important;
+    border-color: #218838 !important;
   }
   
   #cobros-root .btn-danger {
@@ -125,7 +159,8 @@ ob_start();
   #cobros-root input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #6c757d;
+    accent-color: #28a745;
+    cursor: pointer;
   }
   
   /* Toolbar mejorada */
@@ -259,14 +294,67 @@ ob_start();
     margin: 10px 0;
   }
   
-  /* Checkbox label */
-  .checkbox-label {
+  /* Información de socio y contribución */
+  .partner-info {
     display: flex;
+    flex-direction: column;
+  }
+  
+  .partner-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  
+  .partner-registration {
+    font-size: 12px;
+    color: #6c757d;
+  }
+  
+  .contribution-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .contribution-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  
+  .contribution-date {
+    font-size: 12px;
+    color: #6c757d;
+  }
+  
+  .contribution-amount {
+    font-weight: 700;
+    color: #991B1B;
+    margin-top: 4px;
+  }
+  
+  /* Barra de total y pagar */
+  .payment-summary {
+    position: sticky;
+    bottom: 0;
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    padding: 10px 0;
-    font-weight: 500;
-    cursor: pointer;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 10;
+  }
+  
+  .total-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #991B1B;
+  }
+  
+  .checkbox-cell {
+    text-align: center;
+    width: 50px;
   }
 </style>
 
@@ -274,21 +362,14 @@ ob_start();
   <div class="toolbar">
     <form method="get" action="<?= u('cobros/debidas') ?>" style="display:flex;flex-wrap:wrap;gap:16px;align-items:end;">
       <input type="hidden" name="page" value="1"><!-- reset al buscar -->
+      <!-- Mantener el filtro de socio si existe -->
+      <?php if (!empty($filters['idPartner'])): ?>
+        <input type="hidden" name="idPartner" value="<?= htmlspecialchars($filters['idPartner']) ?>">
+      <?php endif; ?>
+      
       <div>
         <label>Buscar</label>
         <input type="text" name="q" value="<?= htmlspecialchars($filters['q']) ?>" placeholder="Nombre, CI o aportación" style="min-width:240px;">
-      </div>
-      <div>
-        <label>Tipo de pago</label>
-        <select name="idPaymentType" style="min-width:180px;">
-          <option value="">— Cualquiera —</option>
-          <?php foreach ($types as $t): ?>
-            <option value="<?= (int)($t['idPaymentType'] ?? 0) ?>" <?= ($filters['idPaymentType']!==''
-                && (int)$filters['idPaymentType']===(int)($t['idPaymentType']??-1))?'selected':'' ?>>
-              <?= htmlspecialchars($t['label'] ?? ('Tipo #'.(int)($t['idPaymentType']??0))) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
       </div>
       <div>
         <label>Aportación</label>
@@ -312,44 +393,93 @@ ob_start();
       <a href="<?= u('cobros/debidas') ?>" class="btn"><i class="fas fa-eraser"></i> Limpiar</a>
     </form>
 
-    <div style="margin-left:auto;">
-      <a href="<?= u('cobros/list') ?>" class="btn"><i class="fas fa-list-alt"></i> Ver Pagadas</a>
+    <div style="margin-left:auto;display:flex;gap:10px;">
+      <a href="<?= u($pagadasUrl) ?>" class="btn btn-success">
+        <i class="fas fa-list-alt"></i> 
+        <?= !empty($filters['idPartner']) ? 'Ver Pagos del Socio' : 'Ver Pagadas' ?>
+      </a>
+      <a href="<?= u('cobros/socios') ?>" class="btn"><i class="fas fa-users"></i> Ver Socios</a>
     </div>
   </div>
 
-  <div class="table-container">
-    <table class="modern-table">
-      <thead>
-        <tr>
-          <th>Quién</th>
-          <th>CI</th>
-          <th>Aportación</th>
-          <th>Tipo seleccionado</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php if (empty($rows)): ?>
-        <tr>
-          <td colspan="5">
-            <div class="no-results">
-              <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; color: #065F46;"></i>
-              No se encontraron deudas según los filtros aplicados
-            </div>
-          </td>
-        </tr>
-      <?php else: foreach ($rows as $r): ?>
-        <tr>
-          <td><strong><?= htmlspecialchars($r['partnerName'] ?? '') ?></strong></td>
-          <td><?= htmlspecialchars($r['partnerCI']   ?? '') ?></td>
-          <td><?= htmlspecialchars($r['contributionName'] ?: ('Aporte #'.(int)($r['idContribution']??0))) ?></td>
-          <td><?= htmlspecialchars($r['paymentTypeName'] ?: (isset($r['idPaymentType']) && $r['idPaymentType']!==null ? ('Tipo #'.$r['idPaymentType']) : '—')) ?></td>
-          <td><span class="status-due">Debe</span></td>
-        </tr>
-      <?php endforeach; endif; ?>
-      </tbody>
-    </table>
-  </div>
+  <form id="paymentForm" action="<?= u('cobros/create-multiple') ?>" method="post">
+    <input type="hidden" name="return_url" value="<?= htmlspecialchars($currentUrl) ?>">
+    
+    <div class="table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th class="checkbox-cell">Seleccionar</th>
+            <th>ID Socio</th>
+            <th>Socio</th>
+            <th>CI</th>
+            <th>Aportación</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php if (empty($rows)): ?>
+          <tr>
+            <td colspan="6">
+              <div class="no-results">
+                <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; color: #065F46;"></i>
+                No se encontraron deudas según los filtros aplicados
+              </div>
+            </td>
+          </tr>
+        <?php else: foreach ($rows as $index => $r): ?>
+          <tr>
+            <td class="checkbox-cell">
+              <input type="checkbox" 
+                     name="selected_debts[]" 
+                     value="<?= (int)$getSafe($r, 'idPartner', 0) ?>-<?= (int)$getSafe($r, 'idContribution', 0) ?>"
+                     data-amount="<?= (float)$getSafe($r, 'amount', 0) ?>"
+                     class="debt-checkbox">
+            </td>
+            <td><strong>#<?= (int)$getSafe($r, 'idPartner', 0) ?></strong></td>
+            <td>
+              <div class="partner-info">
+                <div class="partner-name"><?= htmlspecialchars($getSafe($r, 'partnerName', '')) ?></div>
+                <div class="partner-registration">
+                  Registrado: <?= $formatDate($getSafe($r, 'partnerRegistrationDate', '')) ?>
+                </div>
+              </div>
+            </td>
+            <td><?= htmlspecialchars($getSafe($r, 'partnerCI', '')) ?></td>
+            <td>
+              <div class="contribution-info">
+                <div class="contribution-name">
+                  <?= htmlspecialchars($getSafe($r, 'contributionName', '') ?: ('Aporte #' . (int)$getSafe($r, 'idContribution', 0))) ?>
+                </div>
+                <div class="contribution-date">
+                  <?= !empty($getSafe($r, 'contributionDate', '')) ? $formatDate($getSafe($r, 'contributionDate', '')) : '' ?>
+                  <?= !empty($getSafe($r, 'monthYear', '')) ? ' - ' . htmlspecialchars($getSafe($r, 'monthYear', '')) : '' ?>
+                </div>
+                <div class="contribution-amount">
+                  <strong>Bs. <?= number_format((float)$getSafe($r, 'amount', 0), 2, '.', ',') ?></strong>
+                </div>
+              </div>
+            </td>
+            <td><span class="status-due">Debe</span></td>
+          </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="payment-summary" id="paymentSummary" style="display: none;">
+      <div>
+        <strong>Total seleccionado:</strong>
+        <span class="total-amount" id="totalAmount">Bs. 0.00</span>
+      </div>
+      <div>
+        <span id="selectedCount">0</span> aportaciones seleccionadas
+      </div>
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-credit-card"></i> Pagar Seleccionados
+      </button>
+    </div>
+  </form>
 
   <div class="pagination">
     <form method="get" action="<?= u('cobros/debidas') ?>" style="display:flex;gap:10px;align-items:center;">
@@ -375,6 +505,43 @@ ob_start();
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const checkboxes = document.querySelectorAll('.debt-checkbox');
+  const paymentSummary = document.getElementById('paymentSummary');
+  const totalAmount = document.getElementById('totalAmount');
+  const selectedCount = document.getElementById('selectedCount');
+  
+  function updateSummary() {
+    let total = 0;
+    let count = 0;
+    
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        total += parseFloat(checkbox.dataset.amount);
+        count++;
+      }
+    });
+    
+    totalAmount.textContent = 'Bs. ' + total.toFixed(2);
+    selectedCount.textContent = count;
+    
+    if (count > 0) {
+      paymentSummary.style.display = 'flex';
+    } else {
+      paymentSummary.style.display = 'none';
+    }
+  }
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateSummary);
+  });
+  
+  // Inicializar el summary
+  updateSummary();
+});
+</script>
 
 <?php
 $content = ob_get_clean();

@@ -191,7 +191,108 @@ public function reject(): void
 }
 
 
-
+public function accept(): void
+{
+    $this->startSession();
+ 
+    if (!isset($_SESSION['user_id'])) { $this->redirect('login'); return; }
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { $this->redirect('partnerOnline/pending'); return; }
+ 
+    // Acepta alias por robustez
+    $idPO = (int)($_POST['idPartnerOnline'] ?? $_POST['id'] ?? $_POST['idpo'] ?? 0);
+    if ($idPO <= 0) {
+        error_log('[accept] Falta idPartnerOnline. POST=' . json_encode($_POST, JSON_UNESCAPED_UNICODE));
+        $_SESSION['error'] = 'Solicitud inválida.';
+        $this->redirect('partnerOnline/pending');
+        return;
+    }
+ 
+    // Usa el singleton de la BD
+    $pdo = \Database::singleton()->getConnection();
+    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+ 
+    try {
+        $pdo->beginTransaction();
+ 
+        // 1) Leer y BLOQUEAR el registro (ahora incluye las URLs)
+        $q = $pdo->prepare("
+            SELECT idPartnerOnline, name, ci, cellPhoneNumber, address, birthday, email,
+                   frontImageURL, backImageURL,
+                   dateConfirmation, idUser, idPartner
+            FROM partneronline
+            WHERE idPartnerOnline = ?
+            FOR UPDATE
+        ");
+        $q->execute([$idPO]);
+        $po = $q->fetch(\PDO::FETCH_ASSOC);
+ 
+        if (!$po) throw new \Exception('No existe el registro.');
+        if (!empty($po['dateConfirmation']) && $po['dateConfirmation'] !== '0000-00-00' && $po['dateConfirmation'] !== '0000-00-00 00:00:00')
+            throw new \Exception('La solicitud ya fue confirmada.');
+        if (empty($po['ci'])) throw new \Exception('El CI está vacío.');
+ 
+        // 2) Crear PARTNER (incluye frontImageURL y backImageURL)
+        $insPartner = $pdo->prepare("
+            INSERT INTO partner
+              (name, ci, cellPhoneNumber, address, frontImageURL, backImageURL, birthday, dateRegistration)
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?, CURDATE())
+        ");
+        $insPartner->execute([
+            $po['name'],
+            $po['ci'],
+            $po['cellPhoneNumber'],
+            $po['address'],
+            $po['frontImageURL'] ?? null,
+            $po['backImageURL'] ?? null,
+            $po['birthday'],
+        ]);
+        $idPartner = (int)$pdo->lastInsertId();
+ 
+        // 3) Crear USER: login=CI (máx 20), password=bcrypt(CI), rol=2, email del PO (evita duplicado)
+        $login = substr((string)$po['ci'], 0, 20);
+        $hash  = password_hash((string)$po['ci'], PASSWORD_BCRYPT);
+        $idRol = 2;
+ 
+        $loginFinal = $login; $i = 1;
+        $chk = $pdo->prepare("SELECT 1 FROM user WHERE login = ? LIMIT 1");
+        while (true) {
+            $chk->execute([$loginFinal]);
+            if (!$chk->fetchColumn()) break;
+            $suf = (string)$i++;
+            $loginFinal = substr($login, 0, max(1, 20 - strlen($suf))) . $suf;
+        }
+ 
+        $insUser = $pdo->prepare("
+            INSERT INTO user (login, password, email, firstSession, status, idRol, idPartner)
+            VALUES (?, ?, ?, 0, 1, ?, ?)
+        ");
+        $insUser->execute([
+            $loginFinal,
+            $hash,
+            $po['email'] ?? null,
+            $idRol,
+            $idPartner
+        ]);
+        $idUser = (int)$pdo->lastInsertId();
+ 
+        // 4) Confirmar y enlazar
+        $upd = $pdo->prepare("
+            UPDATE partneronline
+            SET dateConfirmation = CURDATE(), idUser = ?, idPartner = ?
+            WHERE idPartnerOnline = ?
+        ");
+        $upd->execute([$idUser, $idPartner, $idPO]);
+ 
+        $pdo->commit();
+        $_SESSION['success'] = 'Socio y usuario creados correctamente (con imágenes).';
+    } catch (\Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        $_SESSION['error'] = 'Error al aceptar: ' . $e->getMessage();
+    }
+ 
+    $this->redirect('partnerOnline/pending');
+}
 
 
 

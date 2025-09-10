@@ -6,6 +6,119 @@ require_once __DIR__ . '/../Config/database.php';
 
 class Competence
 {
+    private $lastError = [];
+    
+    /**
+     * Get the last error that occurred
+     * @return array Error information including message and code
+     */
+    public function getLastError(): array {
+        return $this->lastError;
+    }
+    
+    /**
+     * Set an error message
+     * @param string $message Error message
+     * @param int|string $code Error code (optional)
+     */
+    private function setError(string $message, $code = 0): void {
+        $this->lastError = [
+            'message' => $message,
+            'code' => is_numeric($code) ? (int)$code : 0
+        ];
+    }
+    /**
+     * Get all competences from the database
+     *
+     * @return array Array of competences
+     */
+    public function listAll(): array
+    {
+        $db = Database::singleton()->getConnection();
+        
+        try {
+            $sql = "SELECT * FROM `competence` ORDER BY idCompetence ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\PDOException $e) {
+            error_log('Competence::listAll error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get all unique menu options from competences
+     * @return array Array of unique menu options
+     */
+    public function getMenuOptions(): array
+    {
+        $db = Database::singleton()->getConnection();
+        
+        try {
+            $sql = "SELECT DISTINCT menuOption FROM `competence` WHERE menuOption IS NOT NULL AND menuOption != '' ORDER BY menuOption ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            
+            $options = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            return is_array($options) ? $options : [];
+        } catch (\PDOException $e) {
+            error_log('Competence::getMenuOptions error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Create a new competence
+     *
+     * @param string $menuOption The menu option text
+     * @return int|false The ID of the created competence or false on failure
+     */
+    public function create(string $menuOption): int|false
+    {
+        $db = Database::singleton()->getConnection();
+        
+        try {
+            // First, check if the table exists
+            $tableCheck = $db->query("SHOW TABLES LIKE 'competence'");
+            if ($tableCheck->rowCount() === 0) {
+                $this->setError('La tabla de competencias no existe en la base de datos', 404);
+                error_log('Competence table does not exist');
+                return false;
+            }
+
+            // Check table structure
+            $stmt = $db->query("DESCRIBE `competence`");
+            $columns = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            error_log('Competence table columns: ' . print_r($columns, true));
+            
+            $sql = "INSERT INTO `competence` (menuOption) 
+                    VALUES (:menuOption)";
+            
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':menuOption', trim($menuOption), \PDO::PARAM_STR);
+            
+            if ($stmt->execute()) {
+                return (int)$db->lastInsertId();
+            } else {
+                $errorInfo = $stmt->errorInfo();
+                $this->setError($errorInfo[2] ?? 'Error desconocido al crear la competencia', $errorInfo[1] ?? 0);
+                error_log('SQL Error: ' . print_r($errorInfo, true));
+                return false;
+            }
+        } catch (\PDOException $e) {
+            $this->setError('Error de base de datos: ' . $e->getMessage(), $e->getCode());
+            error_log('Competence::create error: ' . $e->getMessage());
+            error_log('SQL State: ' . $e->getCode());
+            error_log('Driver Error: ' . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            $this->setError('Error inesperado: ' . $e->getMessage(), $e->getCode());
+            error_log('Unexpected error in Competence::create: ' . $e->getMessage());
+            return false;
+        }
+    }
     /**
      * Devuelve un arreglo PLANO de items del menú a partir del rol:
      * [
@@ -192,7 +305,7 @@ class Competence
                 return ['partner/pending-payments', 'fas fa-file-invoice'];
             // Agregamos la opción para "competencias"
             case 'competencias':
-                return ['competence/list', 'fas fa-cogs'];
+                return ['competence/competence_list', 'fas fa-cogs'];
 
             // === NUEVOS alias para la bandeja de solicitudes ===
             case 'solicitudespedientes':       // sin espacio
@@ -206,7 +319,7 @@ class Competence
             case 'cobros':
             case 'recibos':
             case 'ingresos':
-                return ['cobros/list', 'fas fa-receipt'];
+                return ['cobros/socios', 'fas fa-receipt'];
 
 
             default:

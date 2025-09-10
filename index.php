@@ -215,7 +215,6 @@ $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsAp
 $router->addRoute('GET', '/cobros/create-multiple', 'CobroController', 'createMultiple');
 $router->addRoute('POST', '/cobros/create-multiple', 'CobroController', 'createMultiple');
 
-
 //para recibo de multiples pagos
 $router->addRoute('GET', '/cobros/recibo', 'CobroController', 'recibo');
 /**/ 

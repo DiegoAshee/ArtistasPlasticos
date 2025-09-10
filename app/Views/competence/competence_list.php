@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
 
 // Set up variables for the layout
 $title = 'Gestión de Competencias - Asociación de Artistas';
-$currentPath = 'competence/list';
+$currentPath = 'competence/competence_list';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Competencias', 'url' => null],
@@ -17,33 +17,103 @@ $breadcrumbs = [
 ob_start();
 ?>
 
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <style>
-    /* Estilos para la tabla */
+    /* Main content styles */
+    body {
+        background-color: #f0f2f5;
+    }
+    
+    .content-wrapper {
+        background-color: #f0f2f5;
+        padding: 25px;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Table styles */
     .table {
         width: 100%;
-        margin-bottom: 1rem;
-        color: #212529;
-        border-collapse: collapse;
+        margin-bottom: 0;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
     
     .table th,
     .table td {
-        padding: 1rem;
+        padding: 1rem 1.25rem;
         vertical-align: middle;
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid #edf2f7;
     }
     
     .table thead th {
-        background-color: #f8f9fa;
-        color: #495057;
+        background-color: #f1f5f9;
+        color: #3b4a5c;
         font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #dbe4f0;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
     }
     
     .table tbody tr:hover {
-        background-color: rgba(0, 0, 0, 0.02);
+        background-color: #f8fafc;
+    }
+    
+    .table tbody tr:last-child td {
+        border-bottom: none;
     }
 
-    /* Estilos para los botones de acción */
+    /* Header styles */
+    .header-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .header-actions .page-title {
+        color: rgb(0, 0, 0) !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+        font-size: 1.75rem !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    /* Button styles */
+    .btn-primary {
+        background-color: #2563eb;
+        border: none;
+        padding: 0.6rem 1.75rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    
+    .btn-primary:hover {
+        background-color: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+    }
+    
+    /* Action buttons */
     .btn-edit, .btn-delete {
         display: inline-flex;
         align-items: center;
@@ -118,29 +188,103 @@ ob_start();
         border-top: 1px solid #ddd;
     }
 
-    /* Estilo para las alertas */
-    .alert {
-        font-size: 1rem;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* Estilo para las alertas flotantes */
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 350px;
+        width: 100%;
+    }
+    
+    .notification {
+        position: relative;
+        padding: 16px 24px;
+        border-radius: 10px;
+        color: white;
+        display: flex;
+        align-items: flex-start;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        transform: translateX(120%);
+        animation: slideIn 0.4s forwards;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    
+    .notification.success {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+    }
+    
+    .notification.error {
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+    }
+    
+    .notification .icon {
+        font-size: 1.5rem;
+        margin-right: 12px;
+        margin-top: 2px;
+    }
+    
+    .notification .content {
+        flex: 1;
+    }
+    
+    .notification .title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 1.1rem;
+    }
+    
+    .notification .message {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        line-height: 1.4;
+    }
+    
+    .notification .close-btn {
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.7;
+        cursor: pointer;
+        padding: 4px;
+        margin-left: 12px;
+        transition: opacity 0.2s;
+        font-size: 1.2rem;
+    }
+    
+    .notification .close-btn:hover {
+        opacity: 1;
+    }
+    
+    .notification .progress-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        width: 100%;
+        transform-origin: left;
+        animation: progress 4s linear forwards;
     }
 
-    .alert i {
-        margin-right: 10px;
+    @keyframes slideIn {
+        to {
+            transform: translateX(0);
+        }
     }
-
-    /* Estilo de la tarjeta */
-    .card {
-        border-radius: 12px;
-        border: 1px solid #ddd;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Estilo para el contenedor de la cabecera */
-    .header-actions {
-        margin-bottom: 20px;
+    
+    @keyframes progress {
+        from {
+            transform: scaleX(1);
+        }
+        to {
+            transform: scaleX(0);
+        }
     }
 </style>
 
@@ -152,27 +296,6 @@ ob_start();
                 <i class="fas fa-plus"></i> Nueva Competencia
             </a>
         </div>
-
-        <!-- Alertas de éxito y error -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle"></i> <?= $_SESSION['success'] ?>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <?php unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-triangle"></i> <?= $_SESSION['error'] ?>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <?php unset($_SESSION['error']); ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Contenedor principal de competencias -->
         <div class="card shadow-sm">
@@ -201,17 +324,14 @@ ob_start();
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <a href="<?= u('competence/edit/' . $competence['idCompetence']) ?>" 
+                                                <a href="<?= u('competence/update/' . $competence['idCompetence']) ?>" 
                                                    class="btn-edit" 
                                                    title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a href="<?= u('competence/delete/' . $competence['idCompetence']) ?>" 
-                                                   class="btn-delete" 
-                                                   onclick="return confirm('¿Estás seguro de que deseas eliminar esta competencia?')"
-                                                   title="Eliminar">
-                                                    <i class="fas fa-trash-alt"></i> 
-                                                </a>
+                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" data-id="<?= $competence['idCompetence'] ?>" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -225,14 +345,167 @@ ob_start();
     </div>
 </div>
 
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" method="POST" action="">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar la competencia <strong class="text-danger" id="competenceName"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Sí, eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php
 $content = ob_get_clean();
 require_once __DIR__ . '/../layouts/app.php';
 ?>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    // Activar tooltips en la página
-    $(document).ready(function(){
-        $('[data-toggle="tooltip"]').tooltip();
+    $(document).ready(function() {
+        // Mostrar el modal de confirmación de eliminación
+        $('#deleteConfirmationModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var idCompetence = button.data('id');
+            var modal = $(this);
+            var row = button.closest('tr');
+            
+            // Guardar la referencia a la fila para eliminarla después
+            modal.data('row', row);
+            
+            // Actualizar el ID en el formulario
+            modal.data('id', idCompetence);
+            
+            // Actualizar el nombre de la competencia en el mensaje
+            var competenceName = row.find('td:first-child span').text().trim();
+            modal.find('#competenceName').text(competenceName);
+        });
+
+        // Manejar el envío del formulario de eliminación
+        $('#deleteConfirmationModal form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var modal = $('#deleteConfirmationModal');
+            var idCompetence = modal.data('id');
+            var row = modal.data('row');
+            
+            // Mostrar indicador de carga
+            var submitBtn = modal.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Eliminando...');
+            
+            console.log('Enviando solicitud para eliminar competencia ID:', idCompetence);
+            
+            // Get base URL from the current page
+            var baseUrl = window.location.pathname.split('/competence/')[0];
+            
+            // Enviar la solicitud de eliminación
+            $.ajax({
+                url: baseUrl + '/competence/delete/' + idCompetence,
+                type: 'POST',
+                dataType: 'json',
+                success: function(response, status, xhr) {
+                    console.log('Respuesta del servidor (éxito):', response);
+                    console.log('Estado HTTP:', xhr.status);
+                    
+                    if (response && response.success) {
+                        showNotification('success', response.message);
+                        
+                        // Eliminar la fila de la tabla
+                        if (row && row.length) {
+                            row.fadeOut(400, function() {
+                                $(this).remove();
+                                
+                                // Si no quedan más filas, mostrar mensaje
+                                if ($('table tbody tr').length === 0) {
+                                    $('table tbody').html('<tr><td colspan="2" class="text-center">No hay competencias registradas.</td></tr>');
+                                }
+                            });
+                        }
+                    } else {
+                        var errorMsg = response && response.message ? response.message : 'Error desconocido al eliminar';
+                        console.error('Error en la respuesta:', errorMsg);
+                        showNotification('danger', errorMsg);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error en la solicitud AJAX:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        responseText: xhr.responseText,
+                        error: error
+                    });
+                    
+                    var errorMessage = 'Error al procesar la solicitud';
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response && response.message) {
+                            errorMessage = response.message;
+                            if (response.debug) {
+                                console.error('Debug info:', response.debug);
+                                errorMessage += ' (ver consola para más detalles)';
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error al analizar la respuesta de error:', e);
+                        errorMessage = 'Error en el formato de la respuesta del servidor';
+                    }
+                    
+                    showNotification('danger', errorMessage);
+                },
+                complete: function(xhr) {
+                    console.log('Solicitud completada. Estado:', xhr.status);
+                    // Cerrar el modal
+                    modal.modal('hide');
+                    // Restaurar el botón
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+        
+        // Función para mostrar notificaciones
+        function showNotification(type, message) {
+            var alertClass = 'alert-' + (type === 'danger' ? 'danger' : 'success');
+            var icon = type === 'danger' ? 'exclamation-triangle' : 'check-circle';
+            
+            var alert = $(
+                '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">' +
+                '   <i class="fas fa-' + icon + ' me-2"></i>' +
+                '   ' + message +
+                '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>' +
+                '</div>'
+            );
+            
+            $('.notification-container').html(alert);
+            
+            // Eliminar la alerta después de 5 segundos
+            setTimeout(function() {
+                alert.fadeOut(400, function() {
+                    $(this).remove();
+                });
+            }, 5000);
+        }
     });
 </script>
+
+<div class="notification-container"></div>
