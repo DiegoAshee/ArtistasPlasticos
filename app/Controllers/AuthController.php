@@ -19,6 +19,21 @@ class AuthController extends BaseController
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+            // === reCAPTCHA ===
+            $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+            $secretKey = RECAPTCHA_SECRET; // From config.php
+            $verify = file_get_contents(
+                'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($secretKey) .
+                '&response=' . urlencode($recaptchaResponse)
+            );
+            $resp = json_decode($verify);
+
+            if (!$resp->success) {
+                $this->view('login', ['error' => 'Captcha inválido o no verificado. Por favor, marca "No soy un robot".']);
+                return;
+            }
+            
+            
             $login    = isset($_POST['login']) ? trim((string)$_POST['login']) : '';
             $password = isset($_POST['password']) ? (string)$_POST['password'] : '';
 

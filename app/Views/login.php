@@ -129,7 +129,10 @@ if (!function_exists('asset')) {
                         </div>
                     </div>
                 <?php endif; ?>
-
+                
+                <div class="g-recaptcha" data-sitekey="6Lf4Pb0rAAAAANwvyOXxEqIguKcFGo3uLgewa41b"></div>
+                <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                
                 <!-- Usuario -->
                 <div class="mb-6">
                     <label for="login" class="block text-sm font-medium text-cream-700 mb-2">
