@@ -135,13 +135,6 @@ $router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
 
 /*
 |--------------------------------------------------------------------------
-| RUTAS DEL PAYMENT
-|--------------------------------------------------------------------------
-*/
-$router->addRoute('GET', '/payment/list', 'PaymentController', 'list');
-
-/*
-|--------------------------------------------------------------------------
 | RUTAS DEL PARNERT ONLINE
 |--------------------------------------------------------------------------
 */
@@ -175,38 +168,7 @@ $router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete'
 // AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
 $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
 
-/**/ 
-
-
-// Bandeja de pendientes de partneronline (solo vista/mostrar)
-// Bandeja de solicitudes pendientes (solo lectura)
-$router->addRoute('GET', '/partnerOnline/pending', 'PartnerOnlineController', 'pending');
-
-
-//aprobar o rechazar solicitudes 
-// Acciones sobre solicitudes (POST)
-$router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
-$router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
-
-
-
-//cobros
-/* RUTAS DE COBROS (módulo nuevo, sin chocar con Payment*) */
-/* RUTAS DE COBROS */
-$router->addRoute('GET',  '/cobros/list',            'CobroController', 'pagadas'); // alias
-$router->addRoute('GET',  '/cobros/pagadas',         'CobroController', 'pagadas');
-$router->addRoute('GET',  '/cobros/debidas',         'CobroController', 'debidas');
-
-$router->addRoute('GET',  '/cobros/create',          'CobroController', 'create');
-$router->addRoute('POST', '/cobros/create',          'CobroController', 'create');
-$router->addRoute('GET',  '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
-$router->addRoute('POST', '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
-$router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete');
-
-// AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
-$router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
-
-/**/ 
+/**/
 
 
 /*
@@ -214,8 +176,11 @@ $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsAp
 | RUTAS DE PAGOS DE SOCIOS (NUEVAS)
 |--------------------------------------------------------------------------
 */
-$router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
-$router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
+//$router->addRoute('GET', '/partner/payment', 'PaymentController', 'viewPayments');
+//$router->addRoute('POST', '/partner/payment', 'PaymentController', 'viewPayments'); // Maneja el formulario de pago
+$router->addRoute('GET', '/partner/pending-payments', 'PartnerPaymentController', 'viewPendingPayments');
+$router->addRoute('GET', '/partner/payment-history', 'PartnerPaymentController', 'viewPaymentHistory');
+$router->addRoute('POST', '/partner/pending-payments', 'PartnerPaymentController', 'viewPendingPayments'); // Para procesar el pago
 //$router->addRoute('GET', '/partner/export-pdf-payments', 'PartnerPaymentController', 'exportPDF'); // Opcional, implementar export/*
 
 /*

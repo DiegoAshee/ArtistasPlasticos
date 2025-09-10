@@ -187,8 +187,9 @@ class Competence
 
             case 'mis pagos':
             case 'pagos':
-                return ['partner/payment', 'fas fa-file-invoice'];
-            
+                return ['partner/payment-history', 'fas fa-file-invoice'];
+            case 'pagos pendientes':
+                return ['partner/pending-payments', 'fas fa-file-invoice'];
             // Agregamos la opción para "competencias"
             case 'competencias':
                 return ['competence/list', 'fas fa-cogs'];
