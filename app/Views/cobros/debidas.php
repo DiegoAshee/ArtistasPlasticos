@@ -367,10 +367,7 @@ ob_start();
         <input type="hidden" name="idPartner" value="<?= htmlspecialchars($filters['idPartner']) ?>">
       <?php endif; ?>
       
-      <div>
-        <label>Buscar</label>
-        <input type="text" name="q" value="<?= htmlspecialchars($filters['q']) ?>" placeholder="Nombre, CI o aportación" style="min-width:240px;">
-      </div>
+      
       <div>
         <label>Aportación</label>
         <select name="idContribution" style="min-width:220px;">
@@ -384,13 +381,12 @@ ob_start();
         </select>
       </div>
       <div>
-        <label class="checkbox-label">
+        <label class="checkbox-label" style="display: none;">
           <input type="checkbox" name="onlyLatest" value="1" <?= !empty($filters['onlyLatest'])?'checked':'' ?>>
           Solo última aportación
         </label>
       </div>
       <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
-      <a href="<?= u('cobros/debidas') ?>" class="btn"><i class="fas fa-eraser"></i> Limpiar</a>
     </form>
 
     <div style="margin-left:auto;display:flex;gap:10px;">

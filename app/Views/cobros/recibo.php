@@ -1,4 +1,7 @@
 <?php
+// Establecer la zona horaria de Bolivia (UTC-4)
+date_default_timezone_set('America/La_Paz');
+
 $title = 'Recibo de Pago';
 $currentPath = 'cobros/recibo';
 $breadcrumbs = [
@@ -22,6 +25,18 @@ $totalAmount = $receiptData['totalAmount'];
 $paymentDate = $receiptData['paymentDate'];
 $receiptNumber = $receiptData['receiptNumber'];
 
+// Ordenar los pagos por fecha (monthYear) de forma ascendente
+usort($payments, function($a, $b) {
+    // Convertir monthYear a timestamp para comparación (formato: YYYY-MM)
+    $aTime = strtotime($a['monthYear'] . '-01');
+    $bTime = strtotime($b['monthYear'] . '-01');
+    
+    return $aTime <=> $bTime;
+});
+
+// Obtener la hora actual del servidor con zona horaria de Bolivia
+$currentTime = date('d/m/Y H:i');
+
 ob_start();
 ?>
 <style>
@@ -34,6 +49,24 @@ ob_start();
             padding: 15px !important;
         }
         .actions { display: none !important; }
+        
+        /* Estilos específicos para impresión */
+        body {
+            font-size: 12pt;
+        }
+        .receipt-container {
+            border: none;
+            padding: 0;
+        }
+        .receipt-title {
+            font-size: 16pt;
+        }
+        .payments-table {
+            font-size: 10pt;
+        }
+        .total-amount {
+            font-size: 14pt;
+        }
     }
     
     .receipt-container {
@@ -83,20 +116,28 @@ ob_start();
         border-radius: 8px;
         margin-bottom: 20px;
         border: 1px solid #e9e5de;
+        
     }
-    
+
     .info-row {
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 200px 1fr; /* ancho fijo para alinear todo detrás del ":" más largo */
+        gap: 10px;
         margin-bottom: 8px;
         padding: 5px 0;
     }
-    
+
     .info-label {
-        font-weight: 600;
-        color: #2a2a2a;
-        min-width: 140px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
     }
+
+    .info-value {
+        text-align: left;
+    }
+
+
     
     .payments-table {
         width: 100%;
@@ -208,35 +249,40 @@ ob_start();
 
 <div class="receipt-container">
     <div class="receipt-header">
-        <div class="receipt-number">Recibo N° <?= htmlspecialchars($receiptNumber) ?></div>
+        <div class="receipt-number">Asociación Boliviana de Artistas Plásticos</div>
         <h1 class="receipt-title">RECIBO DE PAGO</h1>
-        <div class="receipt-date"><?= date('d/m/Y H:i', strtotime($paymentDate)) ?></div>
+        <div class="receipt-date"><?= $currentTime ?></div>
     </div>
     
     <div class="customer-info">
         <div class="info-row">
-            <span class="info-label">Socio:</span>
-            <span><?= htmlspecialchars($partnerName) ?></span>
+            <div class="info-label">Socio:</div>
+            <div class="info-value"><?= htmlspecialchars($partnerName) ?></div>
         </div>
+
         <?php if (!empty($partnerCI)): ?>
         <div class="info-row">
-            <span class="info-label">CI:</span>
-            <span><?= htmlspecialchars($partnerCI) ?></span>
+            <div class="info-label">CI:</div>
+            <div class="info-value"><?= htmlspecialchars($partnerCI) ?></div>
         </div>
         <?php endif; ?>
+
         <div class="info-row">
-            <span class="info-label">Tipo de Pago:</span>
-            <span><?= htmlspecialchars($paymentTypeName) ?></span>
+            <div class="info-label">Tipo de Pago:</div>
+            <div class="info-value"><?= htmlspecialchars($paymentTypeName) ?></div>
         </div>
+
         <div class="info-row">
-            <span class="info-label">Cantidad de Aportaciones:</span>
-            <span><?= count($payments) ?></span>
+            <div class="info-label">Cantidad de Aportaciones:</div>
+            <div class="info-value"><?= count($payments) ?></div>
         </div>
     </div>
+
     
     <table class="payments-table">
         <thead>
             <tr>
+                <th>Nº Recibo</th>
                 <th>Aportación</th>
                 <th>Período</th>
                 <th class="text-right">Monto</th>
@@ -245,6 +291,7 @@ ob_start();
         <tbody>
             <?php foreach ($payments as $payment): ?>
                 <tr>
+                    <td>REC-<?= htmlspecialchars(str_pad((string)$payment['idPayment'], 6, '0', STR_PAD_LEFT)) ?></td>
                     <td><?= htmlspecialchars($payment['contributionName']) ?></td>
                     <td><?= htmlspecialchars($payment['monthYear'] ?? 'N/A') ?></td>
                     <td class="text-right">Bs. <?= number_format($payment['paidAmount'], 2, '.', ',') ?></td>
@@ -258,11 +305,6 @@ ob_start();
         <div class="total-amount">Bs. <?= number_format($totalAmount, 2, '.', ',') ?></div>
     </div>
     
-    <div class="receipt-footer">
-        <p><strong>¡Gracias por su pago!</strong></p>
-        <p>Este recibo es válido como comprobante de pago.</p>
-    </div>
-    
     <div class="actions no-print">
         <button onclick="window.print()" class="btn btn-print">
             <i class="fas fa-print"></i> Imprimir Recibo
@@ -271,6 +313,7 @@ ob_start();
             <i class="fas fa-arrow-left"></i> Volver a Cobros
         </a>
     </div>
+    
 </div>
 
 <script>

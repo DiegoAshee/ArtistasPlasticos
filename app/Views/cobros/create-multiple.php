@@ -25,7 +25,7 @@ ob_start();
         padding: 30px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #333333; /* Color de texto sólido sin transparencia */
+        color: #333333;
     }
     
     .payment-header {
@@ -115,6 +115,68 @@ ob_start();
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
     }
     
+    /* Estilos para el área de comprobante */
+    .receipt-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .receipt-question {
+        margin-bottom: 15px;
+    }
+    
+    .receipt-question label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2a2a2a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .receipt-question input[type="checkbox"] {
+        width: auto;
+        transform: scale(1.2);
+    }
+    
+    .file-upload-area {
+        display: none;
+        margin-top: 15px;
+        padding: 20px;
+        border: 2px dashed #ced4da;
+        border-radius: 8px;
+        background: #ffffff;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-area.active {
+        display: block;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #80bdff;
+        background: #f8f9ff;
+    }
+    
+    .file-upload-area input[type="file"] {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        background: #ffffff;
+    }
+    
+    .file-info {
+        font-size: 14px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
     .btn-pay {
         background: #28a745;
         color: white;
@@ -183,6 +245,48 @@ ob_start();
     }
 </style>
 
+<script>
+function toggleReceiptUpload() {
+    const checkbox = document.getElementById('upload_receipt');
+    const uploadArea = document.getElementById('file_upload_area');
+    const fileInput = document.getElementById('receipt_file');
+    
+    if (checkbox.checked) {
+        uploadArea.classList.add('active');
+        fileInput.required = false; // Opcional incluso cuando está marcado
+    } else {
+        uploadArea.classList.remove('active');
+        fileInput.required = false;
+        fileInput.value = ''; // Limpiar archivo seleccionado
+    }
+}
+
+// Validación de archivo
+function validateFile() {
+    const fileInput = document.getElementById('receipt_file');
+    const file = fileInput.files[0];
+    
+    if (file) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        
+        if (file.size > maxSize) {
+            alert('El archivo es muy grande. Máximo 5MB permitido.');
+            fileInput.value = '';
+            return false;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            alert('Tipo de archivo no permitido. Solo se permiten: JPG, PNG, PDF');
+            fileInput.value = '';
+            return false;
+        }
+    }
+    
+    return true;
+}
+</script>
+
 <div class="payment-container">
     <div class="payment-header">
         <h2><i class="fas fa-credit-card"></i> Confirmar Pago Múltiple</h2>
@@ -225,7 +329,7 @@ ob_start();
         </div>
     </div>
 
-    <form method="post" action="<?= u('cobros/create-multiple') ?>">
+    <form method="post" action="<?= u('cobros/create-multiple') ?>" enctype="multipart/form-data">
         <?php foreach ($selectedDebts as $debt): ?>
             <input type="hidden" name="selected_debts[]" value="<?= htmlspecialchars($debt) ?>">
         <?php endforeach; ?>
@@ -249,6 +353,30 @@ ob_start();
                    step="0.01" min="0.01" required readonly
                    style="background: #e9ecef; color: #333333;">
             <small>El monto total se calcula automáticamente</small>
+        </div>
+
+        <!-- Nueva sección para comprobante -->
+        <div class="receipt-section">
+            <div class="receipt-question">
+                <label for="upload_receipt">
+                    <input type="checkbox" id="upload_receipt" name="upload_receipt" onchange="toggleReceiptUpload()">
+                    ¿Desea subir un comprobante de pago?
+                </label>
+                <small>Opcional - Puede adjuntar una imagen o PDF como respaldo del pago</small>
+            </div>
+            
+            <div id="file_upload_area" class="file-upload-area">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #6c757d; margin-bottom: 10px;"></i>
+                <p>Seleccione su comprobante de pago</p>
+                <input type="file" 
+                       id="receipt_file" 
+                       name="receipt_file" 
+                       accept=".jpg,.jpeg,.png,.pdf"
+                       onchange="validateFile()">
+                <div class="file-info">
+                    Formatos permitidos: JPG, PNG, PDF | Tamaño máximo: 5MB
+                </div>
+            </div>
         </div>
 
         <button type="submit" name="confirm_payment" class="btn-pay">

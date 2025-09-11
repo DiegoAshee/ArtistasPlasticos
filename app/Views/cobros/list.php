@@ -275,10 +275,6 @@ ob_start();
       <?php endif; ?>
       
       <div>
-        <label>Buscar</label>
-        <input type="text" name="q" value="<?= htmlspecialchars($filters['q']) ?>" placeholder="Nombre, CI, tipo o aportación" style="min-width:240px;">
-      </div>
-      <div>
         <label>Tipo de pago</label>
         <select name="idPaymentType" style="min-width:180px;">
           <option value="">— Todos —</option>
@@ -311,7 +307,7 @@ ob_start();
         <input type="date" name="to" value="<?= htmlspecialchars($filters['to']) ?>">
       </div>
       <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
-      <a href="<?= u('cobros/list') ?>" class="btn"><i class="fas fa-eraser"></i> Limpiar</a>
+      
     </form>
 
     <div style="margin-left:auto;display:flex;gap:10px;">

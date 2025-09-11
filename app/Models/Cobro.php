@@ -564,28 +564,23 @@ public function getDebtDetails(int $idPartner, int $idContribution): ?array
             return null;
         }
     }
-/*
-    public function create(int $idPartner, int $idPaymentType, int $idContribution, float $paidAmount) {
-        try {
-            $st = $this->db->prepare("
-                INSERT INTO `payment`
-                (paidAmount, dateCreation, idPartner, idPaymentType, idContribution)
-                VALUES (:paidAmount, NOW(), :idPartner, :idPaymentType, :idContribution)
-            ");
-            $st->bindValue(':paidAmount', $paidAmount);
-            $st->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
-            $st->bindValue(':idPaymentType', $idPaymentType, \PDO::PARAM_INT);
-            $st->bindValue(':idContribution', $idContribution, \PDO::PARAM_INT);
-            $st->execute();
-            return $this->db->lastInsertId();
-        } catch (\PDOException $e) {
-            error_log('Cobro::create '.$e->getMessage());
-            return false;
-        }
-    }*/
 
-        public function create(int $idPartner, int $idPaymentType, int $idContribution, float $paidAmount) {
+/**
+ * SIN DEBUG
+ * @param array $file
+ * @param int $partnerId
+ * @return array{error: string, success: bool|array{path: string, success: bool}}
+ */
+
+public function create(int $idPartner, int $idPaymentType, int $idContribution, float $paidAmount, ?string $voucherImageURL = null) {
     try {
+        error_log("DEBUG Cobro::create - Parameters:");
+        error_log("  idPartner: " . $idPartner);
+        error_log("  idPaymentType: " . $idPaymentType);
+        error_log("  idContribution: " . $idContribution);
+        error_log("  paidAmount: " . $paidAmount);
+        error_log("  voucherImageURL: " . ($voucherImageURL ?? 'NULL'));
+        
         // Verificar que no exista ya un pago para esta combinación
         $stCheck = $this->db->prepare("
             SELECT idPayment FROM payment 
@@ -598,29 +593,200 @@ public function getDebtDetails(int $idPartner, int $idContribution): ?array
         $stCheck->execute();
         
         if ($stCheck->fetch()) {
+            error_log("DEBUG: Payment already exists for this combination");
             throw new \Exception('Ya existe un pago para esta contribución');
         }
 
-        $st = $this->db->prepare("
+        // Preparar la consulta de inserción
+        $sql = "
             INSERT INTO `payment`
-            (paidAmount, dateCreation, idPartner, idPaymentType, idContribution)
-            VALUES (:paidAmount, NOW(), :idPartner, :idPaymentType, :idContribution)
-        ");
-        $st->bindValue(':paidAmount', $paidAmount, \PDO::PARAM_STR); // Usar PARAM_STR para float
+            (paidAmount, dateCreation, voucherImageURL, paymentStatus, idPartner, idPaymentType, idContribution)
+            VALUES (:paidAmount, NOW(), :voucherImageURL, 0, :idPartner, :idPaymentType, :idContribution)
+        ";
+        
+        error_log("DEBUG: SQL Query: " . $sql);
+        
+        $st = $this->db->prepare($sql);
+        $st->bindValue(':paidAmount', $paidAmount, \PDO::PARAM_STR);
+        $st->bindValue(':voucherImageURL', $voucherImageURL, \PDO::PARAM_STR);
         $st->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
         $st->bindValue(':idPaymentType', $idPaymentType, \PDO::PARAM_INT);
         $st->bindValue(':idContribution', $idContribution, \PDO::PARAM_INT);
-        $st->execute();
         
-        return $this->db->lastInsertId();
+        $result = $st->execute();
+        error_log("DEBUG: Execute result: " . ($result ? 'SUCCESS' : 'FAILED'));
+        
+        if ($result) {
+            $insertId = $this->db->lastInsertId();
+            error_log("DEBUG: Insert ID: " . $insertId);
+            
+            // Verificar que se insertó correctamente
+            $stVerify = $this->db->prepare("SELECT voucherImageURL FROM payment WHERE idPayment = :id");
+            $stVerify->bindValue(':id', $insertId, \PDO::PARAM_INT);
+            $stVerify->execute();
+            $row = $stVerify->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($row) {
+                error_log("DEBUG: Verified voucherImageURL in DB: " . ($row['voucherImageURL'] ?? 'NULL'));
+            }
+            
+            return $insertId;
+        }
+        
+        return false;
+        
     } catch (\PDOException $e) {
-        error_log('Cobro::create '.$e->getMessage());
+        error_log('Cobro::create PDOException: ' . $e->getMessage());
+        error_log('SQL State: ' . $e->getCode());
         return false;
     } catch (\Exception $e) {
-        error_log('Cobro::create '.$e->getMessage());
+        error_log('Cobro::create Exception: ' . $e->getMessage());
         return false;
     }
 }
+
+// Reemplazar método create en app/Models/Cobro.php
+
+/**
+ * CON DEBUG
+ * @param array $file
+ * @param int $partnerId
+ * @return array{error: string, success: bool|array{path: string, success: bool}}
+ */
+/*
+public function create(int $idPartner, int $idPaymentType, int $idContribution, float $paidAmount, ?string $voucherImageURL = null) {
+    try {
+        if (APP_DEBUG) {
+            echo "<div style='background: #e3f2fd; padding: 10px; margin: 10px 0; border: 1px solid #90caf9;'>";
+            echo "<strong>DEBUG Cobro::create - Parameters:</strong><br>";
+            echo "idPartner: {$idPartner}<br>";
+            echo "idPaymentType: {$idPaymentType}<br>";
+            echo "idContribution: {$idContribution}<br>";
+            echo "paidAmount: {$paidAmount}<br>";
+            echo "voucherImageURL: " . ($voucherImageURL ?? 'NULL');
+            echo "</div>";
+        }
+        
+        // Verificar que no exista ya un pago para esta combinación
+        $stCheck = $this->db->prepare("
+            SELECT idPayment FROM payment 
+            WHERE idPartner = :idPartner 
+            AND idContribution = :idContribution 
+            LIMIT 1
+        ");
+        $stCheck->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
+        $stCheck->bindValue(':idContribution', $idContribution, \PDO::PARAM_INT);
+        $stCheck->execute();
+        
+        if ($stCheck->fetch()) {
+            if (APP_DEBUG) {
+                echo "<div style='background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid #ef5350;'>";
+                echo "DEBUG: Payment already exists for this combination";
+                echo "</div>";
+            }
+            throw new \Exception('Ya existe un pago para esta contribución');
+        }
+
+        // Preparar la consulta de inserción
+        $sql = "
+            INSERT INTO `payment`
+            (paidAmount, dateCreation, voucherImageURL, paymentStatus, idPartner, idPaymentType, idContribution)
+            VALUES (:paidAmount, NOW(), :voucherImageURL, 0, :idPartner, :idPaymentType, :idContribution)
+        ";
+        
+        if (APP_DEBUG) {
+            echo "<div style='background: #f3e5f5; padding: 10px; margin: 10px 0; border: 1px solid #ba68c8;'>";
+            echo "DEBUG: SQL Query:<br>";
+            echo htmlspecialchars($sql);
+            echo "</div>";
+        }
+        
+        $st = $this->db->prepare($sql);
+        $st->bindValue(':paidAmount', $paidAmount, \PDO::PARAM_STR);
+        $st->bindValue(':voucherImageURL', $voucherImageURL, \PDO::PARAM_STR);
+        $st->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
+        $st->bindValue(':idPaymentType', $idPaymentType, \PDO::PARAM_INT);
+        $st->bindValue(':idContribution', $idContribution, \PDO::PARAM_INT);
+        
+        if (APP_DEBUG) {
+            echo "<div style='background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #66bb6a;'>";
+            echo "DEBUG: Binding parameters:<br>";
+            echo "paidAmount: {$paidAmount} (PARAM_STR)<br>";
+            echo "voucherImageURL: " . ($voucherImageURL ?? 'NULL') . " (PARAM_STR)<br>";
+            echo "idPartner: {$idPartner} (PARAM_INT)<br>";
+            echo "idPaymentType: {$idPaymentType} (PARAM_INT)<br>";
+            echo "idContribution: {$idContribution} (PARAM_INT)";
+            echo "</div>";
+        }
+        
+        $result = $st->execute();
+        
+        if (APP_DEBUG) {
+            echo "<div style='background: " . ($result ? '#e8f5e8' : '#ffebee') . "; padding: 10px; margin: 10px 0;'>";
+            echo "DEBUG: Execute result: " . ($result ? 'SUCCESS' : 'FAILED');
+            if (!$result) {
+                $errorInfo = $st->errorInfo();
+                echo "<br>Error Info: ";
+                print_r($errorInfo);
+            }
+            echo "</div>";
+        }
+        
+        if ($result) {
+            $insertId = $this->db->lastInsertId();
+            
+            if (APP_DEBUG) {
+                echo "<div style='background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #66bb6a;'>";
+                echo "DEBUG: Insert ID: {$insertId}";
+                echo "</div>";
+            }
+            
+            // Verificar que se insertó correctamente
+            $stVerify = $this->db->prepare("SELECT voucherImageURL FROM payment WHERE idPayment = :id");
+            $stVerify->bindValue(':id', $insertId, \PDO::PARAM_INT);
+            $stVerify->execute();
+            $row = $stVerify->fetch(\PDO::FETCH_ASSOC);
+            
+            if (APP_DEBUG) {
+                echo "<div style='background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #66bb6a;'>";
+                echo "DEBUG: Verified voucherImageURL in DB: " . ($row['voucherImageURL'] ?? 'NULL');
+                echo "</div>";
+            }
+            
+            return $insertId;
+        }
+        
+        return false;
+        
+    } catch (\PDOException $e) {
+        if (APP_DEBUG) {
+            echo "<div style='background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid #ef5350;'>";
+            echo "<strong>PDOException:</strong> " . $e->getMessage() . "<br>";
+            echo "SQL State: " . $e->getCode();
+            echo "</div>";
+        }
+        error_log('Cobro::create PDOException: ' . $e->getMessage());
+        return false;
+    } catch (\Exception $e) {
+        if (APP_DEBUG) {
+            echo "<div style='background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid #ef5350;'>";
+            echo "<strong>Exception:</strong> " . $e->getMessage();
+            echo "</div>";
+        }
+        error_log('Cobro::create Exception: ' . $e->getMessage());
+        return false;
+    }
+}
+*/
+
+
+
+
+
+
+
+
+
 
     public function update(int $idPayment, int $idPartner, int $idPaymentType, int $idContribution, float $paidAmount): bool {
         try {

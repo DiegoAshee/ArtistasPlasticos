@@ -38,8 +38,7 @@ class PartnerController extends BaseController
                 $error = "Todos los campos de Socio son obligatorios";
             } else {
                 require_once __DIR__ . '/../Models/Partner.php';
-                require_once __DIR__ . '/../Models/Usuario.php';
-
+                require_once __DIR__ . '/../Models/Partner.php';
                 $partnerModel = new \Partner();
                 $userModel    = new \Usuario();
                 $db           = \Database::singleton()->getConnection();
