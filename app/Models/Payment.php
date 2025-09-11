@@ -240,4 +240,80 @@ class Payment {
             return null;
         }
     }
+    public function getContributionBalance(int $idContribution, int $idPartner): float {
+        try {
+            $query = "
+                SELECT (c.amount - COALESCE(SUM(p.paidAmount), 0)) AS balance
+                FROM " . self::TBL_CONTRIBUTION . " c
+                LEFT JOIN " . self::TBL_PAYMENT . " p ON p.idContribution = c.idContribution AND p.idPartner = :idPartner
+                WHERE c.idContribution = :idContribution
+                GROUP BY c.idContribution, c.amount
+            ";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':idContribution', $idContribution, PDO::PARAM_INT);
+            $stmt->bindParam(':idPartner', $idPartner, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (float)($result['balance'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error al obtener saldo de contribución: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Procesar múltiples pagos con status pendiente (1)
+     */
+    public function processMultiplePayments(array $contributions, int $methodId, int $idPartner, ?string $voucherImageURL = null): bool {
+        if (empty($contributions)) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $query = "INSERT INTO " . self::TBL_PAYMENT . " 
+                (paidAmount, dateCreation, idPartner, idPaymentType, idContribution, voucherImageURL, paymentStatus)
+                VALUES (:amount, NOW(), :idPartner, :methodId, :idContribution, :voucherImageURL, 1)";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':idPartner', $idPartner, PDO::PARAM_INT);
+            $stmt->bindParam(':methodId', $methodId, PDO::PARAM_INT);
+            $stmt->bindValue(':voucherImageURL', $voucherImageURL, $voucherImageURL ? PDO::PARAM_STR : PDO::PARAM_NULL);
+
+            foreach ($contributions as $contribution) {
+                $idContribution = (int)$contribution['idContribution'];
+                $amount = (float)$contribution['amount'];
+
+                $stmt->bindParam(':idContribution', $idContribution, PDO::PARAM_INT);
+                $stmt->bindParam(':amount', $amount, PDO::PARAM_STR);
+
+                if (!$stmt->execute()) {
+                    throw new \PDOException("Error al insertar pago para contribución #$idContribution");
+                }
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            error_log("Error al procesar pagos múltiples: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function getQrImageUrl(): ?string {
+        try {
+            $query = "SELECT imageURL FROM `option` WHERE status = 1 ORDER BY idOption DESC LIMIT 1";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result && !empty($result['imageURL'])) {
+                return BASE_URL . $result['imageURL']; // Concatena BASE_URL con la ruta
+            }
+            return null; // Retorna null si no hay QR
+        } catch (PDOException $e) {
+            error_log("Error al recuperar QR: " . $e->getMessage());
+            return null;
+        }
+    }
 }

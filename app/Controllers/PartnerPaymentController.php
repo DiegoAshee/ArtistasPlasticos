@@ -49,7 +49,8 @@ class PartnerPaymentController extends BaseController
         $success = $_SESSION['payment_success'] ?? null;
         $error = $_SESSION['payment_error'] ?? null;
         unset($_SESSION['payment_success'], $_SESSION['payment_error']);
-
+        // Recuperar la URL del QR
+        $qrImageUrl = $paymentModel->getQrImageUrl((int)$_SESSION['user_id']);
         // Procesar pago
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'pay') {
             
@@ -93,27 +94,86 @@ class PartnerPaymentController extends BaseController
                 $this->redirect('partner/pending-payments');
                 return;
             }
-        }
+        } 
+        // Procesar pago múltiple (igual, sin guardar QR)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'payMultiple') {
+        try {
+            $selectedContributions = isset($_POST['selected_contributions']) ? $_POST['selected_contributions'] : [];
+            $totalAmount = (float)($_POST['totalAmount'] ?? 0);
+            $methodId = 2; // Transferencia bancaria
 
+            if (empty($selectedContributions)) {
+                throw new \Exception("No se seleccionaron contribuciones.");
+            }
+
+            if ($totalAmount <= 0) {
+                throw new \Exception("El monto total debe ser mayor a 0.");
+            }
+
+            $expectedTotal = 0;
+            $validContributions = [];
+            foreach ($selectedContributions as $idContribution) {
+                $idContribution = (int)$idContribution;
+                $contribution = $paymentModel->getContributionDetails($idContribution);
+                if (!$contribution) {
+                    throw new \Exception("Contribución #$idContribution no encontrada.");
+                }
+                $balance = $paymentModel->getContributionBalance($idContribution, $idPartner);
+                if ($balance <= 0) {
+                    throw new \Exception("La contribución #$idContribution no tiene saldo pendiente.");
+                }
+                $expectedTotal += $balance;
+                $validContributions[] = ['idContribution' => $idContribution, 'amount' => $balance];
+            }
+
+            if (abs($expectedTotal - $totalAmount) > 0.01) {
+                throw new \Exception("El monto total no coincide con la suma de las contribuciones seleccionadas.");
+            }
+
+            $monthYear = date('Y-m');
+            if (!empty($validContributions)) {
+                $firstContribution = $paymentModel->getContributionDetails($validContributions[0]['idContribution']);
+                $monthYear = $firstContribution['monthYear'] ?? $monthYear;
+            }
+            $proofUrl = $this->handleUpload('proof', $idPartner, $monthYear, 'comprobante_multiple');
+            if (!$proofUrl) {
+                throw new \Exception("El comprobante de pago es obligatorio.");
+            }
+
+            if ($paymentModel->processMultiplePayments($validContributions, $methodId, $idPartner, $proofUrl)) {
+                $_SESSION['payment_success'] = "Pagos enviados para revisión. Serán procesados en 24-48 horas.";
+                $this->redirect('partner/pending-payments');
+                return;
+            } else {
+                throw new \Exception("Error al procesar los pagos.");
+            }
+        } catch (\Throwable $e) {
+            error_log("Pago múltiple falló: " . $e->getMessage());
+            $_SESSION['payment_error'] = $e->getMessage();
+            $this->redirect('partner/pending-payments');
+            return;
+        }
+    }
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new Competence())->getByRole($roleId);
 
         $this->view('partner/pending-payments', [
-            'pendingPayments' => $pendingPayments,
-            'totals' => $totals,
-            'availableYears' => $availableYears,
-            'yearFilter' => $yearFilter,
-            'menuOptions' => $menuOptions,
-            'roleId' => $roleId,
-            'success' => $success,
-            'error' => $error,
-            'idPartner' => $idPartner,
-            'page' => $page,
-            'pageSize' => $pageSize,
-            'total' => $total,
-            'totalPages' => $totalPages,
-        ]);
+        'pendingPayments' => $pendingPayments,
+        'totals' => $totals,
+        'availableYears' => $availableYears,
+        'yearFilter' => $yearFilter,
+        'menuOptions' => $menuOptions,
+        'roleId' => $roleId,
+        'success' => $success,
+        'error' => $error,
+        'idPartner' => $idPartner,
+        'page' => $page,
+        'pageSize' => $pageSize,
+        'total' => $total,
+        'totalPages' => $totalPages,
+        'qrImageUrl' => $qrImageUrl, // Pasamos la URL a la vista
+    ]);
     }
 
     public function viewPaymentHistory(): void
