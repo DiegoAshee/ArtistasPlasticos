@@ -735,6 +735,17 @@ ob_start();
         <!-- Campo para comprobante múltiple (se mostrará cuando se seleccionen items) -->
         <div id="multipleProofSection" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
             <div class="form-group">
+                <label>Escanea el QR para realizar el pago:</label>
+                <?php if ($qrImageUrl): ?>
+                    <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" style="width: 200px; height: 200px; display: block; margin: 0 auto;">
+                    <small style="color: #6c757d; display: block; text-align: center; margin-top: 5px;">
+                        Usa este QR para completar el pago por transferencia.
+                    </small>
+                <?php else: ?>
+                    <p style="color: #6c757d; text-align: center;">No se encontró un QR asociado.</p>
+                <?php endif; ?>
+            </div>
+        <div class="form-group">
                 <label for="proofMultiple">
                     <i class="fas fa-upload"></i> Comprobante de Transferencia (Para pagos múltiples) *
                 </label>
