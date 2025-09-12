@@ -312,7 +312,8 @@ class Competence
             case 'solicitudespendientes':      // por si acaso
             case 'pendientes de socios':
                 return ['partnerOnline/pending', 'fas fa-inbox'];
-
+            case 'revisar pagos':
+                return ['admin/review-payments', 'fas fa-file-invoice'];
 
             //Cobros 
             // mapNameToRouteAndIcon()

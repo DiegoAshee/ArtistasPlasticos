@@ -233,6 +233,15 @@ $router->addRoute('POST', '/partner/pending-payments', 'PartnerPaymentController
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS ADMINISTRATIVAS DE PAGOS
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/admin/review-payments', 'AdminPaymentController', 'reviewPayments');
+$router->addRoute('POST', '/admin/review-payments', 'AdminPaymentController', 'reviewPayments');
+$router->addRoute('GET', '/admin/payment-receipt', 'AdminPaymentController', 'showReceipt');
+
+/*
+|--------------------------------------------------------------------------
 | MANEJO DE ERRORES
 |--------------------------------------------------------------------------
 */

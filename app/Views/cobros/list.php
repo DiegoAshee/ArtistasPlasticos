@@ -353,7 +353,27 @@ ob_start();
           <td><?= htmlspecialchars($r['contributionName'] ?: ('Aporte #'.(int)($r['idContribution']??0))) ?></td>
           <td><strong>Bs. <?= number_format((float)($r['paidAmount'] ?? 0), 2, '.', ',') ?></strong></td>
           <td><?= !empty($r['dateCreation']) ? date('d/m/Y H:i', strtotime($r['dateCreation'])) : '-' ?></td>
-          <td><span class="status-paid">Pagado</span></td>
+          <td>
+                                <?php
+                                $statusClass = '';
+                                switch ($r['paymentStatus'] ?? 1) {
+                                    case 1:
+                                        $statusClass = 'status-pending';
+                                        break;
+                                    case 2:
+                                        $statusClass = 'status-approved';
+                                        break;
+                                    case 3:
+                                        $statusClass = 'status-rejected';
+                                        break;
+                                    default:
+                                        $statusClass = 'status-pending';
+                                }
+                                ?>
+                                <span class="status-badge <?= $statusClass ?>">
+                                    <?= htmlspecialchars($r['status_text'] ?? 'Pendiente') ?>
+                                </span>
+                            </td>
           <td style="white-space: nowrap;">
             <a href="<?= u('cobros/edit/' . (int)($r['idPayment'] ?? 0) . '?return_url=' . urlencode($currentUrl)) ?>" 
                title="Editar" class="btn"><i class="fas fa-edit"></i></a>
