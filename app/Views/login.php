@@ -130,9 +130,6 @@ if (!function_exists('asset')) {
                     </div>
                 <?php endif; ?>
                 
-                <div class="g-recaptcha" data-sitekey="6Lf4Pb0rAAAAANwvyOXxEqIguKcFGo3uLgewa41b"></div>
-                <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-                
                 <!-- Usuario -->
                 <div class="mb-6">
                     <label for="login" class="block text-sm font-medium text-cream-700 mb-2">
@@ -203,6 +200,9 @@ if (!function_exists('asset')) {
                     </label>
                 </div>
 
+                <div class="g-recaptcha" data-sitekey="6Lf4Pb0rAAAAANwvyOXxEqIguKcFGo3uLgewa41b"></div>
+                <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                
                 <!-- Botón -->
                 <button type="submit" class="btn-login w-full py-3 px-4 rounded-lg font-medium text-white mb-6">
                     Iniciar sesión
