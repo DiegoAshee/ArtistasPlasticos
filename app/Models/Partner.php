@@ -95,9 +95,10 @@ class Partner {
 
     public function delete($id) {
         try {
-            $query = "DELETE FROM " . self::TBL . " WHERE idPartner = :id";
+            $query = "UPDATE " . self::TBL . " SET status = :status WHERE idPartner = :id";
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':status', $id, PDO::PARAM_INT);
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Error al eliminar socio: " . $e->getMessage());

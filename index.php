@@ -260,6 +260,30 @@ $router->addRoute('POST', '/options/delete', 'OptionController', 'delete');
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS ADMINISTRATIVAS DE MOVIMIENTOS
+|--------------------------------------------------------------------------
+*/
+
+// Lista de movimientos
+$router->addRoute('GET', '/movement/list', 'MovementController', 'list');
+
+// Crear movimiento
+$router->addRoute('GET', '/movement/create', 'MovementController', 'create');
+$router->addRoute('POST', '/movement/create', 'MovementController', 'store');
+
+// Editar movimiento
+$router->addRoute('GET', '/movement/edit/([0-9]+)', 'MovementController', 'edit');
+$router->addRoute('POST', '/movement/edit/{id}', 'MovementController', 'update');
+
+// Eliminar movimiento
+$router->addRoute('GET', '/movement/delete/{id}', 'MovementController', 'delete');
+$router->addRoute('POST', '/movement/delete/{id}', 'MovementController', 'destroy');
+
+// Exportar PDF (para AJAX)
+$router->addRoute('GET', '/movement/export-pdf', 'MovementController', 'exportPdf');
+
+/*
+|--------------------------------------------------------------------------
 | MANEJO DE ERRORES
 |--------------------------------------------------------------------------
 */

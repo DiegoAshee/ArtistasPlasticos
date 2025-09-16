@@ -321,6 +321,8 @@ class Competence
             case 'recibos':
             case 'ingresos':
                 return ['cobros/socios', 'fas fa-receipt'];
+            case 'movimiento':
+                return ['movement/list', 'fas fa-file-invoice'];
 
 
             default:
