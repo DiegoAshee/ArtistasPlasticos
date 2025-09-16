@@ -24,7 +24,7 @@ class OptionController extends BaseController
             $options = $this->optionModel->getAll();
             $activeOption = $this->optionModel->getActive();
             
-            $this->view('admin/options/index', [
+            $this->view('options/index', [
                 'title' => 'Configuración del Sitio',
                 'options' => $options,
                 'activeOption' => $activeOption,
@@ -36,7 +36,7 @@ class OptionController extends BaseController
             unset($_SESSION['success'], $_SESSION['error']);
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::index error: ' . $e->getMessage());
+            error_log('OptionController::index error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error al cargar las opciones';
             $this->redirect('dashboard');
         }
@@ -47,7 +47,7 @@ class OptionController extends BaseController
      */
     public function create(): void
     {
-        $this->view('admin/options/create', [
+        $this->view('options/create', [
             'title' => 'Nueva Configuración',
             'error' => $_SESSION['error'] ?? null
         ]);
@@ -93,12 +93,13 @@ class OptionController extends BaseController
                 $_SESSION['success'] = 'Configuración creada correctamente';
                 $this->redirect('options');
             } else {
-                $_SESSION['error'] = 'Error al crear la configuración';
+                $error = $this->optionModel->getLastError();
+                $_SESSION['error'] = 'Error al crear la configuración: ' . ($error['message'] ?? 'Error desconocido');
                 $this->redirect('options/create');
             }
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::store error: ' . $e->getMessage());
+            error_log('OptionController::store error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error interno del servidor';
             $this->redirect('options/create');
         }
@@ -126,7 +127,7 @@ class OptionController extends BaseController
                 return;
             }
             
-            $this->view('admin/options/edit', [
+            $this->view('options/edit', [
                 'title' => 'Editar Configuración',
                 'option' => $option,
                 'error' => $_SESSION['error'] ?? null
@@ -135,7 +136,7 @@ class OptionController extends BaseController
             unset($_SESSION['error']);
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::edit error: ' . $e->getMessage());
+            error_log('OptionController::edit error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error al cargar la opción';
             $this->redirect('options');
         }
@@ -183,8 +184,10 @@ class OptionController extends BaseController
                 $uploadedPath = $this->optionModel->uploadImage($_FILES['logo']);
                 if (!empty($uploadedPath)) {
                     $data['imageURL'] = $uploadedPath;
-                    // Opcional: eliminar imagen anterior
-                    if ($currentOption['imageURL'] && file_exists($currentOption['imageURL'])) {
+                    // Eliminar imagen anterior si no es la predeterminada
+                    if ($currentOption['imageURL'] && 
+                        $currentOption['imageURL'] !== 'assets/images/logo.png' && 
+                        file_exists($currentOption['imageURL'])) {
                         unlink($currentOption['imageURL']);
                     }
                 }
@@ -194,12 +197,13 @@ class OptionController extends BaseController
                 $_SESSION['success'] = 'Configuración actualizada correctamente';
                 $this->redirect('options');
             } else {
-                $_SESSION['error'] = 'Error al actualizar la configuración';
+                $error = $this->optionModel->getLastError();
+                $_SESSION['error'] = 'Error al actualizar la configuración: ' . ($error['message'] ?? 'Error desconocido');
                 $this->redirect('options/edit?id=' . $id);
             }
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::update error: ' . $e->getMessage());
+            error_log('OptionController::update error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error interno del servidor';
             $this->redirect('options');
         }
@@ -219,16 +223,25 @@ class OptionController extends BaseController
                 return;
             }
             
+            // Verificar que la opción existe
+            $option = $this->optionModel->getById($id);
+            if (!$option) {
+                $_SESSION['error'] = 'Opción no encontrada';
+                $this->redirect('options');
+                return;
+            }
+            
             if ($this->optionModel->activate($id)) {
                 $_SESSION['success'] = 'Configuración activada correctamente';
             } else {
-                $_SESSION['error'] = 'Error al activar la configuración';
+                $error = $this->optionModel->getLastError();
+                $_SESSION['error'] = 'Error al activar la configuración: ' . ($error['message'] ?? 'Error desconocido');
             }
             
             $this->redirect('options');
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::activate error: ' . $e->getMessage());
+            error_log('OptionController::activate error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error interno del servidor';
             $this->redirect('options');
         }
@@ -248,16 +261,32 @@ class OptionController extends BaseController
                 return;
             }
             
+            // Verificar que la opción existe
+            $option = $this->optionModel->getById($id);
+            if (!$option) {
+                $_SESSION['error'] = 'Opción no encontrada';
+                $this->redirect('options');
+                return;
+            }
+            
+            // No permitir eliminar la opción activa
+            if ($option['status'] == 1) {
+                $_SESSION['error'] = 'No se puede eliminar la configuración activa';
+                $this->redirect('options');
+                return;
+            }
+            
             if ($this->optionModel->delete($id)) {
                 $_SESSION['success'] = 'Configuración eliminada correctamente';
             } else {
-                $_SESSION['error'] = 'Error al eliminar la configuración';
+                $error = $this->optionModel->getLastError();
+                $_SESSION['error'] = 'Error al eliminar la configuración: ' . ($error['message'] ?? 'Error desconocido');
             }
             
             $this->redirect('options');
             
         } catch (Exception $e) {
-            $this->addDebug('OptionController::delete error: ' . $e->getMessage());
+            error_log('OptionController::delete error: ' . $e->getMessage());
             $_SESSION['error'] = 'Error interno del servidor';
             $this->redirect('options');
         }
@@ -300,4 +329,3 @@ class OptionController extends BaseController
         return $errors;
     }
 }
-?>

@@ -240,6 +240,24 @@ $router->addRoute('GET', '/admin/review-payments', 'AdminPaymentController', 're
 $router->addRoute('POST', '/admin/review-payments', 'AdminPaymentController', 'reviewPayments');
 $router->addRoute('GET', '/admin/payment-receipt', 'AdminPaymentController', 'showReceipt');
 
+
+
+
+
+
+/*rutas para opciones*/
+// Rutas para Options
+$router->addRoute('GET', '/options', 'OptionController', 'index');
+$router->addRoute('GET', '/options/create', 'OptionController', 'create');
+$router->addRoute('POST', '/options/store', 'OptionController', 'store');
+$router->addRoute('GET', '/options/edit', 'OptionController', 'edit');
+$router->addRoute('POST', '/options/update', 'OptionController', 'update');
+$router->addRoute('POST', '/options/activate', 'OptionController', 'activate');
+$router->addRoute('POST', '/options/delete', 'OptionController', 'delete');
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | MANEJO DE ERRORES
