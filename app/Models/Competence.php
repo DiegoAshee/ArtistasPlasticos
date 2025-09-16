@@ -324,6 +324,15 @@ class Competence
             case 'movimiento':
                 return ['movement/list', 'fas fa-file-invoice'];
 
+            //Cobros 
+            // mapNameToRouteAndIcon()
+            case 'Conceptos':
+            case 'Concept':
+            case 'conceptos':
+                return ['conceptos/list', 'fas fa-receipt'];
+            case 'concept':
+                return ['movement/list', 'fas fa-file-invoice'];
+
 
             default:
                 // Si aparece algo desconocido, devuelve link inerte

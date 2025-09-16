@@ -255,6 +255,8 @@ $router->addRoute('POST', '/options/update', 'OptionController', 'update');
 $router->addRoute('POST', '/options/activate', 'OptionController', 'activate');
 $router->addRoute('POST', '/options/delete', 'OptionController', 'delete');
 
+//Coneceptos
+//$router->addRoute('GET',  '/conceptos/list',            'CobroController', 'pagadas'); // alias
 
 
 
@@ -281,6 +283,48 @@ $router->addRoute('POST', '/movement/delete/{id}', 'MovementController', 'destro
 
 // Exportar PDF (para AJAX)
 $router->addRoute('GET', '/movement/export-pdf', 'MovementController', 'exportPdf');
+
+
+
+
+
+
+
+//conceptors
+// Lista de movimientos
+/*
+$router->addRoute('GET', '/conceptos/list', 'ConceptController', 'list');
+
+// Crear movimiento
+$router->addRoute('GET', '/conceptos/create', 'ConceptController', 'create');
+$router->addRoute('POST', '/conceptos/create', 'ConceptController', 'store');
+
+// Editar movimiento
+$router->addRoute('GET', '/conceptos/edit/([0-9]+)', 'ConceptController', 'edit');
+$router->addRoute('POST', '/conceptos/edit/{id}', 'ConceptController', 'update');
+
+// Eliminar movimiento
+$router->addRoute('GET', '/conceptos/delete/{id}', 'ConceptController', 'delete');
+$router->addRoute('POST', '/conceptos/delete/{id}', 'ConceptController', 'destroy');
+
+// Exportar PDF (para AJAX)
+$router->addRoute('GET', '/conceptos/export-pdf', 'ConceptController', 'exportPdf');*/
+
+/* Rutas para Conceptos */
+$router->addRoute('GET', '/conceptos', 'ConceptController', 'list');
+$router->addRoute('GET', '/conceptos/list', 'ConceptController', 'list');
+$router->addRoute('GET', '/conceptos/create', 'ConceptController', 'create');
+$router->addRoute('POST', '/conceptos/store', 'ConceptController', 'store');
+$router->addRoute('GET', '/conceptos/edit/{id}', 'ConceptController', 'edit');
+$router->addRoute('POST', '/conceptos/update/{id}', 'ConceptController', 'update');
+$router->addRoute('GET', '/conceptos/delete/{id}', 'ConceptController', 'delete');
+$router->addRoute('POST', '/conceptos/destroy/{id}', 'ConceptController', 'destroy');
+$router->addRoute('GET', '/conceptos/export-pdf', 'ConceptController', 'exportPdf');
+
+
+
+
+
 
 /*
 |--------------------------------------------------------------------------
