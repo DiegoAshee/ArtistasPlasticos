@@ -228,7 +228,7 @@ class Usuario
     }
 
     /**
-     * UPDATE híbrido:
+     * UPDATE híbrido: NO FUNCIONA LOS CAMPOS ESTAN MAL
      * - Nuevo: update(int $id, array $data)
      * - Viejo: update($id, $login, $password, $idRole, $idPartner)
      */
