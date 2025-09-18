@@ -339,26 +339,30 @@ class UserController extends BaseController
             return;
         }
 
+        // Solo procesar POST - el modal envía directamente el POST
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            if ($userModel->delete($userId)) {
-                $_SESSION['success_message'] = "Usuario desactivado correctamente";
-            } else {
-                $_SESSION['error_message'] = "Error al desactivar el usuario";
+            try {
+                // Realizar soft delete
+                $success = $userModel->delete($userId);
+                
+                if ($success) {
+                    error_log("DEBUG - Usuario $userId desactivado exitosamente");
+                    $_SESSION['success_message'] = "Usuario <strong>" . htmlspecialchars($user['login'] ?? '') . "</strong> ha sido desactivado correctamente";
+                } else {
+                    error_log("DEBUG - Error al desactivar usuario $userId");
+                    $_SESSION['error_message'] = "Error al desactivar el usuario";
+                }
+                
+            } catch (\Throwable $e) {
+                error_log("DEBUG - Exception al desactivar usuario: " . $e->getMessage());
+                $_SESSION['error_message'] = "Error interno: " . $e->getMessage();
             }
+            
             $this->redirect('users/list');
             return;
         }
 
-        // Si es GET, mostrar confirmación
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        $this->view('users/delete', [
-            'user' => $user,
-            'menuOptions' => $menuOptions,
-            'currentPath' => 'users/delete',
-            'roleId' => $roleId
-        ]);
+        // Si es GET, redirigir a la lista (el modal se maneja desde JavaScript)
+        $this->redirect('users/list');
     }
 }
