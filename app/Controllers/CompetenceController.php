@@ -8,13 +8,11 @@ require_once __DIR__ . '/../Config/database.php';
 
 class CompetenceController extends BaseController
 {
-    private $competenceModel;
-    private $db;
+    
 
     public function __construct()
     {
         parent::__construct();
-        $this->competenceModel = new Competence();
         $this->db = Database::singleton()->getConnection();
     }
 
