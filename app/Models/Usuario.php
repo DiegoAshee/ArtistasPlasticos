@@ -209,23 +209,18 @@ public function findByPartnerId(int $partnerId): ?array {
     /** Compatibilidad con el controlador */
     public function getUsersAdmin(): array {
     try {
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $sql = "SELECT idUser, login, email, idRol, status
-                FROM `" . self::TABLE . "`
-                WHERE idRol = :role AND status = :status";
+        $sql = "SELECT idUser, login, email, idRol, status, created_at
+                FROM " . self::TABLE . "
+                WHERE idRol = :role AND status = :status
+                ORDER BY created_at DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':role', 1, PDO::PARAM_INT);
-        $stmt->bindValue(':status', 1, PDO::PARAM_INT);
+        $stmt->bindValue(':role', 1, PDO::PARAM_INT); // Rol admin
+        $stmt->bindValue(':status', 1, PDO::PARAM_INT); // Solo activos
 
         $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Debug temporal
-        foreach ($rows as $r) { echo $r['idUser']." -> status=".$r['status']."<br>"; }
-
-        return $rows ?: [];
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        
     } catch (\PDOException $e) {
         error_log("Error al obtener usuarios admin: " . $e->getMessage());
         return [];
