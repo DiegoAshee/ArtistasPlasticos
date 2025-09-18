@@ -14,9 +14,6 @@ if (!function_exists('asset')) {
 
 $maxBirthday = date('Y-m-d', strtotime('-18 years'));
 $minBirthday = date('Y-m-d', strtotime('-120 years'));
-
-// Preservar datos del formulario en caso de errores
-$formData = $form_data ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -79,16 +76,6 @@ $formData = $form_data ?? [];
             box-shadow:0 2px 12px #e1e5e9; transition:transform .15s, filter .2s; margin-top:2px;
         }
         .register-btn:hover { transform:translateY(-2px); filter:saturate(1.05); }
-        .error-messages {
-            background:#ffecec; color:#b63838; border:1px solid #ffc9c9;
-            padding:12px 14px; border-radius:10px; margin-bottom:16px; font-weight:600;
-        }
-        .error-messages ul {
-            margin: 0; padding-left: 20px;
-        }
-        .error-messages li {
-            margin-bottom: 5px;
-        }
         .error-message {
             background:#ffecec; color:#b63838; border:1px solid #ffc9c9;
             padding:12px 14px; border-radius:10px; margin-bottom:16px; text-align:center; font-weight:600;
@@ -116,154 +103,66 @@ $formData = $form_data ?? [];
             padding:10px 22px; font-size:1rem; font-weight:700; cursor:pointer; transition:background .2s;
         }
         .close-modal-btn:hover { background:#bca478; }
-        
-        /* Estilos para los inputs de archivo */
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 14px;
-            background: #f9f8f6;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: border-color .2s, box-shadow .2s;
-        }
-        input[type="file"]:focus {
-            border-color: #bca478;
-            box-shadow: 0 0 0 2px #bca47833;
-            outline: none;
-        }
-        
-        .file-info {
-            margin-top: 5px;
-            font-size: 0.85rem;
-            color: #2d5016;
-            font-weight: 700;
-            text-shadow: 0 1px 1px rgba(255,255,255,0.8);
-        }
-        
         @media (max-width: 860px) {
             .register-container { padding:28px 18px 22px 18px; }
             .form-row { flex-direction:column; gap:0; }
         }
     </style>
-    
-    <script>
-        // Función para mostrar el nombre del archivo seleccionado
-        function showFileName(inputElement, displayElementId) {
-            const displayElement = document.getElementById(displayElementId);
-            if (inputElement.files && inputElement.files.length > 0) {
-                const fileName = inputElement.files[0].name;
-                const fileSize = (inputElement.files[0].size / (1024 * 1024)).toFixed(2); // Tamaño en MB
-                displayElement.textContent = `Archivo seleccionado: ${fileName} (${fileSize} MB)`;
-                displayElement.style.color = '#2d5016'; // Verde más oscuro para mejor visibilidad
-            } else {
-                displayElement.textContent = '';
-            }
-        }
-        
-        // Validación de tamaño de archivo antes de envío
-        function validateFileSize(inputElement, maxSizeMB = 2) {
-            if (inputElement.files && inputElement.files.length > 0) {
-                const fileSizeMB = inputElement.files[0].size / (1024 * 1024);
-                if (fileSizeMB > maxSizeMB) {
-                    alert(`El archivo excede el tamaño máximo permitido de ${maxSizeMB}MB. Tamaño actual: ${fileSizeMB.toFixed(2)}MB`);
-                    inputElement.value = '';
-                    document.getElementById(inputElement.id.replace('Image', 'ImageInfo')).textContent = '';
-                    return false;
-                }
-            }
-            return true;
-        }
-        
-        // Validar formulario antes de envío
-        function validateForm() {
-            const frontImage = document.getElementById('frontImage');
-            const backImage = document.getElementById('backImage');
-            
-            if (!validateFileSize(frontImage) || !validateFileSize(backImage)) {
-                return false;
-            }
-            
-            return true;
-        }
-    </script>
 </head>
 <body>
     <div class="register-container">
         <h1 class="register-title">Registro Online de Socio</h1>
         <p class="subtitle">Completa tus datos para enviar tu solicitud.</p>
 
-        <?php if (isset($errors) && is_array($errors) && count($errors) > 0): ?>
-            <div class="error-messages">
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php elseif (isset($error) && $error): ?>
-            <div class="error-message">
-                <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
-            </div>
+        <?php if (isset($error) && $error): ?>
+            <div class="error-message"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
 
         <?php if (!isset($success)): ?>
-            <form method="POST" action="<?= u('partner/register') ?>" enctype="multipart/form-data" autocomplete="off" novalidate onsubmit="return validateForm()">
+            <form method="POST" action="<?= u('partner/register') ?>" enctype="multipart/form-data" autocomplete="off" novalidate>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="name">Nombre Completo</label>
-                        <input type="text" name="name" id="name" placeholder="Ej: Juan Pérez" 
-                               value="<?= htmlspecialchars($formData['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        <input type="text" name="name" id="name" placeholder="Ej: Juan Pérez" required>
                     </div>
                     <div class="form-group">
                         <label for="ci">Cédula de Identidad (CI)</label>
-                        <input type="text" name="ci" id="ci" placeholder="Ej: 8845325" 
-                               value="<?= htmlspecialchars($formData['ci'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        <input type="text" name="ci" id="ci" placeholder="Ej: 8845325" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cellPhoneNumber">Celular</label>
-                        <input type="text" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: 65734215" 
-                               value="<?= htmlspecialchars($formData['cellPhoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        <input type="text" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: 65734215" required>
                     </div>
                     <div class="form-group">
                         <label for="email">Correo</label>
-                        <input type="email" name="email" id="email" placeholder="ejemplo@dominio.com" 
-                               value="<?= htmlspecialchars($formData['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        <input type="email" name="email" id="email" placeholder="ejemplo@dominio.com" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="address">Dirección</label>
-                        <input type="text" name="address" id="address" placeholder="Ej: Calle 12 #123" 
-                               value="<?= htmlspecialchars($formData['address'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        <input type="text" name="address" id="address" placeholder="Ej: Calle 12 #123" required>
                     </div>
                     <div class="form-group">
                         <label for="birthday">Fecha de Nacimiento</label>
-                        <input type="date" name="birthday" id="birthday" required 
-                               min="<?= $minBirthday ?>" max="<?= $maxBirthday ?>"
-                               value="<?= htmlspecialchars($formData['birthday'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="date" name="birthday" id="birthday" required min="<?= $minBirthday ?>" max="<?= $maxBirthday ?>">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="frontImage">CI (Frontal)</label>
-                        <input type="file" name="frontImage" id="frontImage" accept="image/jpeg,image/png" required
-                               onchange="showFileName(this, 'frontImageInfo'); validateFileSize(this);">
+                        <input type="file" name="frontImage" id="frontImage" accept="image/jpeg,image/png" required>
                         <small class="hint">Máximo 2MB, solo JPG o PNG</small>
-                        <div id="frontImageInfo" class="file-info"></div>
                     </div>
                     <div class="form-group">
                         <label for="backImage">CI (Posterior)</label>
-                        <input type="file" name="backImage" id="backImage" accept="image/jpeg,image/png" required
-                               onchange="showFileName(this, 'backImageInfo'); validateFileSize(this);">
+                        <input type="file" name="backImage" id="backImage" accept="image/jpeg,image/png" required>
                         <small class="hint">Máximo 2MB, solo JPG o PNG</small>
-                        <div id="backImageInfo" class="file-info"></div>
                     </div>
                 </div>
 
@@ -272,7 +171,6 @@ $formData = $form_data ?? [];
                     <input type="text" id="dateRegistration_view" value="<?= date('Y-m-d H:i') ?> (automática)" readonly>
                     <small class="hint">Se guardará automáticamente al enviar. No es editable.</small>
                 </div>
-                
                 <div class="g-recaptcha" data-sitekey="6Lf4Pb0rAAAAANwvyOXxEqIguKcFGo3uLgewa41b"></div>
                 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
                 
@@ -288,6 +186,7 @@ $formData = $form_data ?? [];
     </div>
 
     <?php if (isset($success) && $success): ?>
+        <div class="success-inline"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
         <div class="modal-success" id="modalSuccess">
             <div class="modal-content">
                 <h2>¡Solicitud enviada!</h2>

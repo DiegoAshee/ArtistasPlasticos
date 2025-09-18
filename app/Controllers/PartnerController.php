@@ -114,8 +114,8 @@ class PartnerController extends BaseController
                         throw new \Exception("No se pudo crear el socio en la tabla partner");
                     }
 
-                    // 2. Crear el usuario asociado al socio (ahora retorna ID, no bool)
-                    $userId = $userModel->create(
+                    // 2. Crear el usuario asociado al socio
+                    $userCreated = $userModel->create(
                         $login,             // CI como login
                         $temporalPassword,  // CI como contraseña temporal
                         $email,             // Email
@@ -123,17 +123,16 @@ class PartnerController extends BaseController
                         (int)$partnerId     // ID del socio recién creado
                     );
                     
-                    error_log("DEBUG - Usuario ID creado: " . ($userId ?: 'FALSO'));
+                    error_log("DEBUG - Usuario creado: " . ($userCreated ? 'SÍ' : 'NO'));
                     
-                    // Validar que se creó correctamente (el método ahora retorna ID o false)
-                    if (!$userId || $userId === false) {
+                    if (!$userCreated) {
                         throw new \Exception("No se pudo crear la cuenta de usuario para el socio");
                     }
 
                 } else { // Crear ADMINISTRADOR (idRole = 1)
                     error_log("DEBUG - Creando administrador...");
                     
-                    $userId = $userModel->create(
+                    $userCreated = $userModel->create(
                         $login,             // CI como login
                         $temporalPassword,  // CI como contraseña temporal
                         $email,             // Email
@@ -141,10 +140,7 @@ class PartnerController extends BaseController
                         null                // Sin partner asociado
                     );
                     
-                    error_log("DEBUG - Administrador ID creado: " . ($userId ?: 'FALSO'));
-                    
-                    // Validar que se creó correctamente
-                    if (!$userId || $userId === false) {
+                    if (!$userCreated) {
                         throw new \Exception("No se pudo crear la cuenta de administrador");
                     }
                 }
