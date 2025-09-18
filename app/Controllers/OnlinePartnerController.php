@@ -35,135 +35,96 @@ class OnlinePartnerController extends BaseController
             $email            = trim((string)($_POST['email'] ?? ''));
             $dateRegistration = trim((string)($_POST['dateRegistration'] ?? ''));
 
-            // Array para recopilar todos los errores
-            $errors = [];
-
-            // Validaciones básicas
-            if ($name === '') $errors[] = "El nombre es obligatorio.";
-            if ($ci === '') $errors[] = "La cédula de identidad es obligatoria.";
-            if ($cellPhoneNumber === '') $errors[] = "El número de celular es obligatorio.";
-            if ($address === '') $errors[] = "La dirección es obligatoria.";
-            if ($birthday === '') $errors[] = "La fecha de nacimiento es obligatoria.";
-            if ($email === '') $errors[] = "El correo electrónico es obligatorio.";
-
-            // Validación de email
-            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "El correo no tiene un formato válido.";
-            }
-
-            // Validación de edad
-            if ($birthday !== '') {
+            // Validations
+            if ($name === '' || $ci === '' || $cellPhoneNumber === '' || $address === '' || $birthday === '' || $email === '') {
+                $error = "Todos los campos son obligatorios.";
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $error = "El correo no tiene un formato válido.";
+            } else {
                 try {
                     $dob   = new \DateTime($birthday);
                     $today = new \DateTime('today');
                     $age   = $dob->diff($today)->y;
 
                     if ($age < 18) {
-                        $errors[] = "Debes ser mayor de edad (18+).";
+                        $error = "Debes ser mayor de edad (18+).";
                     } elseif ($age > 120) {
-                        $errors[] = "La fecha de nacimiento es inválida (edad > 120).";
+                        $error = "La fecha de nacimiento es inválida (edad > 120).";
                     }
                 } catch (\Exception $e) {
-                    $errors[] = "Fecha de nacimiento inválida.";
+                    $error = "Fecha de nacimiento inválida.";
                 }
             }
 
-            // Validación de archivos - verificar tamaño antes de procesar
-            if (!isset($_FILES['frontImage']) || $_FILES['frontImage']['error'] !== UPLOAD_ERR_OK) {
-                if (isset($_FILES['frontImage']) && $_FILES['frontImage']['error'] === UPLOAD_ERR_FORM_SIZE) {
-                    $errors[] = "La imagen frontal del CI excede los 2MB permitidos.";
+            // Image uploads
+            $frontImageRel = null;
+            $backImageRel  = null;
+
+            if (!isset($error)) {
+                if (isset($_FILES['frontImage']) && $_FILES['frontImage']['error'] === UPLOAD_ERR_OK) {
+                    $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
                 } else {
-                    $errors[] = "Falta o no se pudo subir la imagen frontal del CI.";
+                    $error = "Falta o no se pudo subir la imagen frontal.";
                 }
-            } elseif ($_FILES['frontImage']['size'] > 2 * 1024 * 1024) {
-                $errors[] = "La imagen frontal del CI excede los 2MB permitidos.";
+
+                if (!isset($error)) {
+                    if (isset($_FILES['backImage']) && $_FILES['backImage']['error'] === UPLOAD_ERR_OK) {
+                        $backImageRel = $this->handleUpload('backImage', $ci, 'back');
+                    } else {
+                        $error = "Falta o no se pudo subir la imagen posterior.";
+                    }
+                }
             }
 
-            if (!isset($_FILES['backImage']) || $_FILES['backImage']['error'] !== UPLOAD_ERR_OK) {
-                if (isset($_FILES['backImage']) && $_FILES['backImage']['error'] === UPLOAD_ERR_FORM_SIZE) {
-                    $errors[] = "La imagen posterior del CI excede los 2MB permitidos.";
-                } else {
-                    $errors[] = "Falta o no se pudo subir la imagen posterior del CI.";
-                }
-            } elseif ($_FILES['backImage']['size'] > 2 * 1024 * 1024) {
-                $errors[] = "La imagen posterior del CI excede los 2MB permitidos.";
-            }
-
-            // Validaciones de duplicados
-            if (count($errors) === 0) {
+            // Check duplicates and create record
+            if (!isset($error)) {
                 $partnerOnlineModel = new \PartnerOnline();
+
+                // Clean up expired unverified records
                 $partnerOnlineModel->deleteExpiredUnverified();
 
                 if ($partnerOnlineModel->emailExistsAnywhere($email)) {
-                    $errors[] = "Este correo ya está registrado.";
-                }
-                if ($partnerOnlineModel->ciExistsAnywhere($ci)) {
-                    $errors[] = "Este CI ya está registrado.";
-                }
-            }
-
-            // Si hay errores, mostrarlos y conservar los datos del formulario
-            if (count($errors) > 0) {
-                $this->view('partner/register', [
-                    'errors' => $errors,
-                    'form_data' => $_POST // Conservar datos del formulario
-                ]);
-                return;
-            }
-
-            // Procesar uploads
-            $frontImageRel = null;
-            $backImageRel = null;
-
-            try {
-                $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
-                $backImageRel = $this->handleUpload('backImage', $ci, 'back');
-            } catch (\Exception $e) {
-                $this->view('partner/register', [
-                    'errors' => [$e->getMessage()],
-                    'form_data' => $_POST
-                ]);
-                return;
-            }
-
-            // Crear registro
-            $verificationToken = bin2hex(random_bytes(32));
-            $tokenExpiresAt = (new \DateTime())->modify('+24 hours')->format('Y-m-d H:i:s');
-
-            $ok = $partnerOnlineModel->create(
-                $name,
-                $ci,
-                $cellPhoneNumber,
-                $address,
-                $birthday,
-                $email,
-                $frontImageRel,
-                $backImageRel,
-                $verificationToken,
-                $tokenExpiresAt
-            );
-
-            if ($ok) {
-                // Send verification email
-                $emailSent = $this->sendVerificationEmail($email, $verificationToken, [
-                    'name' => $name
-                ]);
-                if ($emailSent) {
-                    $this->view('partner/register', ['success' => 'Se ha enviado un enlace de verificación a tu correo. Por favor, verifica tu email para completar el registro.']);
+                    $error = "Este correo ya está registrado.";
+                } elseif ($partnerOnlineModel->ciExistsAnywhere($ci)) {
+                    $error = "Este CI ya está registrado.";
                 } else {
-                    $partnerOnlineModel->delete((int)$ok);
-                    $this->view('partner/register', [
-                        'errors' => ['No se pudo enviar el correo de verificación. Por favor, intenta de nuevo.'],
-                        'form_data' => $_POST
-                    ]);
+                    // Generate verification token
+                    $verificationToken = bin2hex(random_bytes(32));
+                    $tokenExpiresAt = (new \DateTime())->modify('+24 hours')->format('Y-m-d H:i:s');
+
+                    $ok = $partnerOnlineModel->create(
+                        $name,
+                        $ci,
+                        $cellPhoneNumber,
+                        $address,
+                        $birthday,
+                        $email,
+                        $frontImageRel,
+                        $backImageRel,
+                        $verificationToken,
+                        $tokenExpiresAt
+                    );
+
+                    if ($ok) {
+                        // Send verification email
+                        $emailSent = $this->sendVerificationEmail($email, $verificationToken, [
+                            'name' => $name
+                        ]);
+                        if ($emailSent) {
+                            $this->view('partner/register', ['success' => 'Se ha enviado un enlace de verificación a tu correo. Por favor, verifica tu email para completar el registro.']);
+                        } else {
+                            $error = 'No se pudo enviar el correo de verificación. Por favor, intenta de nuevo.';
+                            // Optionally delete the record if email fails
+                            $partnerOnlineModel->delete((int)$ok);
+                            $this->view('partner/register', ['error' => $error]);
+                        }
+                        return;
+                    }
+                    $error = "Error al enviar la solicitud.";
                 }
-                return;
             }
-            
-            $this->view('partner/register', [
-                'errors' => ['Error al enviar la solicitud.'],
-                'form_data' => $_POST
-            ]);
+
+            $this->view('partner/register', isset($error) ? ['error' => $error] : []);
             return;
         }
 
@@ -505,11 +466,8 @@ class OnlinePartnerController extends BaseController
         error_log("[$inputName] Attempting upload at " . date('Y-m-d H:i:s') . ": " . print_r($_FILES[$inputName] ?? 'No file', true));
 
         if (!isset($_FILES[$inputName]) || $_FILES[$inputName]['error'] !== UPLOAD_ERR_OK) {
-            if (isset($_FILES[$inputName]) && $_FILES[$inputName]['error'] === UPLOAD_ERR_FORM_SIZE) {
-                throw new \RuntimeException("El archivo {$inputName} excede el tamaño máximo permitido de 2MB.");
-            }
             error_log("[$inputName] Upload failed: Error code " . ($_FILES[$inputName]['error'] ?? 'No file uploaded'));
-            throw new \RuntimeException("Error al subir el archivo {$inputName}.");
+            return null;
         }
 
         $fileTmp  = $_FILES[$inputName]['tmp_name'];
@@ -524,7 +482,7 @@ class OnlinePartnerController extends BaseController
         // Validations
         if ($fileSize > 2 * 1024 * 1024) {
             error_log("[$inputName] File size exceeds 2MB: $fileSize bytes");
-            throw new \RuntimeException("El archivo {$inputName} excede los 2MB permitidos.");
+            throw new \RuntimeException("El archivo {$inputName} excede los 2MB.");
         }
         if (!in_array($fileType, ['image/jpeg', 'image/png'], true)) {
             error_log("[$inputName] Invalid file type: $fileType");

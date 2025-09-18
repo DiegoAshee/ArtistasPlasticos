@@ -208,29 +208,17 @@ public function findByPartnerId(int $partnerId): ?array {
 
     /** Compatibilidad con el controlador */
     public function getUsersAdmin(): array {
-    try {
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $sql = "SELECT idUser, login, email, idRol, status
-                FROM `" . self::TABLE . "`
-                WHERE idRol = :role AND status = :status";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':role', 1, PDO::PARAM_INT);
-        $stmt->bindValue(':status', 1, PDO::PARAM_INT);
-
-        $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Debug temporal
-        foreach ($rows as $r) { echo $r['idUser']." -> status=".$r['status']."<br>"; }
-
-        return $rows ?: [];
-    } catch (\PDOException $e) {
-        error_log("Error al obtener usuarios admin: " . $e->getMessage());
-        return [];
+        try {
+            $sql = "SELECT idUser, login, email
+                    FROM " . self::TABLE . " WHERE idRol = 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error al obtener usuarios admin: " . $e->getMessage());
+            return [];
+        }
     }
-}
 
     /** Compatibilidad con el controlador */
     public function getUserProfile(int $role, int $id): array {
@@ -267,7 +255,7 @@ public function findByPartnerId(int $partnerId): ?array {
  * Campos reales: idUser, login, password, tokenRecovery, tokenExpiration, 
  * email, firstSession, status, idRol, idPartner
  */
-public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): int|false {
+public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): bool {
     try {
         error_log("DEBUG Usuario::create - Parámetros recibidos:");
         error_log("- loginOrData: " . print_r($loginOrData, true));
@@ -344,11 +332,10 @@ public function create($loginOrData, $password = null, $email = null, $idRole = 
             return false;
         }
 
-        $lastId = (int)$this->db->lastInsertId();
+        $lastId = $this->db->lastInsertId();
         error_log("DEBUG - Last insert ID: " . $lastId);
         
-        // Retornar el ID del usuario creado en lugar de bool
-        return $lastId > 0 ? $lastId : false;
+        return $result;
         
     } catch (\PDOException $e) {
         error_log("DEBUG - PDO Exception: " . $e->getMessage());
