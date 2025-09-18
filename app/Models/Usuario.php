@@ -262,7 +262,7 @@ public function findByPartnerId(int $partnerId): ?array {
  * Campos reales: idUser, login, password, tokenRecovery, tokenExpiration, 
  * email, firstSession, status, idRol, idPartner
  */
-public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): int|false {
+public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): bool {
     try {
         error_log("DEBUG Usuario::create - Parámetros recibidos:");
         error_log("- loginOrData: " . print_r($loginOrData, true));
@@ -339,11 +339,10 @@ public function create($loginOrData, $password = null, $email = null, $idRole = 
             return false;
         }
 
-        $lastId = (int)$this->db->lastInsertId();
+        $lastId = $this->db->lastInsertId();
         error_log("DEBUG - Last insert ID: " . $lastId);
         
-        // Retornar el ID del usuario creado en lugar de bool
-        return $lastId > 0 ? $lastId : false;
+        return $result;
         
     } catch (\PDOException $e) {
         error_log("DEBUG - PDO Exception: " . $e->getMessage());

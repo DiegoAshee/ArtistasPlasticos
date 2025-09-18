@@ -14,6 +14,7 @@ class CompetenceController extends BaseController
     public function __construct()
     {
         parent::__construct();
+        $this->competenceModel = new Competence();
         $this->db = Database::singleton()->getConnection();
     }
 

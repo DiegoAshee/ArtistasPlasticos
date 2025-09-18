@@ -10,19 +10,19 @@ if (!function_exists('u')) {
 }
 
 $title = 'Lista de Administradores';
-$currentPath = 'users';
+$currentPath = 'users'; // ← ESTA ES LA CLAVE: debe coincidir con la URL del menú
 $breadcrumbs = [
     ['label' => 'Principal', 'url' => u('dashboard')],
     ['label' => 'Administradores', 'url' => null],
 ];
 
 // Datos de sesión
-$sessionUser  = $_SESSION['username'] ?? 'Usuario';
+$sessionUser = $_SESSION['username'] ?? 'Usuario';
 $sessionEmail = $_SESSION['email'] ?? '';
-$roleId       = (int)($_SESSION['role'] ?? 0);
+$roleId = (int)($_SESSION['role'] ?? 0);
 
 // Métricas
-$totalUsuarios   = is_array($users ?? []) ? count($users) : 0;
+$totalUsuarios = is_array($users ?? []) ? count($users) : 0;
 $usuariosActivos = 0;
 
 if (!empty($users) && is_array($users)) {
@@ -205,181 +205,6 @@ ob_start();
         opacity: 0.5;
         cursor: not-allowed;
     }
-
-    /* Modal Styles */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-overlay.show {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-content {
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        max-width: 480px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        transform: scale(0.9);
-        transition: transform 0.3s ease;
-    }
-
-    .modal-overlay.show .modal-content {
-        transform: scale(1);
-    }
-
-    .modal-header {
-        padding: 24px 24px 0;
-        border-bottom: 1px solid #e1e5e9;
-        margin-bottom: 20px;
-    }
-
-    .modal-header h3 {
-        margin: 0 0 8px 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #dc3545;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .modal-header p {
-        margin: 0 0 20px 0;
-        color: #6c757d;
-        font-size: 0.95rem;
-    }
-
-    .modal-body {
-        padding: 0 24px 20px;
-    }
-
-    .user-info-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        border: 1px solid #dee2e6;
-    }
-
-    .user-info-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .user-avatar-modal {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--cream-600) 0%, var(--cream-500) 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: bold;
-        font-size: 24px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .user-info-details h4 {
-        margin: 0 0 4px 0;
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #212529;
-    }
-
-    .user-info-details p {
-        margin: 0;
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
-
-    .warning-box {
-        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-        border: 1px solid #f0ad4e;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 20px;
-    }
-
-    .warning-box h5 {
-        margin: 0 0 8px 0;
-        color: #856404;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .warning-box ul {
-        margin: 0;
-        padding-left: 20px;
-        color: #856404;
-    }
-
-    .warning-box li {
-        margin-bottom: 4px;
-        font-size: 0.9rem;
-    }
-
-    .modal-footer {
-        padding: 0 24px 24px;
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        border-top: 1px solid #e1e5e9;
-        padding-top: 20px;
-    }
-
-    .btn-cancel {
-        background: #6c757d;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .btn-cancel:hover {
-        background: #5a6268;
-    }
-
-    .btn-delete {
-        background: #dc3545;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .btn-delete:hover {
-        background: #c82333;
-    }
-
-    .btn-delete:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-    }
 </style>
 
 <!-- Barra de herramientas -->
@@ -399,6 +224,56 @@ ob_start();
     </div>
 </div>
 
+<!-- Métricas -->
+<!-- <div class="dashboard-cards" style="margin-bottom: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon primary"><i class="fas fa-user-shield"></i></div>
+        </div>
+        <div class="card-content">
+            <div class="card-title">Total Usuarios</div>
+            <div class="card-value" id="totalUsuarios"><?= (int)$totalUsuarios ?></div>
+            <div class="card-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>Administradores</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon success"><i class="fas fa-check-circle"></i></div>
+        </div>
+        <div class="card-content">
+            <div class="card-title">Usuarios Activos</div>
+            <div class="card-value"><?= (int)$usuariosActivos ?></div>
+            <div class="card-change">
+                <i class="fas fa-users"></i>
+                <span>En sistema</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon warning"><i class="fas fa-tools"></i></div>
+        </div>
+        <div class="card-content">
+            <div class="card-title">Accesos rápidos</div>
+            <div class="card-value">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <a href="<?= u('dashboard') ?>" class="dropdown-item" style="padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.3); text-decoration: none; font-size: 12px;">
+                        <i class="fas fa-chart-pie"></i> Ir al Dashboard
+                    </a>
+                    <a href="<?= u('partner/list') ?>" class="dropdown-item" style="padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.3); text-decoration: none; font-size: 12px;">
+                        <i class="fas fa-users"></i> Ver Socios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
 <!-- Tabla de usuarios -->
 <?php if (!empty($users) && is_array($users)): ?>
     <div class="table-container">
@@ -408,14 +283,13 @@ ob_start();
                     <th><i class="fas fa-user"></i> Usuario</th>
                     <th><i class="fas fa-envelope"></i> Email</th>
                     <th><i class="fas fa-shield-alt"></i> Rol</th>
-                    <!-- <th><i class="fas fa-calendar-plus"></i> Fecha Creación</th>
-                    <th><i class="fas fa-signal"></i> Estado</th> -->
+                    <th><i class="fas fa-calendar-plus"></i> Fecha Creación</th>
+                    <th><i class="fas fa-signal"></i> Estado</th>
                     <th><i class="fas fa-cogs"></i> Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($users as $usuario): ?>
-                    <?php $dc = $usuario['dateCreated'] ?? $usuario['created_at'] ?? null; ?>
                     <tr>
                         <td>
                             <div class="user-cell" style="display: flex; align-items: center; gap: 12px;">
@@ -439,39 +313,41 @@ ob_start();
                                 <i class="fas fa-crown"></i> Administrador
                             </span>
                         </td>
-                        <!-- <td>
+                        <td>
                             <span class="date-badge">
                                 <i class="fas fa-calendar"></i>
-                                <?= $dc ? date('d/m/Y', strtotime($dc)) : '-' ?>
+                                <?php 
+                                    $dc = $usuario['dateCreated'] ?? $usuario['created_at'] ?? null;
+                                    echo $dc ? date('d/m/Y', strtotime($dc)) : '-';
+                                ?>
                             </span>
                         </td>
                         <td>
                             <span class="status-badge active">
                                 <i class="fas fa-circle" style="font-size: 6px;"></i> Activo
                             </span>
-                        </td> -->
+                        </td>
                         <td class="actions">
                             <div class="action-buttons" style="display: flex; gap: 8px;">
-                                <a href="<?= u('users/edit/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>"
-                                   class="btn btn-sm btn-outline"
-                                   title="Editar"
+                                <a href="<?= u('users/edit/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
+                                   class="btn btn-sm btn-outline" 
+                                   title="Editar" 
                                    style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e1e5e9; color: #333; text-decoration: none; background: #fff;">
                                     <i class="fas fa-edit"></i>
                                 </a>
-
-                                <!-- Usamos JSON seguro para pasar el objeto al onclick -->
-                                <button
-                                    onclick='openDeleteModal(<?= json_encode([
-                                        'id' => $usuario['idUser'] ?? '',
-                                        'login' => $usuario['login'] ?? '',
-                                        'email' => $usuario['email'] ?? '',
-                                        'dateCreated' => $dc
-                                    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'
-                                    class="btn btn-sm btn-danger"
-                                    title="Eliminar"
-                                    style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #e74c3c; color: #fff; border: none; cursor: pointer;">
+                                <a href="<?= u('users/view/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
+                                   class="btn btn-sm btn-info" 
+                                   title="Ver" 
+                                   style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #3498db; color: #fff; text-decoration: none;">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="<?= u('users/delete/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
+                                   class="btn btn-sm btn-danger" 
+                                   title="Eliminar" 
+                                   onclick="return confirm('¿Seguro que desea eliminar este usuario?');" 
+                                   style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #e74c3c; color: #fff; text-decoration: none;">
                                     <i class="fas fa-trash-alt"></i>
-                                </button>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -512,113 +388,8 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<!-- Modal de Confirmación de Eliminación -->
-<div id="deleteModal" class="modal-overlay" aria-hidden="true">
-    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalUserLogin">
-        <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h3>
-            <p>Esta acción desactivará permanentemente la cuenta de usuario.</p>
-        </div>
-        
-        <div class="modal-body">
-            <div class="user-info-card">
-                <div class="user-info-header">
-                    <div class="user-avatar-modal" id="modalUserAvatar">U</div>
-                    <div class="user-info-details">
-                        <h4 id="modalUserLogin">Usuario</h4>
-                        <p id="modalUserEmail">usuario@email.com</p>
-                        <small id="modalUserDate" style="color: #6c757d;"></small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="warning-box">
-                <h5><i class="fas fa-exclamation-triangle"></i> Importante:</h5>
-                <ul>
-                    <li>Esta cuenta será <strong>desactivada</strong> (soft delete)</li>
-                    <li>El usuario no podrá iniciar sesión</li>
-                    <li>Los datos se conservarán para auditoría</li>
-                    <li>Esta acción puede revertirse desde la base de datos</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeDeleteModal()">
-                <i class="fas fa-times"></i> Cancelar
-            </button>
-            <form id="deleteForm" method="POST" style="display: inline;">
-                <button type="submit" class="btn-delete" id="confirmDeleteBtn">
-                    <i class="fas fa-trash-alt"></i> Desactivar Usuario
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- JavaScript para búsqueda, paginación y modal -->
+<!-- JavaScript para búsqueda y paginación -->
 <script>
-    // Variables globales (serán inicializadas en DOMContentLoaded)
-    let deleteModal = null;
-    let deleteForm = null;
-
-    document.addEventListener('DOMContentLoaded', function() {
-        deleteModal = document.getElementById('deleteModal');
-        deleteForm  = document.getElementById('deleteForm');
-
-        if (deleteModal) {
-            // Cerrar modal al hacer clic fuera
-            deleteModal.addEventListener('click', function(e) {
-                if (e.target === deleteModal) {
-                    closeDeleteModal();
-                }
-            });
-        }
-
-        // Cerrar modal con ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && deleteModal && deleteModal.classList.contains('show')) {
-                closeDeleteModal();
-            }
-        });
-    });
-
-    function openDeleteModal(userData) {
-        const modalUserLogin = document.getElementById('modalUserLogin');
-        const modalUserEmail = document.getElementById('modalUserEmail');
-        const modalUserDate  = document.getElementById('modalUserDate');
-        const modalUserAvatar= document.getElementById('modalUserAvatar');
-
-        if (modalUserLogin) modalUserLogin.textContent = userData.login || 'Usuario';
-        if (modalUserEmail) modalUserEmail.textContent = userData.email || '';
-        if (modalUserDate) {
-            modalUserDate.textContent = userData.dateCreated
-                ? 'Registrado el ' + new Date(userData.dateCreated).toLocaleDateString('es-ES')
-                : 'Fecha de registro no disponible';
-        }
-        if (modalUserAvatar) modalUserAvatar.textContent = userData.login ? userData.login.charAt(0).toUpperCase() : 'U';
-
-        if (deleteForm) {
-            // asigna action con la ruta base desde PHP + id del usuario
-            deleteForm.action = '<?= u('users/delete/') ?>' + encodeURIComponent(userData.id);
-        }
-
-        if (deleteModal) {
-            deleteModal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            deleteModal.setAttribute('aria-hidden', 'false');
-        }
-    }
-
-    function closeDeleteModal() {
-        if (deleteModal) {
-            deleteModal.classList.remove('show');
-            deleteModal.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-        }
-    }
-
-    // Funcionalidad de búsqueda y paginación
     (function(){
         const table = document.getElementById('tablaUsuarios');
         const input = document.getElementById('searchInput');
@@ -629,7 +400,7 @@ ob_start();
 
         let currentPage = 1;
         const pageSizeSelect = document.getElementById('pageSize');
-        let pageSize = pageSizeSelect ? parseInt(pageSizeSelect.value, 10) : 20;
+        let pageSize = parseInt(pageSizeSelect ? pageSizeSelect.value : '20', 10);
 
         allRows.forEach(tr => tr.dataset.match = '1');
 
@@ -657,6 +428,9 @@ ob_start();
             allRows.forEach(tr => tr.style.display = 'none');
             fr.slice(start, end).forEach(tr => tr.style.display = '');
 
+            const totalEl = document.getElementById('totalUsuarios'); 
+            if (totalEl) totalEl.textContent = String(fr.length);
+            
             const pageInfo = document.getElementById('pageInfo'); 
             if (pageInfo) pageInfo.textContent = `Página ${currentPage} de ${totalPages()} (${fr.length} registros)`;
 
