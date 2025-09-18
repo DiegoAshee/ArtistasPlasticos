@@ -180,6 +180,7 @@ ob_start();
         <a href="<?= u('conceptos/list') ?>" class="btn btn-secondary">
           <i class="fas fa-times"></i> Cancelar
         </a>
+
       </div>
     </form>
   </div>

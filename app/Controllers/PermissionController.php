@@ -6,7 +6,6 @@ require_once __DIR__ . '/../Models/Competence.php';
 
 class PermissionController extends BaseController
 {
-    private $db;
     
     public function __construct()
     {

@@ -315,11 +315,16 @@ $router->addRoute('GET', '/conceptos', 'ConceptController', 'list');
 $router->addRoute('GET', '/conceptos/list', 'ConceptController', 'list');
 $router->addRoute('GET', '/conceptos/create', 'ConceptController', 'create');
 $router->addRoute('POST', '/conceptos/store', 'ConceptController', 'store');
-$router->addRoute('GET', '/conceptos/edit/{id}', 'ConceptController', 'edit');
+/*$router->addRoute('GET', '/conceptos/edit/{id}', 'ConceptController', 'edit');
 $router->addRoute('POST', '/conceptos/update/{id}', 'ConceptController', 'update');
 $router->addRoute('GET', '/conceptos/delete/{id}', 'ConceptController', 'delete');
 $router->addRoute('POST', '/conceptos/destroy/{id}', 'ConceptController', 'destroy');
-$router->addRoute('GET', '/conceptos/export-pdf', 'ConceptController', 'exportPdf');
+$router->addRoute('GET', '/conceptos/export-pdf', 'ConceptController', 'exportPdf');*/
+$router->addRoute('GET',  '/conceptos/edit/([0-9]+)',   'ConceptController', 'edit');
+$router->addRoute('POST', '/conceptos/update/([0-9]+)', 'ConceptController', 'update');
+$router->addRoute('GET',  '/conceptos/delete/([0-9]+)', 'ConceptController', 'delete');
+$router->addRoute('POST', '/conceptos/destroy/([0-9]+)','ConceptController', 'destroy');
+
 
 
 

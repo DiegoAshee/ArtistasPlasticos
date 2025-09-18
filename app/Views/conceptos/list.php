@@ -291,7 +291,7 @@ ob_start();
     <table class="modern-table">
       <thead>
         <tr>
-          <th>ID</th>
+          <!--<th>ID</th>-->
           <th>Descripción</th>
           <th>Tipo</th>
           <th>Fecha Creación</th>
@@ -310,7 +310,7 @@ ob_start();
         </tr>
       <?php else: foreach ($rows as $r): ?>
         <tr>
-          <td><strong>#<?= (int)($r['idConcept'] ?? 0) ?></strong></td>
+          <!--<td><strong>#<?= (int)($r['idConcept'] ?? 0) ?></strong></td>-->
           <td><?= htmlspecialchars($r['description'] ?? '') ?></td>
           <td>
             <span class="badge-type <?= ($r['type'] ?? '') === 'Ingreso' ? 'badge-income' : 'badge-expense' ?>">
