@@ -24,23 +24,11 @@ if (!function_exists('asset')) {
     }
 }
 
-// Procesar el formulario si se envió
-$error = '';
-$success = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
-    
-    if (empty($email)) {
-        $error = 'Por favor, ingresa tu correo electrónico';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Por favor, ingresa un correo electrónico válido';
-    } else {
-        // Aquí iría la lógica para procesar el recupero de contraseña
-        // Simulamos un envío exitoso para la demostración
-        $success = 'Se ha enviado un enlace de recuperación a tu correo electrónico';
-    }
-}
+// REMOVER TODA LA LÓGICA DE PROCESAMIENTO DEL FORMULARIO
+// El controlador se encarga de esto ahora
+// Las variables $error y $success vienen desde el controlador
+$error = $error ?? '';
+$success = $success ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -78,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: relative;
             color: var(--cream-900);
         }
-
 
         .password-container{
             position:relative; 
@@ -230,14 +217,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .logo img.logo-img {
             max-width: 90px; 
             max-height: 90px;
-            border-radius: 16px;          /* Bordes redondeados (puedes quitarlo si quieres cuadrado) */
+            border-radius: 16px;
             box-shadow: 0 2px 12px #e1e5e9;
             background: #fff;
             padding: 10px;
             display: block;
             margin: 0 auto;
         }
-
 
         @media (max-width:480px){
             .password-container{ 
@@ -260,7 +246,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <img src="<?= asset('img/logo.png') ?>" alt="Logo Asociación de Artistas" class="logo-img">
         </div>
 
-        
         <div class="password-header">
             <h2>Recuperar Contraseña</h2>
             <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña</p>
@@ -280,8 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        
-        <form method="POST" action="<?= htmlspecialchars(u('forgot-password'), ENT_QUOTES, 'UTF-8') ?>">
+        <!-- EL FORM AHORA APUNTA AL CONTROLADOR, NO SE PROCESA AQUÍ -->
+        <form method="POST" action="">
             <div class="form-group">
                 <label for="email">Correo Electrónico</label>
                 <input
