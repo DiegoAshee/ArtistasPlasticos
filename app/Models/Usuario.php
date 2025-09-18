@@ -332,10 +332,11 @@ public function create($loginOrData, $password = null, $email = null, $idRole = 
             return false;
         }
 
-        $lastId = $this->db->lastInsertId();
+        $lastId = (int)$this->db->lastInsertId();
         error_log("DEBUG - Last insert ID: " . $lastId);
         
-        return $result;
+        // Retornar el ID del usuario creado en lugar de bool
+        return $lastId > 0 ? $lastId : false;
         
     } catch (\PDOException $e) {
         error_log("DEBUG - PDO Exception: " . $e->getMessage());

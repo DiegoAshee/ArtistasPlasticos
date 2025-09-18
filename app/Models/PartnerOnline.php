@@ -107,7 +107,7 @@ class PartnerOnline {
     }
     public function getAllPending(): array {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM " . self::TBL . " WHERE isverified=1 AND dateConfirmation=NULL ORDER BY idPartnerOnline DESC");
+            $stmt = $this->db->prepare("SELECT * FROM " . self::TBL . " WHERE isverified=1 ORDER BY idPartnerOnline DESC");
             $stmt->execute();
             return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
         } catch (\PDOException $e) {
@@ -229,5 +229,23 @@ class PartnerOnline {
             return false;
         }
     }
-
+    /**
+     * Actualiza la solicitud online con los IDs creados y fecha de confirmación
+     */
+    public function updateConfirmation(int $idPartnerOnline, int $idUser, int $idPartner): bool {
+        try {
+            $sql = "UPDATE " . self::TBL . " 
+                    SET dateConfirmation = NOW(), idUser = :idUser, idPartner = :idPartner 
+                    WHERE idPartnerOnline = :idPartnerOnline";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':idPartnerOnline', $idPartnerOnline, \PDO::PARAM_INT);
+            $stmt->bindValue(':idUser', $idUser, \PDO::PARAM_INT);
+            $stmt->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::updateConfirmation error: " . $e->getMessage());
+            return false;
+        }
+    }
 }

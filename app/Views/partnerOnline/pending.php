@@ -216,7 +216,7 @@ ob_start();
             <div class="action-buttons">
                 <form action="<?= u('partnerOnline/approve') ?>" method="post" class="approve-form">
                     <input type="hidden" name="id" value="<?= (int)($r['idPartnerOnline'] ?? 0) ?>">
-                    <button type="submit" class="btn-action btn-approve" title="Aprobar solicitud">
+                    <button type="submit" class="btn-action btn-approve" title="Aprobar y crear socio/usuario">
                         <i class="fas fa-check"></i> Aceptar
                     </button>
                 </form>
@@ -233,7 +233,6 @@ ob_start();
         </tbody>
     </table>
   </div>
-
   <!-- MODIFICACIONES -->
   <div class="section-title">
     <i class="fas fa-user-edit"></i><h2 style="margin:0;">Solicitudes de modificación</h2>
