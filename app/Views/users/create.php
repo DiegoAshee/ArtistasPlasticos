@@ -1,10 +1,10 @@
 <?php
 // Set up variables for the layout
 $title = 'Crear Socio - Asociación de Artistas';
-$currentPath = 'partner/create';
+$currentPath = 'users/create';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
-    ['label' => 'Socios', 'url' => u('partner/list')],
+    ['label' => 'Socios', 'url' => u('users/list')],
     ['label' => 'Crear Socio', 'url' => null],
 ];
 
@@ -101,7 +101,7 @@ ob_start();
         font-family: 'Playfair Display', serif;
     }
 
-    .partner-fields {
+    .admin-fields {
         background: var(--cream-50);
         border-radius: 12px;
         padding: 2rem 2.5rem;
@@ -167,7 +167,7 @@ ob_start();
             gap: 1.25rem;
         }
 
-        .partner-fields {
+        .admin-fields {
             padding: 1.5rem;
             margin: 2rem 0;
         }
@@ -181,7 +181,7 @@ ob_start();
 
 <div class="content-wrapper">
     <div class="create-container">
-        <h1 class="create-title">Crear Socio o Usuario</h1>
+        <h1 class="create-title">Crear Usuario Administrador</h1>
         
         <?php if (isset($error)): ?>
             <div class="error-message">
@@ -190,56 +190,19 @@ ob_start();
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="<?= rtrim(BASE_URL,'/') ?>/partner/create">
+        <form method="POST" action="<?= rtrim(BASE_URL,'/') ?>/users/create">
             <div class="form-section">
                 <h2 class="section-title">Datos de Acceso</h2>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="idRole">Tipo de Usuario</label>
-                        <select name="idRole" id="idRole" onchange="togglePartnerFields()" required>
-                            <option value="1">Administrador</option>
-                            <option value="2" selected>Socio</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="partner-fields">
-                <div class="form-section">
-                    <h2 class="section-title">Información Personal</h2>
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="name">Nombre Completo</label>
-                            <input type="text" name="name" id="name" placeholder="Nombre y apellido" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ci">Cédula de Identidad (será tu login)</label>
+                            <label for="ci">Cédula de Identidad (será el login)</label>
                             <input type="text" name="ci" id="ci" placeholder="Ej: 8845325" required>
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="email">Correo Electrónico</label>
                             <input type="email" name="email" id="email" placeholder="Ingrese su correo electrónico" required>
                         </div>
-                        <div class="form-group">
-                            <label for="cellPhoneNumber">Número de Celular</label>
-                            <input type="tel" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: +591 65734215" required>
-                        </div>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="address">Dirección</label>
-                            <input type="text" name="address" id="address" placeholder="Dirección completa" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="birthday">Fecha de Nacimiento</label>
-                            <input type="date" name="birthday" id="birthday" required>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <button type="submit" class="btn-submit">
@@ -249,25 +212,25 @@ ob_start();
     </div>
 </div>
 
-<script>
-function togglePartnerFields() {
+<!-- <script>
+function toggleAdminFields() {
     const roleSelect = document.getElementById('idRole');
-    const partnerFields = document.querySelector('.partner-fields');
-    const partnerInputs = partnerFields.querySelectorAll('input');
+    const adminFields = document.querySelector('.admin-fields');
+    const adminInputs = adminFields.querySelectorAll('input');
     
     if (roleSelect.value === '2') { // Socio
-        partnerFields.style.display = 'block';
-        partnerInputs.forEach(input => input.required = true);
+        adminFields.style.display = 'block';
+        adminInputs.forEach(input => input.required = true);
     } else {
-        partnerFields.style.display = 'none';
-        partnerInputs.forEach(input => input.required = false);
+        adminFields.style.display = 'none';
+        adminInputs.forEach(input => input.required = false);
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    togglePartnerFields();
+    toggleAdminFields();
 });
-</script>
+</script> -->
 
 <?php
 // Get the buffered content
