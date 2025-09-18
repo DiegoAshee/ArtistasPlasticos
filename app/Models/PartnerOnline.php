@@ -105,6 +105,16 @@ class PartnerOnline {
             return [];
         }
     }
+    public function getAllPending(): array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM " . self::TBL . " WHERE isverified=1 AND dateConfirmation=NULL ORDER BY idPartnerOnline DESC");
+            $stmt->execute();
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::getAll error: " . $e->getMessage());
+            return [];
+        }
+    }
 
     public function findById(int $id): ?array {
         try {
