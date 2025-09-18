@@ -103,7 +103,8 @@ public function pending(): void
     $pending = array_filter($rows, static fn(array $r): bool => $isEmptyDate($r['dateConfirmation'] ?? null));
 
     // Tipo: nuevos (idUser NULL) vs modificaciones (idUser NOT NULL)
-    $registrations = array_values(array_filter($pending, static fn(array $r): bool => empty($r['idUser'])));
+    //$registrations = array_values(array_filter($pending, static fn(array $r): bool => empty($r['idUser'])));
+    $registrations = $model->getAllPending();
     $changes       = array_values(array_filter($pending, static fn(array $r): bool => !empty($r['idUser'])));
 
     $this->view('partnerOnline/pending', [
