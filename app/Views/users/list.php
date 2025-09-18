@@ -335,12 +335,12 @@ ob_start();
                                    style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e1e5e9; color: #333; text-decoration: none; background: #fff;">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="<?= u('users/view/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
+                                <!-- <a href="<?= u('users/view/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
                                    class="btn btn-sm btn-info" 
                                    title="Ver" 
                                    style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #3498db; color: #fff; text-decoration: none;">
                                     <i class="fas fa-eye"></i>
-                                </a>
+                                </a> -->
                                 <a href="<?= u('users/delete/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>" 
                                    class="btn btn-sm btn-danger" 
                                    title="Eliminar" 

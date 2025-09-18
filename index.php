@@ -104,6 +104,11 @@ $router->addRoute('POST', '/permissions/update', 'PermissionController', 'update
 |--------------------------------------------------------------------------
 */
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
+$router->addRoute('GET', '/users/create', 'UserController', 'createAdmin');
+$router->addRoute('POST', '/users/create', 'UserController', 'createAdmin');
+$router->addRoute('GET', '/users/edit/([0-9]+)', 'UserController', 'editUser');
+$router->addRoute('POST', '/users/edit/([0-9]+)', 'UserController', 'editUser');
+$router->addRoute('GET', '/users/delete/([0-9]+)', 'UserController', 'deleteUser');
 $router->addRoute('GET', '/users/profile', 'UserController', 'userProfile');
 $router->addRoute('GET', '/users/profile/edit', 'UserController', 'editProfile');
 $router->addRoute('POST', '/users/profile/update', 'UserController', 'updateProfile');
@@ -178,38 +183,6 @@ $router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete'
 $router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
 
 /**/ 
-
-
-// Bandeja de pendientes de partneronline (solo vista/mostrar)
-// Bandeja de solicitudes pendientes (solo lectura)
-$router->addRoute('GET', '/partnerOnline/pending', 'PartnerOnlineController', 'pending');
-
-
-
-//aprobar o rechazar solicitudes 
-// Acciones sobre solicitudes (POST)
-$router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
-$router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
-$router->addRoute('POST', '/partnerOnline/accept', 'PartnerOnlineController', 'accept');
-
-
-
-//cobros
-/* RUTAS DE COBROS (módulo nuevo, sin chocar con Payment*) */
-/* RUTAS DE COBROS */
-$router->addRoute('GET',  '/cobros/list',            'CobroController', 'pagadas'); // alias
-$router->addRoute('GET',  '/cobros/pagadas',         'CobroController', 'pagadas');
-$router->addRoute('GET',  '/cobros/debidas',         'CobroController', 'debidas');
-$router->addRoute('GET',  '/cobros/socios',          'CobroController', 'socios'); // NUEVA RUTA
-
-$router->addRoute('GET',  '/cobros/create',          'CobroController', 'create');
-$router->addRoute('POST', '/cobros/create',          'CobroController', 'create');
-$router->addRoute('GET',  '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
-$router->addRoute('POST', '/cobros/edit/([0-9]+)',   'CobroController', 'edit');
-$router->addRoute('GET',  '/cobros/delete/([0-9]+)', 'CobroController', 'delete');
-
-// AGREGAR ESTA NUEVA RUTA PARA LA API DE DEUDAS:
-$router->addRoute('GET',  '/cobros/debts-api',       'CobroController', 'debtsApi');
 
 //pagosmultiples
 $router->addRoute('GET', '/cobros/create-multiple', 'CobroController', 'createMultiple');
