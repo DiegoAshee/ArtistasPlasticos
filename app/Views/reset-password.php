@@ -119,7 +119,7 @@
     <div class="reset-container">
         <!-- Logo -->
         <div class="logo">
-            <img src="<?= asset('img/logo.png') ?>" alt="Logo Asociación de Artistas">
+            <img "<?= asset($logo_url) ?>" alt="Logo <?= htmlspecialchars($site_title, ENT_QUOTES, 'UTF-8') ?>">
         </div>
 
         <h2>Restablecer Contraseña</h2>

@@ -105,7 +105,7 @@ if (!function_exists('asset')) {
         <div class="login-box rounded-xl overflow-hidden">
             <!-- Logo -->
             <div class="logo-center">
-                <img src="<?= asset('img/logo.png') ?>" alt="Logo Asociación de Artistas">
+                <img src="<?= asset($logo_url) ?>" alt="Logo <?= htmlspecialchars($site_title, ENT_QUOTES, 'UTF-8') ?>">
             </div>
 
             <!-- Encabezado -->
