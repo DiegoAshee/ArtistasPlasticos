@@ -1,17 +1,4 @@
 <?php
-// Helper functions for URL generation
-if (!function_exists('u')) {
-    function u(string $path): string {
-        $base = rtrim(BASE_URL, '/');
-        return $base . '/' . ltrim($path, '/');
-    }
-}
-if (!function_exists('asset')) {
-    function asset(string $path): string { return u($path); }
-}
-?>
-
-<?php
 // Set up variables for the layout
 $title = 'Crear Socio - Asociación de Artistas';
 $currentPath = 'partner/create';
@@ -215,18 +202,6 @@ ob_start();
                         </select>
                     </div>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="login">Login (C.I.)</label>
-                        <input type="text" name="login" id="login" placeholder="Ingrese la cédula de identidad" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Correo Electrónico</label>
-                        <input type="email" name="email" id="email" placeholder="Ingrese su correo" required>
-                    </div>
-                </div>
             </div>
             
             <div class="partner-fields">
@@ -235,33 +210,33 @@ ob_start();
                     <div class="form-row">
                         <div class="form-group">
                             <label for="name">Nombre Completo</label>
-                            <input type="text" name="name" id="name" placeholder="Nombre y apellido">
+                            <input type="text" name="name" id="name" placeholder="Nombre y apellido" required>
                         </div>
                         <div class="form-group">
-                            <label for="ci">Cédula de Identidad</label>
-                            <input type="text" name="ci" id="ci" placeholder="Ej: 8845325">
+                            <label for="ci">Cédula de Identidad (será tu login)</label>
+                            <input type="text" name="ci" id="ci" placeholder="Ej: 8845325" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Correo Electrónico</label>
+                            <input type="email" name="email" id="email" placeholder="Ingrese su correo electrónico" required>
+                        </div>
                         <div class="form-group">
                             <label for="cellPhoneNumber">Número de Celular</label>
-                            <input type="tel" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: +591 65734215">
-                        </div>
-                        <div class="form-group">
-                            <label for="address">Dirección</label>
-                            <input type="text" name="address" id="address" placeholder="Dirección completa">
+                            <input type="tel" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: +591 65734215" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="birthday">Fecha de Nacimiento</label>
-                            <input type="date" name="birthday" id="birthday">
+                            <label for="address">Dirección</label>
+                            <input type="text" name="address" id="address" placeholder="Dirección completa" required>
                         </div>
                         <div class="form-group">
-                            <label for="dateRegistration">Fecha de Registro</label>
-                            <input type="date" name="dateRegistration" id="dateRegistration">
+                            <label for="birthday">Fecha de Nacimiento</label>
+                            <input type="date" name="birthday" id="birthday" required>
                         </div>
                     </div>
                 </div>

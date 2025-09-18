@@ -8,96 +8,180 @@ require_once __DIR__ . '/../Config/config.php';
 class PartnerController extends BaseController
 {
     // ====== SOCIOS / USUARIOS ======
-    public function createPartner(): void
-    {
-        $this->startSession();
+ public function createPartner(): void
+{
+    $this->startSession();
 
-        if (!isset($_SESSION['user_id'])) {
-            $this->redirect('login');
-            return;
+    if (!isset($_SESSION['user_id'])) {
+        $this->redirect('login');
+        return;
+    }
+
+    // Get menu options for the sidebar
+    require_once __DIR__ . '/../Models/Competence.php';
+    $roleId = (int)($_SESSION['role'] ?? 2);
+    $menuOptions = (new \Competence())->getByRole($roleId);
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        // Obtener datos del formulario
+        $login            = trim((string)($_POST['ci'] ?? ''));      // CI como login
+        $ci               = trim((string)($_POST['ci'] ?? ''));      // CI para tabla partner
+        $email            = trim((string)($_POST['email'] ?? ''));
+        $idRole           = isset($_POST['idRole']) ? (int)$_POST['idRole'] : 0;
+        $name             = trim((string)($_POST['name'] ?? ''));
+        $cellPhoneNumber  = trim((string)($_POST['cellPhoneNumber'] ?? ''));
+        $address          = trim((string)($_POST['address'] ?? ''));
+        $birthday         = trim((string)($_POST['birthday'] ?? ''));
+
+        error_log("DEBUG - Datos recibidos del formulario:");
+        error_log("- CI/login: " . $login);
+        error_log("- email: " . $email);
+        error_log("- idRole: " . $idRole);
+        error_log("- name: " . $name);
+
+        // Validaciones
+        $errors = [];
+
+        if ($login === '') {
+            $errors[] = "La cédula de identidad es obligatoria";
+        } elseif (strlen($login) < 7 || strlen($login) > 10) {
+            $errors[] = "La cédula debe tener entre 7 y 10 dígitos";
         }
 
-        // Get menu options for the sidebar
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "El email es obligatorio y debe ser válido";
+        }
 
-        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            $login            = trim((string)($_POST['login'] ?? ''));
-            $email            = trim((string)($_POST['email'] ?? ''));
-            $idRole           = isset($_POST['idRole']) ? (int)$_POST['idRole'] : 0;
-            $name             = trim((string)($_POST['name'] ?? ''));
-            $ci               = trim((string)($_POST['ci'] ?? ''));
-            $cellPhoneNumber  = trim((string)($_POST['cellPhoneNumber'] ?? ''));
-            $address          = trim((string)($_POST['address'] ?? ''));
-            $birthday         = trim((string)($_POST['birthday'] ?? ''));
-
-            if ($login === '' || $email === '') {
-                $error = "El campo Login y Email son obligatorios";
-            } elseif ($idRole === 2 && ($name === '' || $ci === '' || $cellPhoneNumber === '' || $address === '' || $birthday === '')) {
-                $error = "Todos los campos de Socio son obligatorios";
-            } else {
-                require_once __DIR__ . '/../Models/Partner.php';
-                require_once __DIR__ . '/../Models/Partner.php';
-                $partnerModel = new \Partner();
-                $userModel    = new \Usuario();
-                $db           = \Database::singleton()->getConnection();
-
-                $db->beginTransaction();
-                $hashedPassword = password_hash($login, PASSWORD_BCRYPT);
-
-                try {
-                    if ($idRole === 2) { // Socio
-                        $dateCreation     = date('Y-m-d H:i:s');
-                        $dateRegistration = date('Y-m-d H:i:s');  // <-- automático
-
-                        $partnerId = $partnerModel->create(
-                            $name,
-                            $ci,
-                            $cellPhoneNumber,
-                            $address,
-                            $dateCreation,
-                            $birthday,
-                            $dateRegistration
-                        );
-                        if (!$partnerId) {
-                            throw new \Exception("Failed to create Partner");
-                        }
-                        if (!$userModel->create($login, $hashedPassword, $email, $idRole, (int)$partnerId)) {
-                            throw new \Exception("Failed to create User for Partner ID: $partnerId");
-                        }
-                    } else { // Otros roles
-                        if (!$userModel->create($login, $hashedPassword, $email, $idRole, null)) {
-                            throw new \Exception("Failed to create User");
-                        }
-                    }
-
-                    $db->commit();
-                    $this->redirect('users/list');
-                    return;
-                } catch (\Throwable $e) {
-                    $db->rollBack();
-                    error_log("Transaction failed: " . $e->getMessage());
-                    $error = "Error al crear el usuario o socio: " . $e->getMessage();
-                }
+        if ($idRole === 2) { // Solo validar datos adicionales si es socio
+            if ($name === '') {
+                $errors[] = "El nombre completo es obligatorio para socios";
+            }
+            if ($cellPhoneNumber === '') {
+                $errors[] = "El número de celular es obligatorio para socios";
+            }
+            if ($address === '') {
+                $errors[] = "La dirección es obligatoria para socios";
+            }
+            if ($birthday === '' || !DateTime::createFromFormat('Y-m-d', $birthday)) {
+                $errors[] = "La fecha de nacimiento es obligatoria y debe ser válida";
             }
         }
 
-        // Prepare view data
-        $viewData = [
-            'menuOptions' => $menuOptions,
-            'currentPath' => 'partner/create',
-            'roleId' => $roleId
-        ];
-
-        // Add error message if exists
-        if (isset($error)) {
-            $viewData['error'] = $error;
+        // Verificar duplicados
+        require_once __DIR__ . '/../Models/Usuario.php';
+        $userModel = new \Usuario();
+        
+        if ($userModel->loginExists($login)) {
+            $errors[] = "La cédula $login ya está registrada";
+        }
+        
+        if ($userModel->emailExists($email)) {
+            $errors[] = "El email $email ya está registrado";
         }
 
-        // Render del formulario
-        $this->view('partner/create', $viewData);
+        if (empty($errors)) {
+            require_once __DIR__ . '/../Models/Partner.php';
+            $partnerModel = new \Partner();
+            $db = \Database::singleton()->getConnection();
+
+            $db->beginTransaction();
+            
+            // Usar la cédula como contraseña temporal
+            $temporalPassword = $login;
+
+            try {
+                if ($idRole === 2) { // Crear SOCIO
+                    error_log("DEBUG - Creando socio...");
+                    
+                    // Fechas para el socio
+                    $dateCreation = date('Y-m-d H:i:s');
+                    $dateRegistration = date('Y-m-d');
+
+                    // 1. Crear el socio en la tabla partner
+                    $partnerId = $partnerModel->create(
+                        $name,
+                        $ci,                 // CI en tabla partner
+                        $cellPhoneNumber,
+                        $address,
+                        $dateCreation,
+                        $birthday,
+                        $dateRegistration
+                    );
+                    
+                    error_log("DEBUG - Partner ID creado: " . ($partnerId ?: 'FALSO'));
+                    
+                    if (!$partnerId) {
+                        throw new \Exception("No se pudo crear el socio en la tabla partner");
+                    }
+
+                    // 2. Crear el usuario asociado al socio
+                    $userCreated = $userModel->create(
+                        $login,             // CI como login
+                        $temporalPassword,  // CI como contraseña temporal
+                        $email,             // Email
+                        $idRole,            // Rol 2 = Socio
+                        (int)$partnerId     // ID del socio recién creado
+                    );
+                    
+                    error_log("DEBUG - Usuario creado: " . ($userCreated ? 'SÍ' : 'NO'));
+                    
+                    if (!$userCreated) {
+                        throw new \Exception("No se pudo crear la cuenta de usuario para el socio");
+                    }
+
+                } else { // Crear ADMINISTRADOR (idRole = 1)
+                    error_log("DEBUG - Creando administrador...");
+                    
+                    $userCreated = $userModel->create(
+                        $login,             // CI como login
+                        $temporalPassword,  // CI como contraseña temporal
+                        $email,             // Email
+                        $idRole,            // Rol 1 = Admin
+                        null                // Sin partner asociado
+                    );
+                    
+                    if (!$userCreated) {
+                        throw new \Exception("No se pudo crear la cuenta de administrador");
+                    }
+                }
+
+                $db->commit();
+                error_log("DEBUG - Transacción completada exitosamente");
+                
+                // Mensaje de éxito
+                $_SESSION['success_message'] = "Usuario creado exitosamente. Login: $login - Contraseña temporal: $temporalPassword";
+                $this->redirect('partner/list');
+                return;
+
+            } catch (\Throwable $e) {
+                $db->rollBack();
+                error_log("DEBUG - Error en transacción: " . $e->getMessage());
+                error_log("DEBUG - Trace: " . $e->getTraceAsString());
+                $errors[] = $e->getMessage();
+            }
+        }
+
+        // Si hay errores, mostrarlos
+        if (!empty($errors)) {
+            $error = implode('<br>', $errors);
+            error_log("DEBUG - Errores: " . $error);
+        }
     }
+
+    // Preparar datos para la vista
+    $viewData = [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'partner/create',
+        'roleId' => $roleId
+    ];
+
+    if (isset($error)) {
+        $viewData['error'] = $error;
+    }
+
+    // Renderizar formulario
+    $this->view('partner/create', $viewData);
+}
 
     public function export(): void
     {
@@ -168,137 +252,292 @@ class PartnerController extends BaseController
     }
 
     public function updatePartner(int $id): void
-    {
-        $this->startSession();
-        if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
-            $this->redirect('login');
-        }
-
-        // Obtener opciones del menú para la barra lateral
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        require_once __DIR__ . '/../Models/Partner.php';
-        require_once __DIR__ . '/../Models/Usuario.php';
-        $partnerModel = new \Partner();
-        $userModel    = new \Usuario();
-
-        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            $login            = (string)($_POST['login'] ?? '');
-            $idRole           = (int)($_POST['idRole'] ?? 2);
-            $name             = (string)($_POST['name'] ?? '');
-            $ci               = (string)($_POST['ci'] ?? '');
-            $cellPhoneNumber  = (string)($_POST['cellPhoneNumber'] ?? '');
-            $address          = (string)($_POST['address'] ?? '');
-            $birthday         = (string)($_POST['birthday'] ?? '');
-            $dateRegistration = (string)($_POST['dateRegistration'] ?? '');
-
-            if ($login === '') {
-                $error = "El campo Login es obligatorio";
-            } elseif ($idRole === 2 && ($name === '' || $ci === '' || $cellPhoneNumber === '' || $address === '' || $birthday === '' || $dateRegistration === '')) {
-                $error = "Todos los campos de Socio son obligatorios";
-            } else {
-                $db = \Database::singleton()->getConnection();
-                $db->beginTransaction();
-                $hashedPassword = password_hash($login, PASSWORD_BCRYPT);
-
-                try {
-                    $partner = $partnerModel->findById((int)$id);
-                    if (!$partner && $idRole === 2) {
-                        throw new \Exception("Partner no encontrado");
-                    }
-
-                    if ($idRole === 2) {
-                        if (!$partnerModel->update((int)$id, $name, $ci, $cellPhoneNumber, $address, $birthday, $dateRegistration)) {
-                            throw new \Exception("Failed to update Partner");
-                        }
-                        $user = $userModel->findByPartnerId((int)$id);
-                        if (!$user) {
-                            throw new \Exception("User no encontrado para Partner ID: $id");
-                        }
-                        if (!$userModel->update((int)$user['idUser'], $login, $hashedPassword, (int)$idRole, (int)$id)) {
-                            throw new \Exception("Failed to update User");
-                        }
-                    } else {
-                        $user = $userModel->findByLogin($login);
-                        if (!$user) {
-                            throw new \Exception("User no encontrado");
-                        }
-                        if (!$userModel->update((int)$user['idUser'], $login, $hashedPassword, (int)$idRole, null)) {
-                            throw new \Exception("Failed to update User");
-                        }
-                    }
-                    $db->commit();
-                    $this->redirect('socios/list');
-                    return;
-                } catch (\Throwable $e) {
-                    $db->rollBack();
-                    error_log("Transaction failed: " . $e->getMessage());
-                    $error = "Error al actualizar: " . $e->getMessage();
-                }
-            }
-        }
-
-        $partner = $partnerModel->findById((int)$id);
-        if (!$partner) {
-            $_SESSION['error'] = 'Socio no encontrado';
-            $this->redirect('socios/list');
-        }
-
-        $user = $userModel->findByPartnerId((int)$id);
-        if (!$user) {
-            $_SESSION['error'] = 'Usuario no encontrado para este socio';
-            $this->redirect('socios/list');
-        }
-
-        // Pasar los datos a la vista incluyendo las opciones del menú
-        $this->view('partner/edit', [
-            'partner' => $partner,
-            'user' => $user,
-            'menuOptions' => $menuOptions,  // Asegúrate de que esta variable se pase a la vista
-            'currentPath' => 'partner/edit/' . $id
-        ]);
+{
+    $this->startSession();
+    if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
+        $this->redirect('login');
     }
 
-    public function deletePartner(int $id): void
-    {
-        $this->startSession();
-        if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
-            $this->redirect('login');
+    // Obtener opciones del menú para la barra lateral
+    require_once __DIR__ . '/../Models/Competence.php';
+    $roleId = (int)($_SESSION['role'] ?? 2);
+    $menuOptions = (new \Competence())->getByRole($roleId);
+
+    require_once __DIR__ . '/../Models/Partner.php';
+    require_once __DIR__ . '/../Models/Usuario.php';
+    $partnerModel = new \Partner();
+    $userModel = new \Usuario();
+
+    error_log("DEBUG updatePartner - ID recibido: $id");
+
+    // Obtener datos actuales antes de cualquier operación
+    $partner = $partnerModel->findById($id);
+    error_log("DEBUG - Partner encontrado: " . print_r($partner, true));
+
+    $user = null;
+    if ($partner) {
+        // Buscar usuario por idPartner
+        $user = $userModel->findByPartnerId($id);
+        error_log("DEBUG - User encontrado: " . print_r($user, true));
+    }
+
+    if (!$partner) {
+        error_log("DEBUG - Partner no encontrado para ID: $id");
+        $_SESSION['error'] = 'Socio no encontrado';
+        $this->redirect('partner/list');
+        return;
+    }
+
+    if (!$user) {
+        error_log("DEBUG - Usuario no encontrado para Partner ID: $id");
+        $_SESSION['error'] = 'Usuario no encontrado para este socio';
+        $this->redirect('partner/list');
+        return;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Obtener datos del formulario
+        $login = trim((string)($_POST['login'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $idRole = (int)($_POST['idRole'] ?? 2);
+        
+        // Datos del partner (solo si es socio)
+        $name = trim((string)($_POST['name'] ?? ''));
+        $ci = trim((string)($_POST['ci'] ?? ''));
+        $cellPhoneNumber = trim((string)($_POST['cellPhoneNumber'] ?? ''));
+        $address = trim((string)($_POST['address'] ?? ''));
+        $birthday = trim((string)($_POST['birthday'] ?? ''));
+        $dateRegistration = trim((string)($_POST['dateRegistration'] ?? ''));
+
+        error_log("DEBUG Update - Datos del formulario:");
+        error_log("- login: '$login'");
+        error_log("- email: '$email'");
+        error_log("- idRole: $idRole");
+        error_log("- name: '$name'");
+        error_log("- ci: '$ci'");
+        error_log("- cellPhoneNumber: '$cellPhoneNumber'");
+        error_log("- address: '$address'");
+        error_log("- birthday: '$birthday'");
+        error_log("- dateRegistration: '$dateRegistration'");
+
+        // Validaciones
+        $errors = [];
+
+        if ($login === '') {
+            $errors[] = "El campo Login es obligatorio";
         }
 
-        require_once __DIR__ . '/../Models/Partner.php';
-        require_once __DIR__ . '/../Models/Usuario.php';
-        $partnerModel = new \Partner();
-        $userModel    = new \Usuario();
-        $db           = \Database::singleton()->getConnection();
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "El email es obligatorio y debe ser válido";
+        }
 
-        $db->beginTransaction();
-        try {
-            $partner = $partnerModel->findById((int)$id);
-            if ($partner) {
-                $user = $userModel->findByPartnerId((int)$id);
-                if ($user && !$userModel->delete((int)$user['idUser'])) {
-                    throw new \Exception("Failed to delete User");
+        if ($idRole === 2) { // Socio
+            if ($name === '') $errors[] = "El nombre es obligatorio";
+            if ($ci === '') $errors[] = "La cédula es obligatoria";
+            if ($cellPhoneNumber === '') $errors[] = "El celular es obligatorio";
+            if ($address === '') $errors[] = "La dirección es obligatoria";
+            if ($birthday === '') $errors[] = "La fecha de nacimiento es obligatoria";
+            if ($dateRegistration === '') $errors[] = "La fecha de registro es obligatoria";
+        }
+
+        // Verificar duplicados (excluyendo el usuario actual)
+        if ($userModel->loginExists($login, $user['idUser'])) {
+            $errors[] = "El login $login ya está en uso por otro usuario";
+        }
+
+        if ($userModel->emailExists($email, $user['idUser'])) {
+            $errors[] = "El email $email ya está en uso por otro usuario";
+        }
+
+        if (!empty($errors)) {
+            error_log("DEBUG - Errores de validación: " . implode(', ', $errors));
+            $error = implode('<br>', $errors);
+        } else {
+            $db = \Database::singleton()->getConnection();
+            $db->beginTransaction();
+
+            try {
+                if ($idRole === 2) { // Actualizar socio
+                    error_log("DEBUG - Actualizando socio ID: $id");
+                    
+                    // 1. Actualizar tabla partner
+                    $partnerUpdated = $partnerModel->update(
+                        $id, $name, $ci, $cellPhoneNumber, 
+                        $address, $birthday, $dateRegistration
+                    );
+                    
+                    error_log("DEBUG - Partner actualizado: " . ($partnerUpdated ? 'SÍ' : 'NO'));
+                    
+                    if (!$partnerUpdated) {
+                        throw new \Exception("No se pudo actualizar los datos del socio");
+                    }
+
+                    // 2. Actualizar usuario asociado
+                    error_log("DEBUG - Actualizando usuario ID: " . $user['idUser']);
+                    
+                    // Preparar datos para actualizar usuario
+                    $userUpdateData = [
+                        'login' => $login,
+                        'email' => $email,
+                        'idRol' => $idRole
+                    ];
+                    
+                    error_log("DEBUG - Datos para actualizar usuario: " . print_r($userUpdateData, true));
+                    
+                    $userUpdated = $userModel->update($user['idUser'], $userUpdateData);
+                    
+                    error_log("DEBUG - Usuario actualizado: " . ($userUpdated ? 'SÍ' : 'NO'));
+                    
+                    if (!$userUpdated) {
+                        throw new \Exception("No se pudo actualizar el usuario del socio. Ver logs para detalles.");
+                    }
+
+                } else { // Actualizar administrador (idRole = 1)
+                    error_log("DEBUG - Actualizando administrador");
+                    
+                    $userUpdateData = [
+                        'login' => $login,
+                        'email' => $email,
+                        'idRol' => $idRole,
+                        'idPartner' => null // Los admins no tienen partner
+                    ];
+                    
+                    error_log("DEBUG - Datos para actualizar admin: " . print_r($userUpdateData, true));
+                    
+                    $userUpdated = $userModel->update($user['idUser'], $userUpdateData);
+                    
+                    if (!$userUpdated) {
+                        throw new \Exception("No se pudo actualizar el administrador. Ver logs para detalles.");
+                    }
                 }
-                if (!$partnerModel->delete((int)$id)) {
-                    throw new \Exception("Failed to delete Partner");
-                }
-            } else {
-                $user = $userModel->findById((int)$id);
-                if ($user && !$userModel->delete((int)$user['idUser'])) {
-                    throw new \Exception("Failed to delete User");
-                }
+
+                $db->commit();
+                error_log("DEBUG - Actualización exitosa, redirigiendo...");
+                
+                $_SESSION['success_message'] = "Usuario actualizado exitosamente";
+                $this->redirect('partner/list');
+                return;
+
+            } catch (\Throwable $e) {
+                $db->rollBack();
+                error_log("DEBUG - Error en transacción de actualización: " . $e->getMessage());
+                error_log("DEBUG - Trace: " . $e->getTraceAsString());
+                $error = $e->getMessage();
             }
-            $db->commit();
-            $this->redirect('socios/list');
-        } catch (\Throwable $e) {
-            $db->rollBack();
-            error_log("Transaction failed: " . $e->getMessage());
-            $this->view('partner/list', ['socios' => $partnerModel->getAllSocios(), 'error' => 'Error al eliminar: ' . $e->getMessage()]);
         }
     }
+
+    // Preparar datos para la vista
+    $viewData = [
+        'partner' => $partner,
+        'user' => $user,
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'partner/edit/' . $id,
+        'roleId' => $roleId
+    ];
+
+    if (isset($error)) {
+        $viewData['error'] = $error;
+        error_log("DEBUG - Error enviado a vista: $error");
+    }
+
+    $this->view('partner/edit', $viewData);
+}
+
+   public function deletePartner(int $id): void
+{
+    $this->startSession();
+    if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
+        $this->redirect('login');
+        return;
+    }
+
+    // Obtener return_url de la query string para redirigir de vuelta
+    $returnUrl = $_GET['return_url'] ?? 'partner/list';
+
+    require_once __DIR__ . '/../Models/Partner.php';
+    require_once __DIR__ . '/../Models/Usuario.php';
+    $partnerModel = new \Partner();
+    $userModel = new \Usuario();
+    
+    error_log("DEBUG deletePartner - ID recibido: $id");
+    error_log("DEBUG deletePartner - Return URL: $returnUrl");
+
+    // Buscar los datos antes de eliminar
+    $partner = $partnerModel->findById($id);
+    $user = null;
+    
+    if ($partner) {
+        // Es un socio - buscar su usuario asociado
+        $user = $userModel->findByPartnerId($id);
+        error_log("DEBUG - Socio encontrado: " . $partner['name']);
+        error_log("DEBUG - Usuario asociado: " . ($user ? $user['login'] : 'NO ENCONTRADO'));
+    } else {
+        // Podría ser un admin - buscar directamente por idUser
+        $user = $userModel->findById($id);
+        error_log("DEBUG - Usuario encontrado: " . ($user ? $user['login'] : 'NO ENCONTRADO'));
+    }
+
+    if (!$partner && !$user) {
+        $_SESSION['error'] = 'Usuario o socio no encontrado';
+        $this->redirect($returnUrl);
+        return;
+    }
+
+    $db = \Database::singleton()->getConnection();
+    $db->beginTransaction();
+
+    try {
+        if ($partner) {
+            // ELIMINAR SOCIO (soft delete recomendado)
+            error_log("DEBUG - Eliminando socio ID: $id");
+            
+            // 1. Primero eliminar/desactivar el usuario asociado
+            if ($user) {
+                error_log("DEBUG - Desactivando usuario ID: " . $user['idUser']);
+                
+                // Soft delete del usuario (cambiar status a 0)
+                $userUpdateData = ['status' => 0];
+                if (!$userModel->update($user['idUser'], $userUpdateData)) {
+                    throw new \Exception("No se pudo desactivar el usuario del socio");
+                }
+            }
+            
+            // 2. Luego soft delete del partner
+            if (!$partnerModel->delete($id)) {
+                throw new \Exception("No se pudo eliminar el socio");
+            }
+            
+            $message = "Socio eliminado correctamente";
+            
+        } else if ($user) {
+            // ELIMINAR SOLO USUARIO (administrador)
+            error_log("DEBUG - Eliminando usuario ID: $id");
+            
+            // Soft delete del usuario
+            $userUpdateData = ['status' => 0];
+            if (!$userModel->update($id, $userUpdateData)) {
+                throw new \Exception("No se pudo eliminar el usuario");
+            }
+            
+            $message = "Usuario eliminado correctamente";
+        }
+
+        $db->commit();
+        error_log("DEBUG - Eliminación exitosa");
+        
+        $_SESSION['success_message'] = $message;
+        $this->redirect($returnUrl);
+        
+    } catch (\Throwable $e) {
+        $db->rollBack();
+        error_log("DEBUG - Error en eliminación: " . $e->getMessage());
+        error_log("DEBUG - Trace: " . $e->getTraceAsString());
+        
+        $_SESSION['error'] = $e->getMessage();
+        $this->redirect($returnUrl);
+    }
+}
 
     public function manageRegistrations(): void
     {

@@ -52,19 +52,89 @@ class Usuario
     // ===============            BÚSQUEDAS         =============
     // =========================================================
 
-    public function findById(int $id): ?array {
-        try {
-            $sql = "SELECT * FROM " . self::TABLE . "
-                    WHERE idUser = :id LIMIT 1";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
-        } catch (\PDOException $e) {
-            error_log("Error al buscar usuario por ID: " . $e->getMessage());
-            return null;
-        }
+    
+
+
+
+
+    /**
+ * Buscar usuario por ID (solo activos)
+ */
+public function findById(int $id): ?array {
+    try {
+        $sql = "SELECT * FROM " . self::TABLE . "
+                WHERE idUser = :id AND status = 1 LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    } catch (\PDOException $e) {
+        error_log("Error al buscar usuario por ID: " . $e->getMessage());
+        return null;
     }
+}
+
+/**
+ * Buscar usuario por ID incluyendo desactivados (para admin)
+ */
+public function findByIdIncludingInactive(int $id): ?array {
+    try {
+        $sql = "SELECT * FROM " . self::TABLE . "
+                WHERE idUser = :id LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    } catch (\PDOException $e) {
+        error_log("Error al buscar usuario por ID: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Buscar usuario por idPartner (solo activos)
+ */
+public function findByPartnerId(int $partnerId): ?array {
+    try {
+        error_log("DEBUG findByPartnerId - Buscando usuario activo con idPartner: $partnerId");
+        
+        $sql = "SELECT * FROM " . self::TABLE . " 
+                WHERE idPartner = :partnerId AND status = 1 LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':partnerId', $partnerId, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        error_log("DEBUG findByPartnerId - Resultado: " . print_r($result, true));
+        
+        return $result ?: null;
+        
+    } catch (\PDOException $e) {
+        error_log("DEBUG findByPartnerId - Error: " . $e->getMessage());
+        return null;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public function findByEmail(string $email): ?array {
         try {
@@ -104,7 +174,7 @@ class Usuario
             return null;
         }
     }
-
+/*
     public function findByPartnerId(int $partnerId): ?array {
         try {
             $sql = "SELECT * FROM " . self::TABLE . " WHERE idPartner = :partnerId LIMIT 1";
@@ -116,7 +186,11 @@ class Usuario
             error_log("Error al buscar usuario por Partner ID: " . $e->getMessage());
             return null;
         }
-    }
+    }*/
+
+    
+
+
 
     /** NUEVO: listado seguro (sin campos sensibles) */
     public function getAllUsers(): array {
@@ -172,111 +246,248 @@ class Usuario
     // ===============      CREAR / ACTUALIZAR     =============
     // =========================================================
 
+  
+
+
+
     /**
-     * CREATE híbrido:
-     * - Si pasas un array (nuevo diseño), lo usa.
-     * - Si pasas parámetros sueltos (viejo controlador), también funciona.
-     */
-    public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): bool {
-        try {
-            // Normalizamos a array de datos
-            if (is_array($loginOrData)) {
-                $data = $loginOrData;
+ * Método create corregido para los campos reales de la tabla user
+ * Campos reales: idUser, login, password, tokenRecovery, tokenExpiration, 
+ * email, firstSession, status, idRol, idPartner
+ */
+public function create($loginOrData, $password = null, $email = null, $idRole = null, $idPartner = null): bool {
+    try {
+        error_log("DEBUG Usuario::create - Parámetros recibidos:");
+        error_log("- loginOrData: " . print_r($loginOrData, true));
+        error_log("- email: " . print_r($email, true));
+        error_log("- idRole: " . print_r($idRole, true));
+        error_log("- idPartner: " . print_r($idPartner, true));
+        
+        // Normalizamos a array de datos
+        if (is_array($loginOrData)) {
+            $data = $loginOrData;
+            error_log("DEBUG - Usando formato array");
+        } else {
+            $data = [
+                'login'     => (string)$loginOrData,
+                'password'  => (string)$password,
+                'email'     => $email,
+                'idRole'    => $idRole,
+                'idPartner' => $idPartner,
+            ];
+            error_log("DEBUG - Convertido a array: " . print_r($data, true));
+        }
+
+        // Mapear idRole -> idRol
+        if (isset($data['idRole']) && !isset($data['idRol'])) {
+            $data['idRol'] = (int)$data['idRole'];
+            error_log("DEBUG - Mapeado idRole a idRol: " . $data['idRol']);
+        }
+
+        // SQL con los campos reales de la tabla user
+        $sql = "INSERT INTO " . self::TABLE . "
+                (login, password, email, firstSession, status, idRol, idPartner)
+                VALUES (:login, :password, :email, :firstSession, :status, :idRol, :idPartner)";
+
+        error_log("DEBUG - SQL: " . $sql);
+
+        $stmt = $this->db->prepare($sql);
+
+        // Hashear password si llega en claro
+        $hashed = isset($data['password']) && $data['password'] !== null && $data['password'] !== ''
+            ? password_hash($data['password'], PASSWORD_DEFAULT)
+            : null;
+
+        // Preparar valores para binding con los campos reales
+        $values = [
+            ':login'       => $data['login'] ?? null,
+            ':password'    => $hashed,
+            ':email'       => $data['email'] ?? null,
+            ':firstSession' => (int)($data['firstSession'] ?? 1), // 1 = primer inicio de sesión
+            ':status'      => (int)($data['status'] ?? 1), // 1 = activo
+            ':idRol'       => (int)($data['idRol'] ?? 0),
+            ':idPartner'   => $data['idPartner'] ?? null,
+        ];
+
+        error_log("DEBUG - Valores para binding: " . print_r($values, true));
+
+        // Hacer el binding
+        foreach ($values as $key => $value) {
+            if ($value === null) {
+                $stmt->bindValue($key, null, \PDO::PARAM_NULL);
+            } elseif (is_int($value)) {
+                $stmt->bindValue($key, $value, \PDO::PARAM_INT);
             } else {
-                $data = [
-                    'login'     => (string)$loginOrData,
-                    'password'  => (string)$password,
-                    'email'     => $email,
-                    // controlador usa idRole; la columna es idRol
-                    'idRole'    => $idRole,
-                    'idPartner' => $idPartner,
-                    'name'      => $data['name'] ?? null,
-                ];
+                $stmt->bindValue($key, $value, \PDO::PARAM_STR);
             }
+        }
 
-            // Mapear idRole -> idRol
-            if (isset($data['idRole']) && !isset($data['idRol'])) {
-                $data['idRol'] = (int)$data['idRole'];
-            }
-
-            $sql = "INSERT INTO " . self::TABLE . "
-                    (login, password, email, name, firstLogin, idRol, idPartner, google_id, picture, created_at)
-                    VALUES (:login, :password, :email, :name, :firstLogin, :idRol, :idPartner, :google_id, :picture, NOW())";
-
-            $stmt = $this->db->prepare($sql);
-
-            // Hashear password si llega en claro
-            $hashed = isset($data['password']) && $data['password'] !== null
-                ? password_hash($data['password'], PASSWORD_DEFAULT)
-                : null;
-
-            $stmt->bindValue(':login',      $data['login']    ?? null, \PDO::PARAM_STR);
-            $stmt->bindValue(':password',   $hashed,                         \PDO::PARAM_STR);
-            $stmt->bindValue(':email',      $data['email']    ?? null, \PDO::PARAM_STR);
-            $stmt->bindValue(':name',       $data['name']     ?? null, \PDO::PARAM_STR);
-            $stmt->bindValue(':firstLogin', (int)($data['firstLogin'] ?? 0), \PDO::PARAM_INT);
-            $stmt->bindValue(':idRol',      (int)($data['idRol'] ?? 0), \PDO::PARAM_INT);
-            $stmt->bindValue(':idPartner',  $data['idPartner'] ?? null, $data['idPartner'] === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
-            $stmt->bindValue(':google_id',  $data['google_id'] ?? null, \PDO::PARAM_STR);
-            $stmt->bindValue(':picture',    $data['picture']   ?? null, \PDO::PARAM_STR);
-
-            return $stmt->execute();
-        } catch (\PDOException $e) {
-            error_log("Error al crear usuario: " . $e->getMessage());
+        $result = $stmt->execute();
+        
+        error_log("DEBUG - Execute result: " . ($result ? 'TRUE' : 'FALSE'));
+        
+        if (!$result) {
+            $errorInfo = $stmt->errorInfo();
+            error_log("DEBUG - Statement error: " . print_r($errorInfo, true));
             return false;
         }
+
+        $lastId = $this->db->lastInsertId();
+        error_log("DEBUG - Last insert ID: " . $lastId);
+        
+        return $result;
+        
+    } catch (\PDOException $e) {
+        error_log("DEBUG - PDO Exception: " . $e->getMessage());
+        error_log("DEBUG - Error code: " . $e->getCode());
+        return false;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * UPDATE híbrido: NO FUNCIONA LOS CAMPOS ESTAN MAL
      * - Nuevo: update(int $id, array $data)
      * - Viejo: update($id, $login, $password, $idRole, $idPartner)
      */
-    public function update($id, $dataOrLogin, $password = null, $idRole = null, $idPartner = null): bool {
-        try {
-            $id = (int)$id;
-            $data = is_array($dataOrLogin) ? $dataOrLogin : [
+    /**
+ * UPDATE con debug mejorado para los campos reales de la tabla user
+ */
+public function update($id, $dataOrLogin, $password = null, $idRole = null, $idPartner = null): bool {
+    try {
+        $id = (int)$id;
+        
+        error_log("DEBUG Usuario::update - Parámetros recibidos:");
+        error_log("- ID: " . $id);
+        error_log("- dataOrLogin: " . print_r($dataOrLogin, true));
+        error_log("- password: " . (is_string($password) ? '[HIDDEN]' : print_r($password, true)));
+        error_log("- idRole: " . print_r($idRole, true));
+        error_log("- idPartner: " . print_r($idPartner, true));
+        
+        // Normalizar datos
+        if (is_array($dataOrLogin)) {
+            $data = $dataOrLogin;
+            error_log("DEBUG - Usando formato array");
+        } else {
+            $data = [
                 'login'     => $dataOrLogin,
                 'password'  => $password,
                 'idRole'    => $idRole,
                 'idPartner' => $idPartner,
             ];
+            error_log("DEBUG - Convertido a array: " . print_r($data, true));
+        }
 
-            // Mapear idRole -> idRol
-            if (isset($data['idRole']) && !isset($data['idRol'])) {
-                $data['idRol'] = (int)$data['idRole'];
-            }
+        // Mapear idRole -> idRol
+        if (isset($data['idRole']) && !isset($data['idRol'])) {
+            $data['idRol'] = (int)$data['idRole'];
+            error_log("DEBUG - Mapeado idRole a idRol: " . $data['idRol']);
+        }
 
-            $fields = [];
-            $params = [':id' => $id];
+        // Construir campos para actualizar (solo campos reales de la tabla)
+        $fields = [];
+        $params = [':id' => $id];
 
-            $allowed = ['login','password','email','name','idRol','idPartner','google_id','picture','firstLogin'];
-            foreach ($allowed as $f) {
-                if (array_key_exists($f, $data)) {
-                    $fields[] = "$f = :$f";
-                    if ($f === 'password' && $data[$f] !== null && $data[$f] !== '') {
-                        $params[":$f"] = password_hash($data[$f], PASSWORD_DEFAULT);
-                    } else {
-                        $params[":$f"] = $data[$f];
-                    }
+        // Campos permitidos en la tabla user
+        $allowed = ['login', 'password', 'email', 'firstSession', 'status', 'idRol', 'idPartner'];
+        
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "`$field` = :$field";
+                
+                if ($field === 'password' && $data[$field] !== null && $data[$field] !== '') {
+                    // Solo hashear si se proporciona nueva contraseña
+                    $params[":$field"] = password_hash($data[$field], PASSWORD_DEFAULT);
+                    error_log("DEBUG - Hasheando nueva contraseña");
+                } else {
+                    $params[":$field"] = $data[$field];
                 }
+                
+                error_log("DEBUG - Campo $field: " . ($field === 'password' ? '[HIDDEN]' : $data[$field]));
             }
-            if (!$fields) return true;
+        }
 
-            $sql = "UPDATE " . self::TABLE . "
-                    SET " . implode(', ', $fields) . ", updated_at = NOW()
-                    WHERE idUser = :id";
+        if (empty($fields)) {
+            error_log("DEBUG - No hay campos para actualizar");
+            return true; // No hay nada que actualizar
+        }
 
-            $stmt = $this->db->prepare($sql);
-            foreach ($params as $k => $v) {
-                $stmt->bindValue($k, $v, $v === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
-            }
-            return $stmt->execute();
-        } catch (\PDOException $e) {
-            error_log("Error al actualizar usuario: " . $e->getMessage());
+        $sql = "UPDATE " . self::TABLE . " 
+                SET " . implode(', ', $fields) . " 
+                WHERE idUser = :id";
+
+        error_log("DEBUG - SQL: " . $sql);
+        error_log("DEBUG - Parámetros: " . print_r($params, true));
+
+        $stmt = $this->db->prepare($sql);
+        
+        if (!$stmt) {
+            $error = $this->db->errorInfo();
+            error_log("DEBUG - Error preparando statement: " . print_r($error, true));
             return false;
         }
+
+        // Bind parameters
+        foreach ($params as $key => $value) {
+            if ($value === null) {
+                $stmt->bindValue($key, null, \PDO::PARAM_NULL);
+            } elseif (is_int($value)) {
+                $stmt->bindValue($key, $value, \PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue($key, $value, \PDO::PARAM_STR);
+            }
+            error_log("DEBUG - Binding $key: " . ($key === ':password' ? '[HIDDEN]' : $value));
+        }
+
+        $result = $stmt->execute();
+        
+        error_log("DEBUG - Execute result: " . ($result ? 'TRUE' : 'FALSE'));
+        
+        if (!$result) {
+            $errorInfo = $stmt->errorInfo();
+            error_log("DEBUG - Statement error: " . print_r($errorInfo, true));
+            return false;
+        }
+
+        $rowCount = $stmt->rowCount();
+        error_log("DEBUG - Rows affected: " . $rowCount);
+        
+        // Verificar que el usuario existe
+        if ($rowCount === 0) {
+            error_log("DEBUG - ADVERTENCIA: 0 filas afectadas. ¿El usuario ID $id existe?");
+            // Verificar si el usuario existe
+            $checkSql = "SELECT COUNT(*) FROM " . self::TABLE . " WHERE idUser = :id";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            $checkStmt->execute();
+            $exists = $checkStmt->fetchColumn();
+            error_log("DEBUG - Usuario ID $id " . ($exists ? 'SÍ existe' : 'NO existe'));
+        }
+
+        return $result;
+        
+    } catch (\PDOException $e) {
+        error_log("DEBUG - PDO Exception en update: " . $e->getMessage());
+        error_log("DEBUG - Error code: " . $e->getCode());
+        error_log("DEBUG - SQL State: " . ($e->errorInfo[0] ?? 'N/A'));
+        return false;
+    } catch (\Throwable $e) {
+        error_log("DEBUG - Exception general en update: " . $e->getMessage());
+        return false;
     }
+}
 
     /** Tu versión: crear desde Google (devuelve id o false) */
     public function createFromGoogle(array $googleData): int|false {
@@ -405,17 +616,72 @@ class Usuario
     // ===============           UTILIDADES        =============
     // =========================================================
 
-    public function delete(int $id): bool {
-        try {
-            $sql = "DELETE FROM " . self::TABLE . " WHERE idUser = :id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (\PDOException $e) {
-            error_log("Error al eliminar usuario: " . $e->getMessage());
-            return false;
+    /**
+ * Soft delete - cambiar status a 0 en lugar de eliminar el registro
+ * Es mejor práctica mantener los datos históricos
+ */
+public function delete(int $id): bool {
+    try {
+        error_log("DEBUG Usuario::delete - Desactivando usuario ID: $id");
+        
+        // Soft delete: cambiar status a 0 en lugar de DELETE
+        $sql = "UPDATE " . self::TABLE . " SET status = 0 WHERE idUser = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        
+        $result = $stmt->execute();
+        
+        error_log("DEBUG Usuario::delete - Resultado: " . ($result ? 'SUCCESS' : 'FAILED'));
+        
+        if (!$result) {
+            $errorInfo = $stmt->errorInfo();
+            error_log("DEBUG Usuario::delete - Error: " . print_r($errorInfo, true));
         }
+        
+        return $result;
+        
+    } catch (\PDOException $e) {
+        error_log("Error al desactivar usuario: " . $e->getMessage());
+        return false;
     }
+}
+
+/**
+ * Hard delete - eliminar completamente el registro (usar solo cuando sea necesario)
+ */
+public function hardDelete(int $id): bool {
+    try {
+        error_log("DEBUG Usuario::hardDelete - Eliminando completamente usuario ID: $id");
+        
+        $sql = "DELETE FROM " . self::TABLE . " WHERE idUser = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        
+        $result = $stmt->execute();
+        
+        error_log("DEBUG Usuario::hardDelete - Resultado: " . ($result ? 'SUCCESS' : 'FAILED'));
+        
+        return $result;
+        
+    } catch (\PDOException $e) {
+        error_log("Error al eliminar usuario completamente: " . $e->getMessage());
+        return false;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /** Tu versión: verificar si existe email */
     public function emailExists(string $email, ?int $excludeUserId = null): bool {

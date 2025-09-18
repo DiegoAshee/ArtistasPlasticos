@@ -11,12 +11,12 @@ if (!function_exists('asset')) {
 }
 
 // Set up variables for the layout
-$title = 'Editar ' . (($user['idRole'] ?? 2) == 2 ? 'Socio' : 'Usuario');
+$title = 'Editar ' . (($user['idRol'] ?? 2) == 2 ? 'Socio' : 'Usuario');
 $currentPath = 'partner/edit';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Socios', 'url' => u('partner/list')],
-    ['label' => 'Editar ' . (($user['idRole'] ?? 2) == 2 ? 'Socio' : 'Usuario'), 'url' => null],
+    ['label' => 'Editar ' . (($user['idRol'] ?? 2) == 2 ? 'Socio' : 'Usuario'), 'url' => null],
 ];
 
 // Start output buffering for the content
@@ -152,7 +152,7 @@ ob_start();
     }
 
     .btn-cancel {
-        background:rgb(250, 16, 16);
+        background: #fef2f2;
         color: #7f1d1d;
         border: 1px solid #dc2626;
         padding: 1rem 2.5rem;
@@ -265,7 +265,7 @@ ob_start();
 
 <div class="content-wrapper">
     <div class="edit-container">
-        <h1 class="edit-title">Editar <?= ($user['idRole'] ?? 2) == 2 ? 'Socio' : 'Usuario' ?></h1>
+        <h1 class="edit-title">Editar <?= ($user['idRol'] ?? 2) == 2 ? 'Socio' : 'Usuario' ?></h1>
         
         <?php if (isset($error)): ?>
             <div class="error-message">
@@ -283,8 +283,8 @@ ob_start();
                     <div class="form-group">
                         <label for="idRole">Tipo de Usuario</label>
                         <select name="idRole" id="idRole" onchange="togglePartnerFields()" required>
-                            <option value="1" <?= ($user['idRole'] ?? 2) == 1 ? 'selected' : '' ?>>Administrador</option>
-                            <option value="2" <?= ($user['idRole'] ?? 2) == 2 ? 'selected' : '' ?>>Socio</option>
+                            <option value="1" <?= ($user['idRol'] ?? 2) == 1 ? 'selected' : '' ?>>Administrador</option>
+                            <option value="2" <?= ($user['idRol'] ?? 2) == 2 ? 'selected' : '' ?>>Socio</option>
                         </select>
                     </div>
                 </div>
@@ -312,7 +312,7 @@ ob_start();
                         </div>
                         <div class="form-group">
                             <label for="ci">Cédula de Identidad</label>
-                            <input type="text" name="ci" id="ci" value="<?= htmlspecialchars($partner['CI'] ?? '') ?>">
+                            <input type="text" name="ci" id="ci" value="<?= htmlspecialchars($partner['ci'] ?? '') ?>">
                         </div>
                     </div>
                     
@@ -344,7 +344,7 @@ ob_start();
                 <button type="submit" class="btn-submit">
                     <i class="fas fa-save"></i> Guardar Cambios
                 </button>
-                <a href="/partner/list" class="btn-cancel">
+                <a href="<?= u('partner/list') ?>" class="btn-cancel">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
             </div>
