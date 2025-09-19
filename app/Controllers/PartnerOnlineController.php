@@ -66,10 +66,6 @@ class PartnerOnlineController extends BaseController
     }
 
 
-
-
-
-
     //mostrar solicitudes 
 
     // app/Controllers/PartnerOnlineController.php

@@ -107,7 +107,7 @@ class PartnerOnline {
     }
     public function getAllPending(): array {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM " . self::TBL . " WHERE isverified=1 ORDER BY idPartnerOnline DESC");
+            $stmt = $this->db->prepare("SELECT * FROM " . self::TBL . " WHERE dateConfirmation IS NULL AND isverified=1 ORDER BY idPartnerOnline DESC");
             $stmt->execute();
             return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
         } catch (\PDOException $e) {
