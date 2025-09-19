@@ -348,6 +348,7 @@ ob_start();
         <option value="100" <?= $pageSize===100?'selected':'' ?>>100</option>
       </select>
     </form>
+    <h1>hola</h1>
 
     <div class="pagination-info">Página <?= $page ?> de <?= $totalPg ?> (<?= number_format($total) ?> registros)</div>
     
