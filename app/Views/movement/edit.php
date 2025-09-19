@@ -9,12 +9,11 @@ if (!function_exists('u')) {
 if (!function_exists('asset')) {
     function asset(string $path): string { return u($path); }
 }
-?>
 
-<?php
 // Set up variables for the layout
-$title = 'Editar Movimiento - Asociación de Artistas';
+$title = 'Editar Movimiento';
 $currentPath = 'movement/edit';
+$formAction = u('movement/update/' . $movement['idMovement']);
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Movimientos', 'url' => u('movement/list')],
@@ -24,35 +23,28 @@ $breadcrumbs = [
 // Start output buffering
 ob_start();
 ?>
+
 <style>
-    .edit-container {
-        background: var(--surface);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-md);
-        padding: 2.5rem 3rem;
-        margin: 1rem auto;
-        max-width: 1200px;
-        width: calc(100% - 2rem);
-        border: 1px solid var(--border);
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
-
-    .edit-title {
-        color: var(--cream-900);
-        font-size: 2rem;
-        font-weight: 700;
-        margin: 0 0 2.5rem 0;
+    
+    .form-header {
         text-align: center;
-        position: relative;
-        padding-bottom: 1.25rem;
-        font-family: 'Playfair Display', serif;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
     }
-
-    .edit-title:after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
+    
+    .form-header h1 {
+        color: #2c3e50;
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
         width: 100px;
         height: 4px;
         background: var(--cream-600);

@@ -15,6 +15,34 @@ class Usuario
     public function __construct() {
         $this->db = Database::singleton()->getConnection();
     }
+    
+    /**
+     * Obtiene todos los usuarios
+     * @return array Lista de usuarios
+     */
+    public function getAll() {
+        try {
+            $query = "SELECT u.*, p.name as partner_name, p.lastName as partner_lastname 
+                     FROM " . self::TABLE . " u
+                     LEFT JOIN " . self::TABLE2 . " p ON u.idPartner = p.idPartner
+                     ORDER BY p.lastName, p.name ASC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Ocultar información sensible
+            foreach ($users as &$user) {
+                unset($user['password'], $user['tokenRecovery'], $user['tokenExpiration']);
+            }
+            
+            return $users;
+        } catch (PDOException $e) {
+            error_log("Error en Usuario::getAll(): " . $e->getMessage());
+            return [];
+        }
+    }
 
     // =========================================================
     // ===============        AUTENTICACIÓN        =============
