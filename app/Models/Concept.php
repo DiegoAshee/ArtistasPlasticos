@@ -1,115 +1,165 @@
 <?php
 // app/Models/Concept.php
+declare(strict_types=1);
 
 require_once __DIR__ . '/../Config/database.php';
 
-class Concept {
-    private const TBL = '`concept`';
-    private $db;
+class Concept
+{
+    private $lastError = [];
 
-    public function __construct() {
-        $this->db = Database::singleton()->getConnection();
+    public function getLastError(): array {
+        return $this->lastError;
+    }
+
+    private function setError(string $message, $code = 0): void {
+        $this->lastError = [
+            'message' => $message,
+            'code'    => is_numeric($code) ? (int)$code : 0
+        ];
     }
 
     /**
-     * Obtiene todos los conceptos
-     * @return array Lista de conceptos
+     * Listar todos los conceptos con filtros y paginación
      */
-    public function getAll() {
+    public function listAll(array $filters = [], int $page = 1, int $pageSize = 20): array
+    {
+        $db = Database::singleton()->getConnection();
+        $where = [];
+        $params = [];
+
+        if (!empty($filters['q'])) {
+            $where[] = "description LIKE :q";
+            $params[':q'] = '%' . $filters['q'] . '%';
+        }
+        if (!empty($filters['type'])) {
+            $where[] = "type = :type";
+            $params[':type'] = $filters['type'];
+        }
+        if (!empty($filters['from'])) {
+            $where[] = "dateCreation >= :from";
+            $params[':from'] = $filters['from'] . " 00:00:00";
+        }
+        if (!empty($filters['to'])) {
+            $where[] = "dateCreation <= :to";
+            $params[':to'] = $filters['to'] . " 23:59:59";
+        }
+
+        $sqlWhere = $where ? "WHERE " . implode(" AND ", $where) : "";
+
         try {
-            $query = "SELECT * FROM " . self::TBL . " ORDER BY name ASC";
-            $stmt = $this->db->prepare($query);
+            // Total
+            $stmt = $db->prepare("SELECT COUNT(*) FROM concept $sqlWhere");
+            $stmt->execute($params);
+            $total = (int)$stmt->fetchColumn();
+
+            $offset = ($page - 1) * $pageSize;
+            $sql = "SELECT * FROM concept $sqlWhere 
+                    ORDER BY idConcept DESC 
+                    LIMIT :offset, :limit";
+            $stmt = $db->prepare($sql);
+
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $pageSize, \PDO::PARAM_INT);
+
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en Concept::getAll(): " . $e->getMessage());
-            return [];
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+            return [
+                'rows'       => $rows,
+                'total'      => $total,
+                'page'       => $page,
+                'pageSize'   => $pageSize,
+                'totalPages' => ceil($total / $pageSize),
+            ];
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return ['rows'=>[], 'total'=>0, 'page'=>$page, 'pageSize'=>$pageSize, 'totalPages'=>0];
         }
     }
 
-    /**
-     * Obtiene un concepto por su ID
-     * @param int $id ID del concepto
-     * @return array|false Datos del concepto o false si no se encuentra
-     */
-    public function getById($id) {
+    public function find(int $id): ?array
+    {
+        $db = Database::singleton()->getConnection();
         try {
-            $query = "SELECT * FROM " . self::TBL . " WHERE idConcept = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt = $db->prepare("SELECT * FROM concept WHERE idConcept = :id");
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en Concept::getById(): " . $e->getMessage());
-            return false;
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return null;
         }
     }
 
-    /**
-     * Crea un nuevo concepto
-     * @param array $data Datos del concepto
-     * @return int|false ID del concepto creado o false en caso de error
-     */
-    public function create($data) {
+    public function create(string $description, string $type): int|false
+    {
+        $db = Database::singleton()->getConnection();
         try {
-            $query = "INSERT INTO " . self::TBL . " (name, description, type, dateCreation) 
-                     VALUES (:name, :description, :type, NOW())";
-            $stmt = $this->db->prepare($query);
-            
-            $stmt->bindParam(':name', $data['name'], PDO::PARAM_STR);
-            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
-            $stmt->bindParam(':type', $data['type'], PDO::PARAM_STR);
-            
+            $sql = "INSERT INTO concept (description, type, dateCreation) 
+                    VALUES (:description, :type, NOW())";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':description', trim($description));
+            $stmt->bindValue(':type', $type);
             if ($stmt->execute()) {
-                return $this->db->lastInsertId();
+                return (int)$db->lastInsertId();
             }
             return false;
-        } catch (PDOException $e) {
-            error_log("Error en Concept::create(): " . $e->getMessage());
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
             return false;
         }
     }
 
-    /**
-     * Actualiza un concepto existente
-     * @param int $id ID del concepto a actualizar
-     * @param array $data Nuevos datos del concepto
-     * @return bool True si se actualizó correctamente, false en caso contrario
-     */
-    public function update($id, $data) {
+    /*public function update(int $id, string $description, string $type): bool
+    {
+        $db = Database::singleton()->getConnection();
         try {
-            $query = "UPDATE " . self::TBL . " SET 
-                     name = :name, 
-                     description = :description, 
-                     type = :type 
-                     WHERE idConcept = :id";
-            
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':name', $data['name'], PDO::PARAM_STR);
-            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
-            $stmt->bindParam(':type', $data['type'], PDO::PARAM_STR);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            
+            $sql = "UPDATE concept 
+                    SET description = :description, type = :type 
+                    WHERE idConcept = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':description', trim($description));
+            $stmt->bindValue(':type', $type);
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
             return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Error en Concept::update(): " . $e->getMessage());
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return false;
+        }
+    }*/
+
+    public function update(int $id, string $description): bool
+    {
+        $db = Database::singleton()->getConnection();
+        try {
+            $sql = "UPDATE concept 
+                    SET description = :description 
+                    WHERE idConcept = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':description', trim($description));
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
             return false;
         }
     }
 
-    /**
-     * Elimina un concepto
-     * @param int $id ID del concepto a eliminar
-     * @return bool True si se eliminó correctamente, false en caso contrario
-     */
-    public function delete($id) {
+
+    public function delete(int $id): bool
+    {
+        $db = Database::singleton()->getConnection();
         try {
-            $query = "DELETE FROM " . self::TBL . " WHERE idConcept = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt = $db->prepare("DELETE FROM concept WHERE idConcept = :id");
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
             return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Error en Concept::delete(): " . $e->getMessage());
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
             return false;
         }
     }
