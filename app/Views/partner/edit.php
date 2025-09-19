@@ -338,7 +338,7 @@ ob_start();
                 
                 <div class="form-section">
                     <h2 class="section-title">Documentos de Identidad</h2>
-                    <p>Puede actualizar las imágenes de la cédula de identidad (formato JPG o PNG, máximo 2MB cada una)</p>
+                    <p style="color:black">Puede actualizar las imágenes de la cédula de identidad (formato JPG o PNG, máximo 2MB cada una)</p>
                     
                     <div class="image-upload-container">
                         <div class="image-upload-box" onclick="document.getElementById('frontImage').click()">
