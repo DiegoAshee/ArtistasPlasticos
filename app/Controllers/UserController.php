@@ -67,30 +67,50 @@ class UserController extends BaseController
     }
 
     public function listUsers(): void
-    {
-        $this->startSession();
-        if (!isset($_SESSION['user_id'])) { 
-            $this->redirect('login'); 
-        }
-
-        // Menú dinámico desde BD (según rol)
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        // Usuarios administradores desde tu modelo
-        require_once __DIR__ . '/../Models/Usuario.php';
-        $userModel = new \Usuario();
-        $users = $userModel->getUsersAdmin();
-
-        // Render
-        $this->view('users/list', [
-            'users'       => $users,
-            'menuOptions' => $menuOptions, // ← lo consumen los partials (sidebar)
-            'roleId'      => $roleId,
-            // 'currentPath' lo fija la propia vista como 'users'
-        ]);
+{
+    $this->startSession();
+    if (!isset($_SESSION['user_id'])) { 
+        $this->redirect('login'); 
     }
+
+    // Debug: verificar sesión
+    error_log("DEBUG UserController::listUsers - Usuario en sesión: " . ($_SESSION['user_id'] ?? 'NO_ID'));
+    error_log("DEBUG UserController::listUsers - Rol: " . ($_SESSION['role'] ?? 'NO_ROLE'));
+
+    // Menú dinámico desde BD (según rol)
+    require_once __DIR__ . '/../Models/Competence.php';
+    $roleId = (int)($_SESSION['role'] ?? 2);
+    $menuOptions = (new \Competence())->getByRole($roleId);
+
+    // Usuarios administradores desde tu modelo
+    require_once __DIR__ . '/../Models/Usuario.php';
+    $userModel = new \Usuario();
+    $users = $userModel->getUsersAdmin();
+
+    // Debug: verificar datos
+    error_log("DEBUG UserController::listUsers - Total usuarios obtenidos: " . count($users));
+    if (!empty($users)) {
+        error_log("DEBUG UserController::listUsers - Primer usuario: " . print_r($users[0], true));
+    } else {
+        error_log("DEBUG UserController::listUsers - ADVERTENCIA: Array de usuarios está vacío");
+        
+        // Hacer una consulta de debug adicional
+        try {
+            $debugUsers = $userModel->getAll(); // Este método sí debería devolver datos
+            error_log("DEBUG UserController::listUsers - Usuarios con getAll(): " . count($debugUsers));
+        } catch (Exception $e) {
+            error_log("DEBUG UserController::listUsers - Error en getAll(): " . $e->getMessage());
+        }
+    }
+
+    // Render
+    $this->view('users/list', [
+        'users'       => $users,
+        'menuOptions' => $menuOptions, // ← lo consumen los partials (sidebar)
+        'roleId'      => $roleId,
+        // 'currentPath' lo fija la propia vista como 'users'
+    ]);
+}
      
       public function createAdmin(): void
     {
