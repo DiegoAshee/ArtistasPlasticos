@@ -227,7 +227,7 @@ ob_start();
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Editar Rol</h2>
-        <?php if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
+        <?php //if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
         <form method="POST" action="<?= u('role/list') ?>">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="updateId">
