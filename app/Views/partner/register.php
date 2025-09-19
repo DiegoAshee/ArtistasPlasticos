@@ -146,6 +146,231 @@ $formData = $form_data ?? [];
             .register-container { padding:28px 18px 22px 18px; }
             .form-row { flex-direction:column; gap:0; }
         }
+        /* Modal de validación de archivos */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(188, 164, 120, 0.3);
+    max-width: 420px;
+    width: 90%;
+    padding: 0;
+    transform: scale(0.8) translateY(-20px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    padding: 32px 32px 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(188, 164, 120, 0.15);
+}
+
+.modal-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.modal-icon::before {
+    content: "⚠";
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.modal-title {
+    color: #9c8f7a;
+    font-size: 1.5rem;
+    margin: 0 0 8px;
+    font-weight: 700;
+    font-family: 'Playfair Display', Georgia, serif;
+}
+
+.modal-subtitle {
+    color: #7a7164;
+    font-size: 0.95rem;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 24px 32px;
+}
+
+.file-error-info {
+    background: linear-gradient(135deg, #fff5f5, #ffeaea);
+    border: 1px solid #ffb3b3;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.file-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #ff9999, #ff6b6b);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+}
+
+.file-info-text h4 {
+    margin: 0 0 4px;
+    color: #d63384;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.file-info-text p {
+    margin: 0;
+    color: #6f4242;
+    font-size: 0.9rem;
+}
+
+.size-comparison {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.size-item {
+    text-align: center;
+    flex: 1;
+}
+
+.size-label {
+    font-size: 0.8rem;
+    color: #7a7164;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.size-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.size-current {
+    color: #dc3545;
+}
+
+.size-max {
+    color: #28a745;
+}
+
+.vs-separator {
+    font-size: 1.2rem;
+    color: #9c8f7a;
+    font-weight: bold;
+    margin: 0 16px;
+}
+
+.modal-footer {
+    padding: 16px 32px 32px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-understand {
+    background: linear-gradient(135deg, #bca478, #9c8f7a);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 32px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(188, 164, 120, 0.3);
+    letter-spacing: 0.3px;
+}
+
+.btn-understand:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(188, 164, 120, 0.4);
+    filter: brightness(1.05);
+}
+
+.btn-understand:active {
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+    
+    .size-comparison {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .vs-separator {
+        transform: rotate(90deg);
+        margin: 0;
+    }
+}
     </style>
     
     <script>
@@ -187,6 +412,95 @@ $formData = $form_data ?? [];
             
             return true;
         }
+        // Función para mostrar el modal personalizado
+    function showFileSizeModal(fileName, currentSizeMB, maxSizeMB) {
+        document.getElementById('fileName').textContent = fileName;
+        document.getElementById('currentSize').textContent = currentSizeMB.toFixed(1) + ' MB';
+        document.getElementById('maxSize').textContent = maxSizeMB.toFixed(1) + ' MB';
+        
+        const modal = document.getElementById('fileSizeModal');
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const btn = modal.querySelector('.btn-understand');
+            if (btn) btn.focus();
+        }, 300);
+    }
+
+    function closeFileSizeModal() {
+        const modal = document.getElementById('fileSizeModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    // Función para mostrar el nombre del archivo seleccionado
+    function showFileName(inputElement, displayElementId) {
+        const displayElement = document.getElementById(displayElementId);
+        if (inputElement.files && inputElement.files.length > 0) {
+            const fileName = inputElement.files[0].name;
+            const fileSize = (inputElement.files[0].size / (1024 * 1024)).toFixed(2);
+            displayElement.textContent = `Archivo seleccionado: ${fileName} (${fileSize} MB)`;
+            displayElement.style.color = '#2d5016';
+        } else {
+            displayElement.textContent = '';
+        }
+    }
+    
+    // Validación de tamaño de archivo actualizada
+    function validateFileSize(inputElement, maxSizeMB = 2) {
+        if (inputElement.files && inputElement.files.length > 0) {
+            const file = inputElement.files[0];
+            const fileSizeMB = file.size / (1024 * 1024);
+            
+            if (fileSizeMB > maxSizeMB) {
+                // Mostrar modal personalizado en lugar de alert
+                showFileSizeModal(file.name, fileSizeMB, maxSizeMB);
+                
+                // Limpiar el input
+                inputElement.value = '';
+                const infoElement = document.getElementById(inputElement.id.replace('Image', 'ImageInfo'));
+                if (infoElement) {
+                    infoElement.textContent = '';
+                }
+                
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    // Validar formulario antes de envío
+    function validateForm() {
+        const frontImage = document.getElementById('frontImage');
+        const backImage = document.getElementById('backImage');
+        
+        if (!validateFileSize(frontImage) || !validateFileSize(backImage)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Event listeners para el modal
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cerrar modal con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFileSizeModal();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        const modal = document.getElementById('fileSizeModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeFileSizeModal();
+                }
+            });
+        }
+    });
     </script>
 </head>
 <body>
@@ -299,5 +613,45 @@ $formData = $form_data ?? [];
             setTimeout(function(){ window.location.href = "<?= u('login') ?>"; }, 5000);
         </script>
     <?php endif; ?>
+    <!-- Modal de validación de archivos -->
+<div id="fileSizeModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-icon"></div>
+            <h3 class="modal-title">Archivo muy grande</h3>
+            <p class="modal-subtitle">El archivo seleccionado excede el tamaño permitido</p>
+        </div>
+        
+        <div class="modal-body">
+            <div class="file-error-info">
+                <div class="file-details">
+                    <div class="file-icon">📄</div>
+                    <div class="file-info-text">
+                        <h4 id="fileName">archivo.jpg</h4>
+                        <p>No se puede subir este archivo</p>
+                    </div>
+                </div>
+                
+                <div class="size-comparison">
+                    <div class="size-item">
+                        <div class="size-label">Tamaño actual</div>
+                        <div class="size-value size-current" id="currentSize">5.2 MB</div>
+                    </div>
+                    <div class="vs-separator">vs</div>
+                    <div class="size-item">
+                        <div class="size-label">Máximo permitido</div>
+                        <div class="size-value size-max" id="maxSize">2.0 MB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn-understand" onclick="closeFileSizeModal()">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
