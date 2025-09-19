@@ -872,7 +872,7 @@ class PartnerController extends BaseController
         }
     }
 
-    public function manageRegistrations(): void
+    /* public function manageRegistrations(): void
     {
         $this->startSession();
         if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
@@ -973,5 +973,5 @@ class PartnerController extends BaseController
             'successMessage' => $successMessage,
             'errorMessage'   => $errorMessage,
         ]);
-    }
+    } */
 }
