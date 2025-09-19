@@ -12,11 +12,11 @@ class Partner {
         $this->db = Database::singleton()->getConnection();
     }
 
-    public function create($name, $ci, $cellPhoneNumber, $address, $dateCreation, $birthday, $dateRegistration) {
+    public function create($name, $ci, $cellPhoneNumber, $address, $dateCreation, $birthday, $dateRegistration,$frontImageURL,$backImageURL) {
         try {
             // Generar URLs de imágenes automáticamente basadas en el CI
-            $frontImageURL = "images/carnets/front_" . $ci . ".png";
-            $backImageURL = "images/carnets/back_" . $ci . ".png";
+            /* $frontImageURL = "images/carnets/front_" . $ci . ".png";
+            $backImageURL = "images/carnets/back_" . $ci . ".png"; */
             
             $query = "INSERT INTO " . self::TBL . " 
                       (name, ci, cellPhoneNumber, address, dateCreation, birthday, dateRegistration, status, frontImageURL, backImageURL) 
