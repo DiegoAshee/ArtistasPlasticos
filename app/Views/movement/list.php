@@ -1,58 +1,92 @@
 <?php
 // app/Views/movement/list.php
 
-$title       = 'Movimientos';
-$currentPath = 'movement/list'; // para marcar activo en el menú
+$title = 'Movimientos';
+$currentPath = 'movement/list';
 $breadcrumbs = [
-  ['label' => 'Inicio', 'url' => u('dashboard')],
-  ['label' => 'Movimientos', 'url' => null],
+    ['label' => 'Inicio', 'url' => u('dashboard')],
+    ['label' => 'Movimientos', 'url' => null],
 ];
 
-// Métricas simples
-$totalMovimientos = is_array($movements ?? null) ? count($movements) : 0;
+// Calcular métricas
+$totalMovimientos = is_array($movements ?? []) ? count($movements) : 0;
 $montoTotal = 0;
 $movimientosHoy = 0;
+$hoy = date('Y-m-d');
+
 if (!empty($movements) && is_array($movements)) {
-    $hoy = date('Y-m-d');
     foreach ($movements as $m) {
         $montoTotal += (float)($m['amount'] ?? 0);
-        $dc = $m['dateCreation'] ?? null;
-        if ($dc && date('Y-m-d', strtotime($dc)) === $hoy) { $movimientosHoy++; }
+        $fechaMovimiento = $m['dateMovement'] ?? '';
+        if ($fechaMovimiento && date('Y-m-d', strtotime($fechaMovimiento)) === $hoy) {
+            $movimientosHoy++;
+        }
     }
 }
 
-// ---- Contenido específico de la página ----
 ob_start();
 ?>
-  <!-- Estilos para dar aire y encabezado pegajoso -->
-  <style>
-    .modern-table th, .modern-table td {
-      padding: 10px 14px;
-      line-height: 1.35;
-      vertical-align: middle;
-      color: #000000;
-    }
-    .modern-table { border-collapse: separate; border-spacing: 0 6px; }
-    .modern-table thead th {
-      position: sticky; top: 0;
-      background: #bbae97; color: #2a2a2a;
-      z-index: 2;
-    }
-    .modern-table tbody tr { background:#d7cbb5; }
-    .modern-table tbody tr:nth-child(even) { background: #dccaaf; }
-    .modern-table tbody tr td:first-child  { border-top-left-radius:10px; border-bottom-left-radius:10px; }
-    .modern-table tbody tr td:last-child   { border-top-right-radius:10px; border-bottom-right-radius:10px; }
 
-    /* contenedor de tabla */
-    .table-container { background:#cfc4b0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:auto; }
-    
-    /* Estilos para montos */
-    .amount-cell {
-      font-weight: 600;
-      font-family: 'Courier New', monospace;
+<!-- Estilos para la tabla de movimientos -->
+<style>
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+        margin: 0;
     }
-    .amount-positive { color: #27ae60; }
-    .amount-negative { color: #e74c3c; }
+    
+    .modern-table th, 
+    .modern-table td {
+        padding: 12px 16px;
+        vertical-align: middle;
+        color: #2d3436;
+    }
+    
+    .modern-table thead th {
+        position: sticky;
+        top: 0;
+        background: #2c3e50;
+        color: #fff;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .modern-table tbody tr {
+        background: #fff;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .modern-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .modern-table tbody tr td:first-child {
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+    
+    .modern-table tbody tr td:last-child {
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    
+    .table-container {
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+        margin-top: 24px;
+    }
+    
+    .amount-cell {
+        font-weight: 600;
+        text-align: right;
+    }
     
     /* Badge de estado */
     .status-badge {
@@ -124,14 +158,18 @@ ob_start();
       />
     </div>
 
-    <div style="display:flex;gap:12px;">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="startDate" style="font-size:0.85rem;color:#555;">Desde:</label>
+        <input type="date" id="startDate" style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;" />
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="endDate" style="font-size:0.85rem;color:#555;">Hasta:</label>
+        <input type="date" id="endDate" style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;" />
+      </div>
       <button id="exportPdfBtn" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
         <i class="fas fa-file-pdf"></i> Exportar PDF
       </button>
-      
-      <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
-        <i class="fas fa-plus"></i> Nuevo Movimiento
-      </a>
     </div>
   </div>
 
@@ -152,7 +190,10 @@ ob_start();
         </thead>
         <tbody>
           <?php foreach ($movements as $movement): ?>
-            <tr>
+            <?php
+              $dateAttr = !empty($movement['dateCreation']) ? date('Y-m-d', strtotime($movement['dateCreation'])) : '';
+            ?>
+            <tr data-date="<?= htmlspecialchars($dateAttr) ?>">
               <td title="<?= htmlspecialchars($movement['description'] ?? '') ?>">
                 <?php
                   $desc = (string)($movement['description'] ?? '');
@@ -180,12 +221,12 @@ ob_start();
               </td>
               <td class="actions">
                 <div class="action-buttons">
-                  <a href="<?= u('movement/edit/' . (int)($movement['idMovement'] ?? 0)) ?>" 
+                  <!-- <a href="<?= u('movement/edit/' . (int)($movement['idMovement'] ?? 0)) ?>" 
                     class="btn btn-sm btn-outline" 
                     title="Editar" 
                     style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #e1e5e9;color:#333;text-decoration:none;">
                     <i class="fas fa-edit"></i>
-                  </a>
+                  </a> -->
 
                   <button onclick="showDeleteModal(<?= (int)($movement['idMovement'] ?? 0) ?>, '<?= htmlspecialchars(addslashes($movement['description'] ?? ''), ENT_QUOTES) ?>')"
                     class="btn btn-sm btn-danger"
@@ -280,31 +321,59 @@ ob_start();
       }
     }
     
-    // Buscador en vivo
-    document.addEventListener('DOMContentLoaded', function() {
-      const searchInput = document.getElementById('searchInput');
-      const table = document.getElementById('tablaMovimientos');
-      
-      if (searchInput && table) {
-        searchInput.addEventListener('input', function() {
-          const searchTerm = this.value.toLowerCase();
-          const rows = table.querySelectorAll('tbody tr');
-          
-          rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            let found = false;
-            
-            cells.forEach(cell => {
-              if (cell.textContent.toLowerCase().includes(searchTerm)) {
-                found = true;
-              }
-            });
-            
-            row.style.display = found ? '' : 'none';
+    // Buscador en vivo + Filtro por rango de fechas
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const table = document.getElementById('tablaMovimientos');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    function normalize(dateStr) {
+      return dateStr ? dateStr : '';
+    }
+
+    function applyFilters() {
+      if (!table) return;
+      const rows = table.querySelectorAll('tbody tr');
+      const term = (searchInput?.value || '').toLowerCase();
+      const start = normalize(startDateInput?.value || '');
+      const end = normalize(endDateInput?.value || '');
+
+      rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date') || '';
+        // Filtrado por texto
+        let matchesText = true;
+        if (term) {
+          matchesText = false;
+          const cells = row.querySelectorAll('td');
+          cells.forEach(cell => {
+            if (cell.textContent.toLowerCase().includes(term)) {
+              matchesText = true;
+            }
           });
-        });
-      }
-    });
+        }
+
+        // Filtrado por fecha (inclusive)
+        let matchesDate = true;
+        if (start && rowDate && rowDate < start) {
+          matchesDate = false;
+        }
+        if (end && rowDate && rowDate > end) {
+          matchesDate = false;
+        }
+        // Si no hay fecha en la fila y el usuario usa filtros de fecha, ocultar
+        if ((start || end) && !rowDate) {
+          matchesDate = false;
+        }
+
+        row.style.display = (matchesText && matchesDate) ? '' : 'none';
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
+    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
+  });
   </script>
 
   <!-- Exportación PDF -->
@@ -334,8 +403,24 @@ ob_start();
           }
           
           const movements = result.data || [];
+          // Aplicar filtro por rango de fechas al PDF si el usuario lo configuró
+          const start = document.getElementById('startDate')?.value || '';
+          const end = document.getElementById('endDate')?.value || '';
+          const data = (start || end)
+            ? movements.filter(m => {
+                if (!m.dateCreation) return false;
+                try {
+                  const dStr = new Date(m.dateCreation).toISOString().slice(0,10); // YYYY-MM-DD
+                  if (start && dStr < start) return false;
+                  if (end && dStr > end) return false;
+                  return true;
+                } catch (_) {
+                  return false;
+                }
+              })
+            : movements;
           
-          if (movements.length === 0) {
+          if (data.length === 0) {
             throw new Error('No se encontraron movimientos para exportar');
           }
           
@@ -344,14 +429,16 @@ ob_start();
           
           // Título y fecha
           doc.setFontSize(20);
-          doc.text('Lista Completa de Movimientos', 15, 15);
+          doc.text('Lista  de Movimientos', 15, 15);
           
           doc.setFontSize(10);
           doc.text('Generado el: ' + new Date().toLocaleDateString(), 15, 25);
           
           // Cabeceras de tabla
           const headers = ['Descripción', 'Monto', 'Fecha', 'Tipo Pago', 'Concepto', 'Usuario'];
-          const columnPositions = [15, 80, 130, 170, 210, 250];
+          // Posiciones de columnas (x) y configuración de anchos
+          const columnPositions = [15, 130, 170, 200, 235, 270];
+          const descMaxWidth = 110; // Ancho máximo para ajuste de texto en descripción
           
           doc.setFontSize(8);
           doc.setFont('helvetica', 'bold');
@@ -366,19 +453,25 @@ ob_start();
           doc.setFontSize(7);
           
           let y = 45;
-          movements.forEach((movement, index) => {
-            if (y > 190) {
+          const topMargin = 20;
+          const headerY = 35;
+          const bottomMargin = 15;
+          const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+          const lineHeight = 5.5; // altura por línea
+          data.forEach((movement, index) => {
+            // Salto de página si no hay espacio suficiente para al menos una línea
+            if (y > (pageHeight - bottomMargin)) {
               doc.addPage();
-              y = 20;
+              y = topMargin;
               
               // Cabeceras en nueva página
               doc.setFontSize(8);
               doc.setFont('helvetica', 'bold');
               headers.forEach((header, i) => {
-                doc.text(header, columnPositions[i], y);
+                doc.text(header, columnPositions[i], y + 15);
               });
-              doc.line(15, y + 2, 280, y + 2);
-              y = 30;
+              doc.line(15, y + 17, 280, y + 17);
+              y = y + 25;
               doc.setFont('helvetica', 'normal');
               doc.setFontSize(7);
             }
@@ -393,20 +486,42 @@ ob_start();
               }
             };
             
-            const row = [
-              (movement.description || 'N/A').substring(0, 25),
-              'Bs. ' + parseFloat(movement.amount || 0).toFixed(2),
-              formatDate(movement.dateCreation),
-              (movement.payment_type_description || 'N/A').substring(0, 15),
-              (movement.concept_description || 'N/A').substring(0, 15),
-              (movement.user_login || 'N/A').substring(0, 15)
-            ];
+            // Preparar valores de la fila
+            const fullDesc = movement.description || 'N/A';
+            const wrappedDesc = doc.splitTextToSize(fullDesc, descMaxWidth);
+            const amountText = 'Bs. ' + parseFloat(movement.amount || 0).toFixed(2);
+            const dateText = formatDate(movement.dateCreation);
+            const payTypeText = (movement.payment_type_description || 'N/A');
+            const conceptText = (movement.concept_description || 'N/A');
+            const userText = (movement.user_login || 'N/A');
+
+            // Si no hay espacio suficiente para todas las líneas de la descripción, saltar de página
+            const neededHeight = lineHeight * (Array.isArray(wrappedDesc) ? wrappedDesc.length : 1);
+            if (y + neededHeight > (pageHeight - bottomMargin)) {
+              doc.addPage();
+              y = topMargin;
+              doc.setFontSize(8);
+              doc.setFont('helvetica', 'bold');
+              headers.forEach((header, i) => {
+                doc.text(header, columnPositions[i], y + 15);
+              });
+              doc.line(15, y + 17, 280, y + 17);
+              y = y + 25;
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7);
+            }
+
+            // Pintar la descripción en múltiples líneas si es necesario
+            doc.text(wrappedDesc, columnPositions[0], y);
+            // Pintar el resto de columnas alineadas con la primera línea
+            doc.text(amountText, columnPositions[1], y);
+            doc.text(dateText, columnPositions[2], y);
+            doc.text(payTypeText, columnPositions[3], y);
+            doc.text(conceptText, columnPositions[4], y);
+            doc.text(userText, columnPositions[5], y);
             
-            row.forEach((cell, i) => {
-              doc.text(cell, columnPositions[i], y);
-            });
-            
-            y += 8;
+            // Avanzar Y según líneas ocupadas por la descripción
+            y += neededHeight + 2;
           });
           
           // Números de página

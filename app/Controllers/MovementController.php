@@ -7,8 +7,27 @@ require_once __DIR__ . '/../Config/config.php';
 
 class MovementController extends BaseController
 {
+    private $movementModel;
+    private $conceptModel;
+    private $paymentTypeModel;
+    private $userModel;
+
+    public function __construct() {
+        parent::__construct();
+        require_once __DIR__ . '/../Models/Movement.php';
+        require_once __DIR__ . '/../Models/Concept.php';
+        require_once __DIR__ . '/../Models/PaymentType.php';
+        require_once __DIR__ . '/../Models/Usuario.php';
+        require_once __DIR__ . '/../Models/Competence.php';
+        
+        $this->movementModel = new \Movement();
+        $this->conceptModel = new \Concept();
+        $this->paymentTypeModel = new \PaymentType();
+        $this->userModel = new \Usuario();
+    }
+
     /**
-     * Show movements list
+     * List all movements
      */
     public function list(): void
     {
@@ -19,44 +38,53 @@ class MovementController extends BaseController
             return;
         }
 
-        // Get menu options for the sidebar
-        require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
+        $competenceModel = new \Competence();
+        $menuOptions = $competenceModel->getByRole($roleId);
 
-        // Mock data for movements (replace with real data later)
-         $movements = [
-            [
-                'idMovement' => 1,
-                'description' => 'Pago mensualidad enero',
-                'amount' => 150.00,
-                'dateCreation' => '2024-01-15 10:30:00',
-                'idPaymentType' => 1,
-                'idConcept' => 1,
-                'idUser' => 1,
-                'payment_type_description' => 'Efectivo',
-                'concept_description' => 'Mensualidad',
-                'user_login' => 'admin',
-                'user_email' => 'admin@test.com'
-            ],
-            [
-                'idMovement' => 2,
-                'description' => 'Compra materiales arte',
-                'amount' => 450.50,
-                'dateCreation' => '2024-01-14 15:20:00',
-                'idPaymentType' => 2,
-                'idConcept' => 2,
-                'idUser' => 2,
-                'payment_type_description' => 'Transferencia',
-                'concept_description' => 'Materiales',
-                'user_login' => 'usuario1',
-                'user_email' => 'usuario1@test.com'
-            ]
-        ];
+        // Obtener todos los movimientos con la información relacionada
+        $movements = $this->movementModel->getAllMovements();
+
+        // Obtener datos para la vista
+        $concepts = $this->conceptModel->getAll();
+        $users = $this->userModel->getAll();
+        $paymentTypes = $this->paymentTypeModel->getAll();
+
+        // Variables de filtros (compatibilidad con la vista)
+        $startDate = $_GET['start_date'] ?? null;
+        $endDate = $_GET['end_date'] ?? null;
+        $conceptId = $_GET['concept_id'] ?? null;
+        $userId = $_GET['user_id'] ?? null;
+
+        // Calculate totals
+        $totalAmount = array_reduce($movements, function($sum, $movement) {
+            return $sum + $movement['amount'];
+        }, 0);
+
+        $today = date('Y-m-d');
+        $todayMovements = array_filter($movements, function($movement) use ($today) {
+            return substr($movement['dateMovement'], 0, 10) === $today;
+        });
+
+        $todayTotal = array_reduce($todayMovements, function($sum, $movement) {
+            return $sum + $movement['amount'];
+        }, 0);
 
         // Prepare view data
         $viewData = [
             'movements' => $movements,
+            'concepts' => $concepts,
+            'paymentTypes' => $paymentTypes,
+            'users' => $users,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'concept_id' => $conceptId,
+                'user_id' => $userId
+            ],
+            'totalAmount' => $totalAmount,
+            'totalMovements' => count($movements),
+            'todayTotal' => $todayTotal,
             'menuOptions' => $menuOptions,
             'currentPath' => 'movement/list',
             'roleId' => $roleId
@@ -66,103 +94,20 @@ class MovementController extends BaseController
     }
 
     /**
-     * Show create form
+     * Show create form (disabled)
      */
     public function create(): void
     {
-        $this->startSession();
-
-        if (!isset($_SESSION['user_id'])) {
-            $this->redirect('login');
-            return;
-        }
-
-        // Get menu options for the sidebar
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        // Mock data for dropdowns (replace with real data later)
-        $paymentTypes = [
-            ['idPaymentType' => 1, 'description' => 'Efectivo'],
-            ['idPaymentType' => 2, 'description' => 'Transferencia Bancaria'],
-            ['idPaymentType' => 3, 'description' => 'Tarjeta de Crédito'],
-            ['idPaymentType' => 4, 'description' => 'QR']
-        ];
-
-        $concepts = [
-            ['idConcept' => 1, 'description' => 'Mensualidad'],
-            ['idConcept' => 2, 'description' => 'Materiales'],
-            ['idConcept' => 3, 'description' => 'Eventos'],
-            ['idConcept' => 4, 'description' => 'Donaciones']
-        ];
-
-        $users = [
-            ['idUser' => 1, 'login' => 'admin', 'email' => 'admin@test.com'],
-            ['idUser' => 2, 'login' => 'usuario1', 'email' => 'usuario1@test.com'],
-            ['idUser' => 3, 'login' => 'usuario2', 'email' => 'usuario2@test.com']
-        ];
-
-        // Prepare view data
-        $viewData = [
-            'paymentTypes' => $paymentTypes,
-            'concepts' => $concepts,
-            'users' => $users,
-            'menuOptions' => $menuOptions,
-            'currentPath' => 'movement/create',
-            'roleId' => $roleId
-        ];
-
-        // Add error message if exists
-        if (isset($_GET['error'])) {
-            $viewData['error'] = $_GET['error'];
-        }
-
-        $this->view('movement/create', $viewData);
+        // Crear movimiento deshabilitado: redirigir al listado
+        $this->redirect('movement/list');
     }
 
     /**
-     * Store new movement (mock)
+     * Store new movement (disabled)
      */
     public function store(): void
     {
-        $this->startSession();
-
-        if (!isset($_SESSION['user_id'])) {
-            $this->redirect('login');
-            return;
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('movement/create');
-            return;
-        }
-
-        // Mock validation - in real app would save to database
-        $error = null;
-
-        // Basic validation
-        if (empty($_POST['description'])) {
-            $error = "La descripción es requerida";
-        } elseif (empty($_POST['amount']) || !is_numeric($_POST['amount']) || (float)$_POST['amount'] <= 0) {
-            $error = "El monto debe ser un número válido mayor a 0";
-        } elseif (empty($_POST['dateCreation'])) {
-            $error = "La fecha de creación es requerida";
-        } elseif (empty($_POST['idPaymentType'])) {
-            $error = "Debe seleccionar un tipo de pago";
-        } elseif (empty($_POST['idConcept'])) {
-            $error = "Debe seleccionar un concepto";
-        } elseif (empty($_POST['idUser'])) {
-            $error = "Debe seleccionar un usuario";
-        }
-
-        if ($error) {
-            $this->redirect('movement/create?error=' . urlencode($error));
-            return;
-        }
-
-        // Mock success - in real app would save to database
-        // Here you would save to database and redirect to list
+        // Crear movimiento deshabilitado: redirigir al listado
         $this->redirect('movement/list');
     }
 
@@ -178,48 +123,22 @@ class MovementController extends BaseController
             return;
         }
 
-        // Get menu options for the sidebar
+        // Sidebar menu options
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new \Competence())->getByRole($roleId);
 
-        // Mock movement data (replace with real database query)
-        $movement = [
-            'idMovement' => $id,
-            'description' => 'Pago mensualidad enero',
-            'amount' => '150.00',
-            'dateCreation' => '2024-01-15 10:30:00',
-            'idPaymentType' => 1,
-            'idConcept' => 1,
-            'idUser' => 1,
-            'payment_type_description' => 'Efectivo',
-            'concept_description' => 'Mensualidad',
-            'user_login' => 'admin',
-            'user_email' => 'admin@test.com'
-        ];
+        // Fetch real data from DB
+        $movement = $this->movementModel->getById($id);
+        if (!$movement) {
+            $this->redirect('movement/list');
+            return;
+        }
 
-        // Mock data for dropdowns
-        $paymentTypes = [
-            ['idPaymentType' => 1, 'description' => 'Efectivo'],
-            ['idPaymentType' => 2, 'description' => 'Transferencia Bancaria'],
-            ['idPaymentType' => 3, 'description' => 'Tarjeta de Crédito'],
-            ['idPaymentType' => 4, 'description' => 'QR']
-        ];
+        $paymentTypes = $this->paymentTypeModel->getAll();
+        $concepts = $this->conceptModel->getAll();
+        $users = $this->userModel->getAll();
 
-        $concepts = [
-            ['idConcept' => 1, 'description' => 'Mensualidad'],
-            ['idConcept' => 2, 'description' => 'Materiales'],
-            ['idConcept' => 3, 'description' => 'Eventos'],
-            ['idConcept' => 4, 'description' => 'Donaciones']
-        ];
-
-        $users = [
-            ['idUser' => 1, 'login' => 'admin', 'email' => 'admin@test.com'],
-            ['idUser' => 2, 'login' => 'usuario1', 'email' => 'usuario1@test.com'],
-            ['idUser' => 3, 'login' => 'usuario2', 'email' => 'usuario2@test.com']
-        ];
-
-        // Prepare view data
         $viewData = [
             'movement' => $movement,
             'paymentTypes' => $paymentTypes,
@@ -230,7 +149,6 @@ class MovementController extends BaseController
             'roleId' => $roleId
         ];
 
-        // Add messages if exist
         if (isset($_GET['error'])) {
             $viewData['error'] = $_GET['error'];
         }
@@ -241,7 +159,7 @@ class MovementController extends BaseController
     }
 
     /**
-     * Update movement (mock)
+     * Update movement (persist to DB)
      */
     public function update(int $id): void
     {
@@ -257,22 +175,27 @@ class MovementController extends BaseController
             return;
         }
 
-        // Mock validation
         $error = null;
 
-        // Basic validation
-        if (empty($_POST['description'])) {
-            $error = "La descripción es requerida";
-        } elseif (empty($_POST['amount']) || !is_numeric($_POST['amount']) || (float)$_POST['amount'] <= 0) {
-            $error = "El monto debe ser un número válido mayor a 0";
-        } elseif (empty($_POST['dateCreation'])) {
-            $error = "La fecha de creación es requerida";
-        } elseif (empty($_POST['idPaymentType'])) {
-            $error = "Debe seleccionar un tipo de pago";
-        } elseif (empty($_POST['idConcept'])) {
-            $error = "Debe seleccionar un concepto";
-        } elseif (empty($_POST['idUser'])) {
-            $error = "Debe seleccionar un usuario";
+        $description = trim($_POST['description'] ?? '');
+        $amount = $_POST['amount'] ?? '';
+        $dateCreation = $_POST['dateCreation'] ?? '';
+        $idPaymentType = $_POST['idPaymentType'] ?? '';
+        $idConcept = $_POST['idConcept'] ?? '';
+        $idUser = $_POST['idUser'] ?? '';
+
+        if ($description === '') {
+            $error = 'La descripción es requerida';
+        } elseif ($amount === '' || !is_numeric($amount)) {
+            $error = 'El monto debe ser un número válido';
+        } elseif ($dateCreation === '') {
+            $error = 'La fecha de creación es requerida';
+        } elseif ($idPaymentType === '') {
+            $error = 'Debe seleccionar un tipo de pago';
+        } elseif ($idConcept === '') {
+            $error = 'Debe seleccionar un concepto';
+        } elseif ($idUser === '') {
+            $error = 'Debe seleccionar un usuario';
         }
 
         if ($error) {
@@ -280,8 +203,25 @@ class MovementController extends BaseController
             return;
         }
 
-        // Mock success - in real app would update database
-        $this->redirect("movement/edit/{$id}?success=" . urlencode("Movimiento actualizado correctamente"));
+        // Convert datetime-local to MySQL DATETIME
+        $formattedDate = date('Y-m-d H:i:00', strtotime($dateCreation));
+
+        $data = [
+            'description' => $description,
+            'amount' => (float)$amount,
+            'dateCreation' => $formattedDate,
+            'idPaymentType' => (int)$idPaymentType,
+            'idConcept' => (int)$idConcept,
+            'idUser' => (int)$idUser,
+        ];
+
+        $ok = $this->movementModel->update($id, $data);
+        if (!$ok) {
+            $this->redirect("movement/edit/{$id}?error=" . urlencode('No se pudo actualizar el movimiento'));
+            return;
+        }
+
+        $this->redirect("movement/edit/{$id}?success=" . urlencode('Movimiento actualizado correctamente'));
     }
 
     /**
@@ -376,27 +316,8 @@ class MovementController extends BaseController
             return;
         }
 
-        // Mock data for PDF export
-        $movements = [
-            [
-                'idMovement' => 1,
-                'description' => 'Pago mensualidad enero',
-                'amount' => 150.00,
-                'dateCreation' => '2024-01-15 10:30:00',
-                'payment_type_description' => 'Efectivo',
-                'concept_description' => 'Mensualidad',
-                'user_login' => 'admin'
-            ],
-            [
-                'idMovement' => 2,
-                'description' => 'Compra materiales arte',
-                'amount' => 450.50,
-                'dateCreation' => '2024-01-14 15:20:00',
-                'payment_type_description' => 'Transferencia',
-                'concept_description' => 'Materiales',
-                'user_login' => 'usuario1'
-            ]
-        ];
+        // Fetch real data for PDF export (same as list view)
+        $movements = $this->movementModel->getAllMovements();
 
         header('Content-Type: application/json');
         echo json_encode([

@@ -269,9 +269,7 @@ $router->addRoute('POST', '/options/delete', 'OptionController', 'delete');
 // Lista de movimientos
 $router->addRoute('GET', '/movement/list', 'MovementController', 'list');
 
-// Crear movimiento
-$router->addRoute('GET', '/movement/create', 'MovementController', 'create');
-$router->addRoute('POST', '/movement/create', 'MovementController', 'store');
+// Crear movimiento (deshabilitado)
 
 // Editar movimiento
 $router->addRoute('GET', '/movement/edit/([0-9]+)', 'MovementController', 'edit');
