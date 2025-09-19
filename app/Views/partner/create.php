@@ -147,6 +147,67 @@ ob_start();
         font-size: 1.05rem;
     }
 
+    .image-upload-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .image-upload-box {
+        border: 2px dashed var(--cream-400);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: var(--cream-50);
+        position: relative;
+    }
+
+    .image-upload-box:hover {
+        border-color: var(--cream-600);
+        background-color: var(--cream-100);
+    }
+
+    .image-upload-box i {
+        font-size: 2rem;
+        color: var(--cream-600);
+        margin-bottom: 0.75rem;
+    }
+
+    .image-upload-box p {
+        margin: 0;
+        color: var(--cream-700);
+        font-weight: 500;
+    }
+
+    .image-upload-box small {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--cream-500);
+        font-size: 0.8rem;
+    }
+
+    .image-preview {
+        margin-top: 1rem;
+        max-width: 100%;
+        max-height: 200px;
+        display: none;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .file-name {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--cream-600);
+        word-break: break-all;
+        text-align: center;
+        font-style: italic;
+    }
+
     @media (max-width: 1200px) {
         .create-container {
             padding: 2rem;
@@ -167,6 +228,10 @@ ob_start();
             gap: 1.25rem;
         }
 
+        .image-upload-container {
+            grid-template-columns: 1fr;
+        }
+
         .partner-fields {
             padding: 1.5rem;
             margin: 2rem 0;
@@ -181,7 +246,7 @@ ob_start();
 
 <div class="content-wrapper">
     <div class="create-container">
-        <h1 class="create-title">Crear Socio o Usuario</h1>
+        <h1 class="create-title">Crear Nuevo Socio</h1>
         
         <?php if (isset($error)): ?>
             <div class="error-message">
@@ -190,83 +255,118 @@ ob_start();
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="<?= rtrim(BASE_URL,'/') ?>/partner/create">
-            <div class="form-section">
-                <h2 class="section-title">Datos de Acceso</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="idRole">Tipo de Usuario</label>
-                        <select name="idRole" id="idRole" onchange="togglePartnerFields()" required>
-                            <option value="1">Administrador</option>
-                            <option value="2" selected>Socio</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+        <form method="POST" action="<?= rtrim(BASE_URL,'/') ?>/partner/create" enctype="multipart/form-data">
+            <input type="hidden" name="idRole" value="2">
             
             <div class="partner-fields">
                 <div class="form-section">
                     <h2 class="section-title">Información Personal</h2>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="name">Nombre Completo</label>
+                            <label for="name">Nombre Completo *</label>
                             <input type="text" name="name" id="name" placeholder="Nombre y apellido" required>
                         </div>
                         <div class="form-group">
-                            <label for="ci">Cédula de Identidad (será tu login)</label>
+                            <label for="ci">Cédula de Identidad *</label>
                             <input type="text" name="ci" id="ci" placeholder="Ej: 8845325" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="email">Correo Electrónico</label>
+                            <label for="email">Correo Electrónico *</label>
                             <input type="email" name="email" id="email" placeholder="Ingrese su correo electrónico" required>
                         </div>
                         <div class="form-group">
-                            <label for="cellPhoneNumber">Número de Celular</label>
+                            <label for="cellPhoneNumber">Número de Celular *</label>
                             <input type="tel" name="cellPhoneNumber" id="cellPhoneNumber" placeholder="Ej: +591 65734215" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="address">Dirección</label>
-                            <input type="text" name="address" id="address" placeholder="Dirección completa" required>
+                            <label for="address">Dirección *</label>
+                            <textarea name="address" id="address" rows="3" placeholder="Dirección completa" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="birthday">Fecha de Nacimiento</label>
+                            <label for="birthday">Fecha de Nacimiento *</label>
                             <input type="date" name="birthday" id="birthday" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Se eliminó el campo de fecha de registro -->
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title">Documentos de Identidad</h2>
+                    <p>Suba imágenes claras de la cédula de identidad (formato JPG, PNG o PDF, máximo 2MB cada una)</p>
+                    
+                    <div class="image-upload-container">
+                        <div class="image-upload-box" onclick="document.getElementById('frontImage').click()">
+                            <i class="fas fa-id-card"></i>
+                            <p>Cédula - Frente</p>
+                            <small>Haga clic para seleccionar la imagen</small>
+                            <input type="file" name="frontImage" id="frontImage" accept="image/*,.pdf" style="display: none" onchange="previewImage(this, 'frontPreview', 'frontFileName')">
+                            <img id="frontPreview" class="image-preview" alt="Vista previa frente de cédula">
+                            <span id="frontFileName" class="file-name"></span>
+                        </div>
+                        
+                        <div class="image-upload-box" onclick="document.getElementById('backImage').click()">
+                            <i class="fas fa-id-card"></i>
+                            <p>Cédula - Dorso</p>
+                            <small>Haga clic para seleccionar la imagen</small>
+                            <input type="file" name="backImage" id="backImage" accept="image/*,.pdf" style="display: none" onchange="previewImage(this, 'backPreview', 'backFileName')">
+                            <img id="backPreview" class="image-preview" alt="Vista previa dorso de cédula">
+                            <span id="backFileName" class="file-name"></span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <button type="submit" class="btn-submit">
-                <i class="fas fa-user-plus"></i> Crear Usuario
+                <i class="fas fa-user-plus"></i> Crear Socio
             </button>
         </form>
     </div>
 </div>
 
 <script>
-function togglePartnerFields() {
-    const roleSelect = document.getElementById('idRole');
-    const partnerFields = document.querySelector('.partner-fields');
-    const partnerInputs = partnerFields.querySelectorAll('input');
+function previewImage(input, previewId, fileNameId) {
+    const preview = document.getElementById(previewId);
+    const fileNameElement = document.getElementById(fileNameId);
+    const file = input.files[0];
     
-    if (roleSelect.value === '2') { // Socio
-        partnerFields.style.display = 'block';
-        partnerInputs.forEach(input => input.required = true);
+    if (file) {
+        // Mostrar el nombre del archivo
+        fileNameElement.textContent = file.name;
+        
+        // Verificar el tamaño del archivo (máximo 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('El archivo no puede ser mayor a 2MB');
+            input.value = '';
+            preview.style.display = 'none';
+            fileNameElement.textContent = '';
+            return;
+        }
+        
+        // Mostrar vista previa para imágenes
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            // Para PDFs, mostrar un icono en lugar de la vista previa
+            preview.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5ODg0NmEiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTQgMlYxMGEyIDIgMCAwIDAgMiAyaDhhMiAyIDAgMCAwIDItMlY4LjgyMmEyIDIgMCAwIDAtLjU4Ni0xLjQxNGwtNi44MjgtNi44MjhhMiAyIDAgMCAwLTEuNDE0LS41ODZINmEyIDIgMCAwIDAtMiAydjEzYTIgMiAwIDAgMCAyIDJoNCI+PC9wYXRoPjxwb2x5bGluZSBwb2ludHM9IjE0IDIgMTQgMTAgMjIgMTAiPjwvcG9seWxpbmU+PHBhdGggZD0iTTUgMTQuNWEyLjUgMi41IDAgMCAwIDUgMHYtNWEyLjUgMi41IDAgMCAwLTUgMHY1eiI+PC9wYXRoPjxwYXRoIGQ9Ik04IDEyaDUiPjwvcGF0aD48L3N2Zz4=';
+            preview.style.display = 'block';
+        }
     } else {
-        partnerFields.style.display = 'none';
-        partnerInputs.forEach(input => input.required = false);
+        preview.style.display = 'none';
+        fileNameElement.textContent = '';
     }
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    togglePartnerFields();
-});
 </script>
 
 <?php
