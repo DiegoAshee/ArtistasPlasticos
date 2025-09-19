@@ -58,3 +58,4 @@ Add-Content .gitignore "`n.env"
 
 
 .env
+.htaccess
