@@ -115,7 +115,7 @@ class Concept
         }
     }
 
-    public function update(int $id, string $description, string $type): bool
+    /*public function update(int $id, string $description, string $type): bool
     {
         $db = Database::singleton()->getConnection();
         try {
@@ -131,7 +131,25 @@ class Concept
             $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
             return false;
         }
+    }*/
+
+    public function update(int $id, string $description): bool
+    {
+        $db = Database::singleton()->getConnection();
+        try {
+            $sql = "UPDATE concept 
+                    SET description = :description 
+                    WHERE idConcept = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':description', trim($description));
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return false;
+        }
     }
+
 
     public function delete(int $id): bool
     {

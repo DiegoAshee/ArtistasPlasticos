@@ -123,7 +123,7 @@ class ConceptController extends BaseController
         $this->view('conceptos/edit', $viewData);
     }
 
-    public function update(int $id): void
+    /*public function update(int $id): void
     {
         $this->startSession();
         if (!isset($_SESSION['user_id'])) {
@@ -152,7 +152,37 @@ class ConceptController extends BaseController
         $this->redirect("conceptos/list?success=" . urlencode("Concepto actualizado correctamente"));
 
         //$this->redirect("conceptos/edit/{$id}?success=" . urlencode("Concepto actualizado correctamente"));
+    }*/
+
+    public function update(int $id): void
+{
+    $this->startSession();
+    if (!isset($_SESSION['user_id'])) {
+        $this->redirect('login');
+        return;
     }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $this->redirect("conceptos/edit/{$id}");
+        return;
+    }
+
+    $description = trim($_POST['description'] ?? '');
+
+    if ($description === '') {
+        $this->redirect("conceptos/edit/{$id}?error=" . urlencode("La descripción no puede estar vacía"));
+        return;
+    }
+
+    $model = new \Concept();
+    if (!$model->update($id, $description)) {
+        $err = $model->getLastError()['message'] ?? "Error al actualizar";
+        $this->redirect("conceptos/edit/{$id}?error=" . urlencode($err));
+        return;
+    }
+
+    $this->redirect("conceptos/list?success=" . urlencode("Descripción actualizada correctamente"));
+}
+
 
     public function delete(int $id): void
 {
