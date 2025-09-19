@@ -125,12 +125,7 @@ ob_start();
     <?php endif; ?>
     
     <form method="post" action="<?= u('conceptos/store') ?>">
-      <div class="form-group">
-        <label for="description">Descripción *</label>
-        <input type="text" id="description" name="description" required 
-               placeholder="Ingrese la descripción del concepto">
-      </div>
-      
+
       <div class="form-group">
         <label for="type">Tipo *</label>
         <select id="type" name="type" required>
@@ -138,6 +133,12 @@ ob_start();
           <option value="Ingreso">Ingreso</option>
           <option value="Egreso">Egreso</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción *</label>
+        <input type="text" id="description" name="description" required 
+               placeholder="Ingrese la descripción del concepto">
       </div>
       
       <div style="display: flex; gap: 10px; margin-top: 30px;">

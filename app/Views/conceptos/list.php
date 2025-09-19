@@ -313,7 +313,7 @@ ob_start();
           <!--<td><strong>#<?= (int)($r['idConcept'] ?? 0) ?></strong></td>-->
           <td><?= htmlspecialchars($r['description'] ?? '') ?></td>
           <td>
-            <span class="badge-type <?= ($r['type'] ?? '') === 'Ingreso' ? 'badge-income' : 'badge-expense' ?>">
+            <span class="badge-type <?= ($r['type'] ?? '') === 'ingreso'  ? 'badge-income' : 'badge-expense' ?>">
               <?= htmlspecialchars($r['type'] ?? '') ?>
             </span>
           </td>

@@ -164,14 +164,14 @@ ob_start();
                placeholder="Ingrese la descripción del concepto">
       </div>
       
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label for="type">Tipo *</label>
         <select id="type" name="type" required>
           <option value="">Seleccione un tipo</option>
           <option value="Ingreso" <?= ($concept['type'] ?? '') === 'Ingreso' ? 'selected' : '' ?>>Ingreso</option>
           <option value="Egreso" <?= ($concept['type'] ?? '') === 'Egreso' ? 'selected' : '' ?>>Egreso</option>
         </select>
-      </div>
+      </div> -->
       
       <div style="display: flex; gap: 10px; margin-top: 30px;">
         <button type="submit" class="btn btn-primary">
