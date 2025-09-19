@@ -40,14 +40,14 @@ ob_start();
     .modern-table td {
         padding: 12px 16px;
         vertical-align: middle;
-        color: #2d3436;
+        color: #000000;
     }
     
     .modern-table thead th {
         position: sticky;
         top: 0;
-        background: #2c3e50;
-        color: #fff;
+        background: #bbae97;
+        color: #2a2a2a;
         font-weight: 600;
         text-transform: uppercase;
         font-size: 0.8rem;
@@ -55,9 +55,12 @@ ob_start();
     }
     
     .modern-table tbody tr {
-        background: #fff;
+        background: #d7cbb5;
         transition: all 0.2s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .modern-table tbody tr:nth-child(even) {
+        background: #dccaaf;
     }
     
     .modern-table tbody tr:hover {
@@ -76,7 +79,7 @@ ob_start();
     }
     
     .table-container {
-        background: #f8f9fa;
+        background: #cfc4b0;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         overflow: hidden;
