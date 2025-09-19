@@ -419,6 +419,48 @@ ob_start();
     });
   </script>
 
+  <!-- Incluir SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .swal2-popup {
+      border-radius: 16px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    }
+    
+    .swal2-title {
+      color: #2a2a2a !important;
+      font-size: 1.5rem !important;
+      font-weight: 600 !important;
+    }
+    
+    .swal2-html-container {
+      color: #555 !important;
+      font-size: 1rem !important;
+    }
+    
+    .swal2-confirm {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 10px 24px !important;
+      font-weight: 600 !important;
+    }
+    
+    .swal2-cancel {
+      background: #f1f1f1 !important;
+      color: #333 !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 10px 24px !important;
+      font-weight: 600 !important;
+    }
+    
+    .swal2-icon {
+      border-color: #e74c3c !important;
+      color: #e74c3c !important;
+    }
+  </style>
+
   <!-- Buscador en vivo + paginación -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -444,6 +486,59 @@ ob_start();
         allRows = Array.from(document.querySelectorAll('.socio-row'));
         filteredRows = [...allRows];
         updatePagination();
+        
+        // Configurar event listeners para botones de eliminar
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(btn => {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+            confirmDelete(id, name);
+          });
+        });
+      }
+      
+      // Función de confirmación de eliminación con SweetAlert
+      function confirmDelete(id, name) {
+        Swal.fire({
+          title: '¿Estás seguro?',
+          html: `Vas a eliminar al socio: <strong>${name}</strong><br><br>Esta acción no se puede deshacer.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#e74c3c',
+          cancelButtonColor: '#95a5a6',
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          reverseButtons: true,
+          customClass: {
+            popup: 'custom-swal-popup',
+            title: 'custom-swal-title',
+            htmlContainer: 'custom-swal-html',
+            confirmButton: 'custom-swal-confirm',
+            cancelButton: 'custom-swal-cancel'
+          },
+          buttonsStyling: false,
+          showLoaderOnConfirm: true,
+          preConfirm: () => {
+            return new Promise((resolve) => {
+              // Redirigir para eliminar
+              window.location.href = '<?= u("partner/delete/") ?>' + id + '?return_url=' + encodeURIComponent(window.location.pathname + window.location.search);
+              // No resolvemos la promesa para que el loader se mantenga durante la redirección
+            });
+          },
+          allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+          if (result.dismiss === Swal.DismissReason.cancel) {
+            Swal.fire({
+              title: 'Cancelado',
+              text: 'El socio no ha sido eliminado',
+              icon: 'info',
+              confirmButtonColor: '#3498db',
+              confirmButtonText: 'Entendido'
+            });
+          }
+        });
       }
       
       // Función de búsqueda
@@ -580,42 +675,6 @@ ob_start();
       
       // Inicializar la tabla
       init();
-      
-      // Modal de eliminación
-      const deleteModal = document.getElementById('deleteModal');
-      const deleteButtons = document.querySelectorAll('.delete-btn');
-      const deleteItemName = document.getElementById('deleteItemName');
-      const cancelBtn = document.getElementById('cancelDelete');
-      const confirmBtn = document.getElementById('confirmDelete');
-      
-      let deleteId = '';
-      
-      deleteButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          deleteId = this.getAttribute('data-id');
-          const name = this.getAttribute('data-name');
-          deleteItemName.textContent = name;
-          deleteModal.style.display = 'flex';
-        });
-      });
-      
-      cancelBtn.addEventListener('click', function() {
-        deleteModal.style.display = 'none';
-      });
-      
-      confirmBtn.addEventListener('click', function() {
-        if (deleteId) {
-          window.location.href = '<?= u("partner/delete/") ?>' + deleteId + '?return_url=' + encodeURIComponent(window.location.pathname + window.location.search);
-        }
-      });
-      
-      // Cerrar modal al hacer click fuera
-      deleteModal.addEventListener('click', function(e) {
-        if (e.target === deleteModal) {
-          deleteModal.style.display = 'none';
-        }
-      });
     });
   </script>
 
@@ -738,4 +797,3 @@ $content = ob_get_clean();
 
 // ---- Incluir layout principal (misma forma que dashboard) ----
 include __DIR__ . '/../layouts/app.php';
-?>
