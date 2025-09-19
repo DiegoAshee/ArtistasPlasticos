@@ -235,13 +235,17 @@ public function findByPartnerId(int $partnerId): ?array {
     }
 
     /** Compatibilidad con el controlador */
-    public function getUsersAdmin(): array {
+public function getUsersAdmin(): array {
     try {
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $sql = "SELECT idUser, login, email, idRol, status
-                FROM `" . self::TABLE . "`
-                WHERE idRol = :role AND status = :status";
+        // Consulta corregida con todos los campos necesarios
+        $sql = "SELECT idUser, login, email, idRol, status, 
+                       tokenRecovery, tokenExpiration, firstSession,
+                       idPartner, CURRENT_TIMESTAMP as created_at
+                FROM " . self::TABLE . "
+                WHERE idRol = :role AND status = :status
+                ORDER BY login ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':role', 1, PDO::PARAM_INT);
@@ -250,8 +254,8 @@ public function findByPartnerId(int $partnerId): ?array {
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Debug temporal
-        foreach ($rows as $r) { echo $r['idUser']." -> status=".$r['status']."<br>"; }
+        error_log("DEBUG getUsersAdmin - Total usuarios encontrados: " . count($rows));
+        error_log("DEBUG getUsersAdmin - Datos: " . print_r($rows, true));
 
         return $rows ?: [];
     } catch (\PDOException $e) {
