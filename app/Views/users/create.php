@@ -1,11 +1,11 @@
 <?php
 // Set up variables for the layout
-$title = 'Crear Socio - Asociación de Artistas';
+$title = 'Crear Usuario';
 $currentPath = 'users/create';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
     ['label' => 'Socios', 'url' => u('users/list')],
-    ['label' => 'Crear Socio', 'url' => null],
+    ['label' => 'Crear Usuario', 'url' => null],
 ];
 
 // Start output buffering
@@ -181,7 +181,7 @@ ob_start();
 
 <div class="content-wrapper">
     <div class="create-container">
-        <h1 class="create-title">Crear Usuario Administrador</h1>
+        <h1 class="create-title">Crear Usuario </h1>
         
         <?php if (isset($error)): ?>
             <div class="error-message">
@@ -201,6 +201,17 @@ ob_start();
                         <div class="form-group">
                             <label for="email">Correo Electrónico</label>
                             <input type="email" name="email" id="email" placeholder="Ingrese su correo electrónico" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="idRol">Rol</label>
+                            <select name="idRol" id="idRol" required>
+                                <option value="">Seleccione un rol</option>
+                                <?php foreach ($roles ?? [] as $rol): ?>
+                                    <option value="<?= htmlspecialchars((string)$rol['idRol']) ?>"><?= htmlspecialchars($rol['rol']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
             </div>
