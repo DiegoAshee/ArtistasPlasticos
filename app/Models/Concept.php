@@ -20,6 +20,21 @@ class Concept
     }
 
     /**
+     * Obtener todos los conceptos (uso simple en listados/combos)
+     */
+    public function getAll(): array
+    {
+        $db = Database::singleton()->getConnection();
+        try {
+            $stmt = $db->query("SELECT * FROM concept ORDER BY description ASC");
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return [];
+        }
+    }
+
+    /**
      * Listar todos los conceptos con filtros y paginación
      */
     public function listAll(array $filters = [], int $page = 1, int $pageSize = 20): array
