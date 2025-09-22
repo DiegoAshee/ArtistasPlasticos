@@ -424,7 +424,7 @@ ob_start();
                                 </div>
                                 <div>
                                     <div style="font-weight: 600; margin-bottom: 2px;"><?= htmlspecialchars($usuario['login'] ?? '') ?></div>
-                                    <div class="admin-badge">ADMIN</div>
+                                    
                                 </div>
                             </div>
                         </td>
