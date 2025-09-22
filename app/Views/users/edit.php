@@ -1,6 +1,6 @@
 <?php
 // Set up variables for the layout
-$title = 'Editar Usuario - Administración';
+$title = 'Editar Usuario';
 $currentPath = 'users/edit';
 $breadcrumbs = [
     ['label' => 'Inicio', 'url' => u('dashboard')],
@@ -68,7 +68,9 @@ ob_start();
         font-family: 'Inter', sans-serif;
     }
 
-    .form-group input {
+     .form-group input,
+    .form-group select,
+    .form-group textarea {
         width: 100%;
         padding: 0.85rem 1.25rem;
         border: 1px solid var(--cream-300);
@@ -224,12 +226,12 @@ ob_start();
                 <span class="info-label">ID:</span>
                 <span class="info-value"><?= htmlspecialchars($user['idUser'] ?? '') ?></span>
             </div> -->
-            <div class="info-item">
+            <!-- <div class="info-item">
                 <span class="info-label">Rol:</span>
                 <span class="info-value">
                     <?= (int)($user['idRol'] ?? 0) === 1 ? 'Administrador' : 'Usuario' ?>
                 </span>
-            </div>
+            </div> -->
             <div class="info-item">
                 <span class="info-label">Estado:</span>
                 <span class="info-value">
@@ -258,7 +260,18 @@ ob_start();
                        placeholder="Ingrese el correo electrónico" 
                        required>
             </div>
-
+            <div class="form-group">
+                <label for="idRol">Rol</label>
+                <select name="idRol" id="idRol" required>
+                    <option value="">Seleccione un rol</option>
+                    <?php foreach ($roles ?? [] as $rol): ?>
+                        <option value="<?= htmlspecialchars((string)$rol['idRol']) ?>" 
+                                <?= ((int)$rol['idRol'] === (int)($user['idRol'] ?? 0)) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($rol['rol']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <!-- <div class="form-group">
                 <label for="password">Nueva Contraseña (Opcional)</label>
                 <input type="password" 

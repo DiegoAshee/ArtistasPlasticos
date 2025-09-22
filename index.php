@@ -104,7 +104,7 @@ $router->addRoute('POST', '/permissions/update', 'PermissionController', 'update
 |--------------------------------------------------------------------------
 */
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
-$router->addRoute('GET', '/users/create', 'UserController', 'createAdmin');
+$router->addRoute('GET', '/users/create', 'UserController', 'createUser');
 $router->addRoute('POST', '/users/create', 'UserController', 'createAdmin');
 $router->addRoute('GET', '/users/edit/([0-9]+)', 'UserController', 'editUser');
 $router->addRoute('POST', '/users/edit/([0-9]+)', 'UserController', 'editUser');

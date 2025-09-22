@@ -233,7 +233,37 @@ public function findByPartnerId(int $partnerId): ?array {
             return [];
         }
     }
+/**
+ * Obtener usuarios de todos los roles excepto uno específico
+ */
+public function getUsersExceptRole(int $excludeRoleId): array {
+    try {
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+        // Consulta para obtener usuarios de todos los roles excepto el especificado
+        $sql = "SELECT idUser, login, email, idRol, status, 
+                       tokenRecovery, tokenExpiration, firstSession,
+                       idPartner, CURRENT_TIMESTAMP as created_at
+                FROM " . self::TABLE . "
+                WHERE idRol != :excludeRole AND status = :status
+                ORDER BY idRol ASC, login ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':excludeRole', $excludeRoleId, PDO::PARAM_INT);
+        $stmt->bindValue(':status', 1, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        error_log("DEBUG getUsersExceptRole - Total usuarios encontrados (excepto rol $excludeRoleId): " . count($rows));
+        error_log("DEBUG getUsersExceptRole - Datos: " . print_r($rows, true));
+
+        return $rows ?: [];
+    } catch (\PDOException $e) {
+        error_log("Error al obtener usuarios excepto rol $excludeRoleId: " . $e->getMessage());
+        return [];
+    }
+}
     /** Compatibilidad con el controlador */
 public function getUsersAdmin(): array {
     try {
@@ -263,6 +293,42 @@ public function getUsersAdmin(): array {
         return [];
     }
 }
+// Modificaciones en el modelo Usuario.php
+
+// Renombrar y modificar getUsersAdmin a getNonSocioUsers
+// Agregar JOIN con tabla rol para obtener el nombre del rol
+public function getNonSocioUsers(): array {
+    try {
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // Consulta con JOIN a rol y filtro excluyendo rol 2
+        $sql = "SELECT u.idUser, u.login, u.email, u.idRol, u.status, 
+                       u.tokenRecovery, u.tokenExpiration, u.firstSession,
+                       u.idPartner, CURRENT_TIMESTAMP as created_at,
+                       r.rol as rolName
+                FROM " . self::TABLE . " u
+                INNER JOIN rol r ON u.idRol = r.idRol
+                WHERE u.idRol != :excludedRole AND u.status = :status
+                ORDER BY u.login ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':excludedRole', 2, PDO::PARAM_INT);
+        $stmt->bindValue(':status', 1, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        error_log("DEBUG getNonSocioUsers - Total usuarios encontrados: " . count($rows));
+        error_log("DEBUG getNonSocioUsers - Datos: " . print_r($rows, true));
+
+        return $rows ?: [];
+    } catch (\PDOException $e) {
+        error_log("Error al obtener usuarios no socios: " . $e->getMessage());
+        return [];
+    }
+}
+
+// El resto de funciones (create, update, delete) permanecen iguales, ya que ya manejan idRol dinámicamente
 
     /** Compatibilidad con el controlador */
     public function getUserProfile(int $role, int $id): array {

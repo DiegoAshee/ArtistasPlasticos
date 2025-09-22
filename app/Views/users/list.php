@@ -9,11 +9,11 @@ if (!function_exists('u')) {
     }
 }
 
-$title = 'Lista de Administradores';
+$title = 'Lista de Usuarios';
 $currentPath = 'users';
 $breadcrumbs = [
     ['label' => 'Principal', 'url' => u('dashboard')],
-    ['label' => 'Administradores', 'url' => null],
+    ['label' => 'Usuarios', 'url' => null],
 ];
 
 // Datos de sesión
@@ -436,7 +436,7 @@ ob_start();
                         </td>
                         <td>
                             <span class="role-badge">
-                                <i class="fas fa-crown"></i> Administrador
+                                <?= htmlspecialchars($usuario['rolName'] ?? 'Desconocido') ?>
                             </span>
                         </td>
                         <!-- <td>
@@ -504,8 +504,8 @@ ob_start();
         <div class="empty-state-icon" style="font-size: 48px; margin-bottom: 15px; color: var(--cream-600);">
             <i class="fas fa-user-shield"></i>
         </div>
-        <h3 style="margin: 0 0 10px 0; color: #555;">No hay usuarios administradores</h3>
-        <p style="margin: 0 0 25px 0; color: #777;">Comienza agregando tu primer usuario administrador</p>
+        <h3 style="margin: 0 0 10px 0; color: #555;">No hay usuarios</h3>
+        <p style="margin: 0 0 25px 0; color: #777;">Comienza agregando tu primer usuario</p>
         <a href="<?= u('users/create') ?>" class="btn-primary">
             <i class="fas fa-plus"></i> Crear Primer Usuario
         </a>
