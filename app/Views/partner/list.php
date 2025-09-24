@@ -22,27 +22,55 @@ if (!empty($socios) && is_array($socios)) {
 // ---- Contenido específico de la página ----
 ob_start();
 ?>
-  <!-- Estilos para dar aire y encabezado pegajoso -->
+  <!-- Estilos optimizados para mejor uso del espacio -->
   <style>
     .modern-table th, .modern-table td {
-      padding: 10px 14px;
-      line-height: 1.35;
+      padding: 8px 12px;
+      line-height: 1.3;
       vertical-align: middle;
       color: #000000;
+      font-size: 0.875rem;
     }
-    .modern-table { border-collapse: separate; border-spacing: 0 6px; }
+    .modern-table { 
+      border-collapse: separate; 
+      border-spacing: 0 6px; 
+      table-layout: fixed;
+      width: 100%;
+    }
     .modern-table thead th {
       position: sticky; top: 0;
       background: #bbae97; color: #2a2a2a;
       z-index: 2;
+      font-weight: 600;
+      font-size: 0.8rem;
     }
-    .modern-table tbody tr { background:#d7cbb5; }
+    .modern-table tbody tr { background:#d7cbb5; transition: all 0.2s ease; }
+    .modern-table tbody tr:hover { background: #d0c4a8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .modern-table tbody tr:nth-child(even) { background: #dccaaf; }
+    .modern-table tbody tr:nth-child(even):hover { background: #d5c9b0; }
     .modern-table tbody tr td:first-child  { border-top-left-radius:10px; border-bottom-left-radius:10px; }
     .modern-table tbody tr td:last-child   { border-top-right-radius:10px; border-bottom-right-radius:10px; }
 
+    /* Ancho específico de columnas para optimizar espacio */
+    .col-name { width: 20%; }
+    .col-ci { width: 12%; }
+    .col-contact { width: 25%; }
+    .col-phone { width: 12%; }
+    .col-images { width: 15%; }
+    .col-actions { width: 16%; }
+
     /* contenedor de tabla */
-    .table-container { background:#cfc4b0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:auto; }
+    .table-container { 
+      background:#cfc4b0;
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+      max-width: 100%;
+    }
     
     /* Filas ocultas por búsqueda */
     .hidden { display: none !important; }
@@ -51,40 +79,68 @@ ob_start();
     .highlight {
       background-color: yellow;
       font-weight: bold;
+      padding: 2px 4px;
+      border-radius: 3px;
     }
     
     /* Info de búsqueda */
     .search-info {
-      background: #f8f9fa;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
       border: 1px solid #dee2e6;
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 10px;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
       font-size: 14px;
       color: #495057;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    /* Botones para ver imágenes CI */
+    /* Optimización para contacto - mostrar en líneas múltiples */
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .contact-item {
+      font-size: 0.75rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .contact-label {
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Botones para ver imágenes CI - más compactos */
     .ci-view-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
+      gap: 3px;
+      padding: 4px 8px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 12px;
+      border-radius: 5px;
+      font-size: 0.7rem;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
       text-decoration: none;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 3px;
+      width: 100%;
+      justify-content: center;
     }
 
     .ci-view-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       color: white;
       text-decoration: none;
     }
@@ -99,8 +155,138 @@ ob_start();
 
     .ci-buttons-container {
       display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    /* Botones de acciones reorganizados */
+    .actions-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      min-width: 60px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+
+    .btn-edit {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-edit:hover {
+      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+      color: white;
+    }
+
+    .btn-delete {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+    }
+
+    .btn-delete:hover {
+      box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+      color: white;
+    }
+
+    /* Botón de detalles */
+    .details-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+      width: 100%;
+      justify-content: center;
+    }
+
+    .details-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+      color: white;
+      text-decoration: none;
+    }
+
+    /* Avatar del usuario más pequeño */
+    .user-avatar-small {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cream-200,#eee) 0%, var(--cream-300,#ddd) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .user-cell {
+      display: flex;
+      align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
+    }
+
+    .user-name {
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ci-badge {
+      font-family: monospace; 
+      background: #f8f9fa; 
+      padding: 3px 6px; 
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Estilo para campos sin información */
+    .no-info {
+      color: #6c757d;
+      font-style: italic;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+
+    .contact-item .no-info {
+      font-size: 0.7rem;
     }
 
     /* Modal para mostrar imágenes */
@@ -150,6 +336,12 @@ ob_start();
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+      background: #ff3742;
+      transform: scale(1.1);
     }
 
     .modal-title {
@@ -179,6 +371,257 @@ ob_start();
       margin-bottom: 10px;
       opacity: 0.5;
     }
+
+    /* Modal de detalles del socio */
+    .details-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1500;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .details-modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .details-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px 30px;
+      border-radius: 16px 16px 0 0;
+      position: relative;
+    }
+
+    .details-header h2 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .details-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .details-close:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+    }
+
+    .details-body {
+      padding: 30px;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .details-section {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .details-section h3 {
+      color: #495057;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .details-field {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .details-field:last-child {
+      margin-bottom: 0;
+    }
+
+    .details-label {
+      font-weight: 600;
+      color: #495057;
+      min-width: 120px;
+      font-size: 0.9rem;
+    }
+
+    .details-value {
+      color: #212529;
+      font-size: 0.9rem;
+      word-break: break-word;
+    }
+
+    .details-images {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .details-images h3 {
+      color: #495057;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ci-images-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .ci-image-card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .ci-image-card h4 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .details-actions {
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+      padding: 20px 30px;
+      border-radius: 0 0 16px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+      background: #5a6268;
+      transform: translateY(-1px);
+      color: white;
+      text-decoration: none;
+    }
+
+    .btn-edit-modal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-edit-modal:hover {
+      background: #218838;
+      transform: translateY(-1px);
+      color: white;
+      text-decoration: none;
+    }
+
+    /* Responsive design */
+    @media (max-width: 1200px) {
+      .modern-table th, .modern-table td {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+      }
+      
+      .contact-item {
+        font-size: 0.7rem;
+      }
+      
+      .action-btn {
+        padding: 4px 6px;
+        font-size: 0.65rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      .ci-images-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .details-actions {
+        flex-direction: column;
+      }
+      
+      .details-modal-content {
+        margin: 10px;
+        max-height: calc(100vh - 20px);
+      }
+      
+      .table-wrapper {
+        border-radius: 16px;
+      }
+    }
   </style>
 
   <!-- Barra de acciones -->
@@ -189,18 +632,18 @@ ob_start();
         type="text"
         id="searchInput"
         placeholder="Buscar por nombre, CI, login, email, celular..."
-        style="width:100%;border:2px solid #e1e5e9;border-radius:12px;padding:10px 40px 10px 38px;outline:none;background:#fff;transition:border-color .2s;"
+        style="width:100%;border:2px solid #e1e5e9;border-radius:12px;padding:12px 40px 12px 38px;outline:none;background:#fff;transition:border-color .2s;"
         onfocus="this.style.borderColor='var(--cream-400)';"
         onblur="this.style.borderColor='#e1e5e9';"
       />
     </div>
 
     <div style="display:flex;gap:12px;">
-      <button id="exportPdfBtn" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
+      <button id="exportPdfBtn" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer;transition: all 0.3s ease;">
         <i class="fas fa-file-pdf"></i> Exportar PDF
       </button>
       
-      <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
+      <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:12px 16px;text-decoration:none;font-weight:600;transition: all 0.3s ease;">
         <i class="fas fa-plus"></i> Nuevo Socio
       </a>
     </div>
@@ -209,123 +652,151 @@ ob_start();
   <!-- Info de búsqueda -->
   <div id="searchInfo" class="search-info" style="display:none;"></div>
 
-  <!-- Tabla de socios -->
+  <!-- Tabla de socios optimizada -->
   <?php if (!empty($socios) && is_array($socios)): ?>
     <div class="table-container">
-      <table id="tablaSocios" class="modern-table" style="width:100%;border-collapse:separate;border-spacing:0;">
-        <thead>
-          <tr>
-            <th><i class="fas fa-user"></i> Nombre</th>
-            <th><i class="fas fa-id-card"></i> CI</th>
-            <th><i class="fas fa-user-tag"></i> Login</th>
-            <th><i class="fas fa-envelope"></i> Email</th>
-            <th><i class="fas fa-phone"></i> Celular</th>
-            <th><i class="fas fa-map-marker-alt"></i> Dirección</th>
-            <th><i class="fas fa-id-badge"></i> CI Frente</th>
-            <th><i class="fas fa-id-badge"></i> CI Atrás</th>
-            <th><i class="fas fa-calendar-plus"></i> F. Creación</th>
-            <th><i class="fas fa-birthday-cake"></i> F. Nacimiento</th>
-            <th><i class="fas fa-calendar-check"></i> F. Registro</th>
-            <th><i class="fas fa-cogs"></i> Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <?php foreach ($socios as $socio): ?>
-            <tr class="socio-row" data-search="<?= htmlspecialchars(strtolower(
-              ($socio['name'] ?? '') . ' ' . 
-              ($socio['ci'] ?? '') . ' ' . 
-              ($socio['login'] ?? '') . ' ' . 
-              ($socio['email'] ?? '') . ' ' . 
-              ($socio['cellPhoneNumber'] ?? '') . ' ' . 
-              ($socio['address'] ?? '')
-            )) ?>">
-              <td>
-                <div class="user-cell" style="display:flex;align-items:center;gap:10px;">
-                  <div class="user-avatar-small" style="width:28px;height:28px;border-radius:50%;background:var(--cream-200,#eee);display:flex;align-items:center;justify-content:center;">
-                    <i class="fas fa-user"></i>
-                  </div>
-                  <span class="searchable-text"><?= htmlspecialchars($socio['name'] ?? '') ?></span>
-                </div>
-              </td>
-              <td><span class="searchable-text"><?= htmlspecialchars($socio['ci'] ?? '') ?></span></td>
-              <td><span class="searchable-text"><?= htmlspecialchars($socio['login'] ?? '') ?></span></td>
-              <td><span class="searchable-text"><?= htmlspecialchars($socio['email'] ?? '') ?></span></td>
-              <td><span class="searchable-text"><?= htmlspecialchars($socio['cellPhoneNumber'] ?? '') ?></span></td>
-              <td class="address-cell" title="<?= htmlspecialchars($socio['address'] ?? '') ?>">
-                <span class="searchable-text">
-                <?php
-                  $addr = (string)($socio['address'] ?? '');
-                  $addr = htmlspecialchars($addr, ENT_QUOTES, 'UTF-8');
-                  echo (mb_strlen($addr,'UTF-8') > 30) ? mb_substr($addr,0,30,'UTF-8').'…' : $addr;
-                ?>
-                </span>
-              </td>
-              <!-- CI Frente -->
-              <td>
-                <button class="ci-view-btn front" 
-                        onclick="showImageModal('<?= htmlspecialchars($socio['frontImageURL'] ?? '') ?>', 'CI Frente - <?= htmlspecialchars($socio['name'] ?? '') ?>')">
-                  <i class="fas fa-eye"></i>
-                  Ver Frente
-                </button>
-              </td>
-              <!-- CI Atrás -->
-              <td>
-                <button class="ci-view-btn back" 
-                        onclick="showImageModal('<?= htmlspecialchars($socio['backImageURL'] ?? '') ?>', 'CI Atrás - <?= htmlspecialchars($socio['name'] ?? '') ?>')">
-                  <i class="fas fa-eye"></i>
-                  Ver Atrás
-                </button>
-              </td>
-              <td><span class="date-badge"><?= !empty($socio['dateCreation'])     ? date('d/m/Y', strtotime($socio['dateCreation']))     : '-' ?></span></td>
-              <td><span class="date-badge"><?= !empty($socio['birthday'])         ? date('d/m/Y', strtotime($socio['birthday']))         : '-' ?></span></td>
-              <td><span class="date-badge"><?= !empty($socio['dateRegistration']) ? date('d/m/Y', strtotime($socio['dateRegistration'])) : '-' ?></span></td>
-              <td class="actions">
-                <div class="action-buttons">
-                  <a href="<?= u('partner/edit/' . (int)($socio['idPartner'] ?? 0)) ?>" 
-                    class="btn btn-sm btn-outline" 
-                    title="Editar" 
-                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #e1e5e9;color:#333;text-decoration:none;">
-                    <i class="fas fa-edit"></i>
-                  </a>
-
-                  <a href="#"
-                    class="btn btn-sm btn-danger delete-btn"
-                    title="Eliminar"
-                    data-id="<?= (int)($socio['idPartner'] ?? 0) ?>"
-                    data-name="<?= htmlspecialchars($socio['name'] ?? '') ?>"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;text-decoration:none;margin-left:6px;">
-                    <i class="fas fa-trash"></i>
-                  </a>
-                </div>
-              </td>
+      <div class="table-wrapper">
+        <table id="tablaSocios" class="modern-table">
+          <thead>
+            <tr>
+              <th class="col-name"><i class="fas fa-user"></i> Socio</th>
+              <th class="col-ci"><i class="fas fa-id-card"></i> CI</th>
+              <th class="col-contact"><i class="fas fa-address-book"></i> Contacto</th>
+              <th class="col-phone"><i class="fas fa-phone"></i> Teléfono</th>
+              <th class="col-images"><i class="fas fa-images"></i> CI Docs</th>
+              <th class="col-actions"><i class="fas fa-cogs"></i> Acciones</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody id="tableBody">
+            <?php foreach ($socios as $socio): ?>
+              <tr class="socio-row" data-search="<?= htmlspecialchars(strtolower(
+                ($socio['name'] ?? '') . ' ' . 
+                ($socio['ci'] ?? '') . ' ' . 
+                ($socio['login'] ?? '') . ' ' . 
+                ($socio['email'] ?? '') . ' ' . 
+                ($socio['cellPhoneNumber'] ?? '')
+              )) ?>" 
+              data-partner='<?= htmlspecialchars(json_encode($socio), ENT_QUOTES, 'UTF-8') ?>'>
+                
+                <!-- Columna Socio (Nombre + Avatar) -->
+                <td class="col-name">
+                  <div class="user-cell">
+                    <div class="user-avatar-small">
+                      <i class="fas fa-user" style="color: #666; font-size: 0.8rem;"></i>
+                    </div>
+                    <span class="searchable-text user-name" title="<?= htmlspecialchars($socio['name'] ?? 'Sin información') ?>">
+                      <?= htmlspecialchars($socio['name'] ?? 'Sin información') ?>
+                    </span>
+                  </div>
+                </td>
+                
+                <!-- Columna CI -->
+                <td class="col-ci">
+                  <span class="searchable-text ci-badge">
+                    <?= htmlspecialchars($socio['ci'] ?? 'Sin información') ?>
+                  </span>
+                </td>
+                
+                <!-- Columna Contacto (Login + Email) -->
+                <td class="col-contact">
+                  <div class="contact-info">
+                    <div class="contact-item">
+                      <span class="contact-label">Usuario:</span>
+                      <span class="searchable-text" title="<?= htmlspecialchars($socio['login'] ?? 'Sin información') ?>">
+                        <?= htmlspecialchars($socio['login'] ?? 'Sin información') ?>
+                      </span>
+                    </div>
+                    <div class="contact-item">
+                      <span class="contact-label">Email:</span>
+                      <span class="searchable-text" title="<?= htmlspecialchars($socio['email'] ?? 'Sin información') ?>">
+                        <?= htmlspecialchars($socio['email'] ?? 'Sin información') ?>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Columna Teléfono -->
+                <td class="col-phone">
+                  <span class="searchable-text" style="font-weight: 500;">
+                    <?= htmlspecialchars($socio['cellPhoneNumber'] ?? 'Sin información') ?>
+                  </span>
+                </td>
+                
+                <!-- Columna Imágenes CI -->
+                <td class="col-images">
+                  <div class="ci-buttons-container">
+                    <button class="ci-view-btn front" 
+                            onclick="showImageModal('<?= htmlspecialchars($socio['frontImageURL'] ?? '') ?>', 'CI Frente - <?= htmlspecialchars($socio['name'] ?? '') ?>')">
+                      <i class="fas fa-eye"></i> Frente
+                    </button>
+                    <button class="ci-view-btn back" 
+                            onclick="showImageModal('<?= htmlspecialchars($socio['backImageURL'] ?? '') ?>', 'CI Atrás - <?= htmlspecialchars($socio['name'] ?? '') ?>')">
+                      <i class="fas fa-eye"></i> Atrás
+                    </button>
+                  </div>
+                </td>
+                
+                <!-- Columna Acciones -->
+                <td class="col-actions">
+                  <div class="actions-container">
+                    <!-- Fila superior: Editar + Eliminar -->
+                    <div class="action-row">
+                      <a href="<?= u('partner/edit/' . (int)($socio['idPartner'] ?? 0)) ?>" 
+                        class="action-btn btn-edit" 
+                        title="Editar socio">
+                        <i class="fas fa-edit"></i> Editar
+                      </a>
+
+                      <a href="#"
+                        class="action-btn btn-delete delete-btn"
+                        title="Eliminar socio"
+                        data-id="<?= (int)($socio['idPartner'] ?? 0) ?>"
+                        data-name="<?= htmlspecialchars($socio['name'] ?? '') ?>">
+                        <i class="fas fa-trash"></i> Eliminar
+                      </a>
+                    </div>
+                    
+                    <!-- Fila inferior: Detalles -->
+                    <div class="action-row">
+                      <button class="details-btn" onclick="showDetailsModal(this)" title="Ver detalles completos">
+                        <i class="fas fa-info-circle"></i> Detalles
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Controles de paginación -->
-      <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:12px;">
-        <label for="pageSize">Por página:</label>
-        <select id="pageSize" style="border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;">
-          <option value="10">10</option>
-          <option value="20" selected>20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
+      <div id="pager" style="display:flex;align-items:center;gap:12px;justify-content:space-between;padding:16px 20px;background:#f8f9fa;border-radius:0 0 16px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label for="pageSize" style="font-weight: 500; color: #495057;">Por página:</label>
+          <select id="pageSize" style="border:1px solid #ced4da;border-radius:6px;padding:6px 10px;background: white;">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
 
-        <button id="firstPage" style="border:1px solid #cfcfcf;border-radius:8px;padding:6px 10px;background:#fff;">«</button>
-        <button id="prevPage"  style="border:1px solid #cfcfcf;border-radius:8px;padding:6px 10px;background:#fff;">‹</button>
-        <span id="pageInfo" style="min-width:180px;text-align:center;font-weight:600;"></span>
-        <button id="nextPage"  style="border:1px solid #cfcfcf;border-radius:8px;padding:6px 10px;background:#fff;">›</button>
-        <button id="lastPage"  style="border:1px solid #cfcfcf;border-radius:8px;padding:6px 10px;background:#fff;">»</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="firstPage" style="border:1px solid #ced4da;border-radius:6px;padding:8px 12px;background:#fff;cursor:pointer;transition: all 0.2s ease;">«</button>
+          <button id="prevPage"  style="border:1px solid #ced4da;border-radius:6px;padding:8px 12px;background:#fff;cursor:pointer;transition: all 0.2s ease;">‹</button>
+          <span id="pageInfo" style="min-width:200px;text-align:center;font-weight:600;color:#495057;"></span>
+          <button id="nextPage"  style="border:1px solid #ced4da;border-radius:6px;padding:8px 12px;background:#fff;cursor:pointer;transition: all 0.2s ease;">›</button>
+          <button id="lastPage"  style="border:1px solid #ced4da;border-radius:6px;padding:8px 12px;background:#fff;cursor:pointer;transition: all 0.2s ease;">»</button>
+        </div>
       </div>
     </div>
   <?php else: ?>
-    <div class="empty-state" style="text-align:center;padding:40px 20px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);">
-      <div class="empty-state-icon" style="font-size:42px;margin-bottom:10px;color:var(--cream-600);"><i class="fas fa-users"></i></div>
-      <h3>No hay socios registrados</h3>
-      <p>Comienza agregando tu primer socio al sistema</p>
-      <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
+    <div class="empty-state" style="text-align:center;padding:60px 20px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);">
+      <div class="empty-state-icon" style="font-size:64px;margin-bottom:20px;color:var(--cream-600);"><i class="fas fa-users"></i></div>
+      <h3 style="color: #495057; margin-bottom: 10px;">No hay socios registrados</h3>
+      <p style="color: #6c757d; margin-bottom: 30px;">Comienza agregando tu primer socio al sistema</p>
+      <a href="<?= u('partner/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:12px 20px;text-decoration:none;font-weight:600;">
         <i class="fas fa-plus"></i> Crear primer socio
       </a>
     </div>
@@ -340,20 +811,121 @@ ob_start();
     </div>
   </div>
 
-  <!-- Modal de confirmación de eliminación -->
-  <div id="deleteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center;">
-    <div style="background:white;padding:25px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 5px 15px rgba(0,0,0,0.3);">
-      <h3 style="margin-top:0;color:#2a2a2a;">Confirmar eliminación</h3>
-      <p>¿Estás seguro de que deseas eliminar a <strong id="deleteItemName"></strong>?</p>
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-        <button id="cancelDelete" class="btn" style="background:#f1f1f1;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">Cancelar</button>
-        <button id="confirmDelete" class="btn" style="background:#e74c3c;color:white;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">Eliminar</button>
+  <!-- Modal de detalles del socio -->
+  <div id="detailsModal" class="details-modal">
+    <div class="details-modal-content">
+      <div class="details-header">
+        <h2 id="detailsTitle">
+          <i class="fas fa-user-circle"></i>
+          Detalles del Socio
+        </h2>
+        <button class="details-close" onclick="closeDetailsModal()">×</button>
+      </div>
+      
+      <div class="details-body">
+        <div class="details-grid">
+          <div class="details-section">
+            <h3><i class="fas fa-user"></i> Información Personal</h3>
+            <div class="details-field">
+              <span class="details-label">Nombre:</span>
+              <span class="details-value" id="detailName">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">CI:</span>
+              <span class="details-value" id="detailCI">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">Teléfono:</span>
+              <span class="details-value" id="detailPhone">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">Fecha Nac.:</span>
+              <span class="details-value" id="detailBirthday">-</span>
+            </div>
+          </div>
+          
+          <div class="details-section">
+            <h3><i class="fas fa-envelope"></i> Información de Contacto</h3>
+            <div class="details-field">
+              <span class="details-label">Email:</span>
+              <span class="details-value" id="detailEmail">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">Login:</span>
+              <span class="details-value" id="detailLogin">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">Dirección:</span>
+              <span class="details-value" id="detailAddress">-</span>
+            </div>
+            <div class="details-field">
+              <span class="details-label">Estado:</span>
+              <span class="details-value" id="detailStatus">-</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="details-section">
+          <h3><i class="fas fa-calendar"></i> Fechas Importantes</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div class="details-field" style="flex-direction: column; align-items: flex-start;">
+              <span class="details-label">Fecha de Creación:</span>
+              <span class="details-value" id="detailDateCreation">-</span>
+            </div>
+            <div class="details-field" style="flex-direction: column; align-items: flex-start;">
+              <span class="details-label">Fecha de Registro:</span>
+              <span class="details-value" id="detailDateRegistration">-</span>
+            </div>
+            <div class="details-field" style="flex-direction: column; align-items: flex-start;">
+              <span class="details-label">Fecha de Nacimiento:</span>
+              <span class="details-value" id="detailBirthdayFull">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="details-images">
+          <h3><i class="fas fa-id-badge"></i> Imágenes del CI</h3>
+          <div class="ci-images-grid">
+            <div class="ci-image-card">
+              <h4>CI - Lado Frontal</h4>
+              <div id="detailFrontImage">
+                <button class="ci-view-btn front" onclick="showImageFromDetails('front')" style="margin: 10px 0;">
+                  <i class="fas fa-eye"></i> Ver Imagen Frontal
+                </button>
+              </div>
+            </div>
+            <div class="ci-image-card">
+              <h4>CI - Lado Posterior</h4>
+              <div id="detailBackImage">
+                <button class="ci-view-btn back" onclick="showImageFromDetails('back')" style="margin: 10px 0;">
+                  <i class="fas fa-eye"></i> Ver Imagen Posterior
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="details-actions">
+        <button class="btn-back" onclick="closeDetailsModal()">
+          <i class="fas fa-arrow-left"></i>
+          Volver a la Lista
+        </button>
+        <div>
+          <a href="#" id="detailEditLink" class="btn-edit-modal">
+            <i class="fas fa-edit"></i>
+            Editar Socio
+          </a>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- JavaScript para funcionalidad de imágenes -->
+  <!-- JavaScript para funcionalidad de imágenes y detalles -->
   <script>
+    // Variables globales para el modal de detalles
+    let currentPartnerData = null;
+
     // Función para mostrar modal de imagen
     function showImageModal(imagePath, title) {
       const modal = document.getElementById('imageModal');
@@ -403,18 +975,155 @@ ob_start();
       const modal = document.getElementById('imageModal');
       modal.style.display = 'none';
     }
+
+    // Función para mostrar modal de detalles
+    function showDetailsModal(button) {
+      const row = button.closest('.socio-row');
+      const partnerDataStr = row.getAttribute('data-partner');
+      
+      try {
+        currentPartnerData = JSON.parse(partnerDataStr);
+        populateDetailsModal(currentPartnerData);
+        
+        const modal = document.getElementById('detailsModal');
+        modal.style.display = 'flex';
+        
+        // Animar entrada del modal
+        const modalContent = modal.querySelector('.details-modal-content');
+        modalContent.style.transform = 'scale(0.8)';
+        modalContent.style.opacity = '0';
+        
+        setTimeout(() => {
+          modalContent.style.transition = 'all 0.3s ease';
+          modalContent.style.transform = 'scale(1)';
+          modalContent.style.opacity = '1';
+        }, 10);
+        
+      } catch (e) {
+        console.error('Error al parsear datos del socio:', e);
+        alert('Error al cargar los detalles del socio');
+      }
+    }
+
+    // Función para poblar el modal de detalles
+    function populateDetailsModal(partner) {
+      // Función auxiliar para formatear fechas
+      const formatDate = (dateString) => {
+        if (!dateString) return 'Sin información';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch (e) {
+          return 'Sin información';
+        }
+      };
+
+      const formatDateTime = (dateString) => {
+        if (!dateString) return 'Sin información';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (e) {
+          return 'Sin información';
+        }
+      };
+
+      // Función auxiliar para mostrar valor o "Sin información"
+      const displayValue = (value) => {
+        return value && value.trim() !== '' ? value : 'Sin información';
+      };
+
+      // Actualizar título del modal
+      document.getElementById('detailsTitle').innerHTML = `
+        <i class="fas fa-user-circle"></i>
+        Detalles del Socio: ${partner.name || 'Sin nombre'}
+      `;
+
+      // Información personal
+      document.getElementById('detailName').textContent = displayValue(partner.name);
+      document.getElementById('detailCI').textContent = displayValue(partner.ci);
+      document.getElementById('detailPhone').textContent = displayValue(partner.cellPhoneNumber);
+      document.getElementById('detailBirthday').textContent = formatDate(partner.birthday);
+
+      // Información de contacto
+      document.getElementById('detailEmail').textContent = displayValue(partner.email);
+      document.getElementById('detailLogin').textContent = displayValue(partner.login);
+      document.getElementById('detailAddress').textContent = displayValue(partner.address);
+      
+      // Estado del usuario
+      const userStatus = partner.userStatus == 1 ? 'Activo' : 'Inactivo';
+      document.getElementById('detailStatus').innerHTML = `
+        <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; 
+                     background: ${partner.userStatus == 1 ? '#d4edda' : '#f8d7da'}; 
+                     color: ${partner.userStatus == 1 ? '#155724' : '#721c24'};">
+          ${userStatus}
+        </span>
+      `;
+
+      // Fechas importantes
+      document.getElementById('detailDateCreation').textContent = formatDateTime(partner.dateCreation);
+      document.getElementById('detailDateRegistration').textContent = formatDate(partner.dateRegistration);
+      document.getElementById('detailBirthdayFull').textContent = formatDate(partner.birthday);
+
+      // Enlace de edición
+      document.getElementById('detailEditLink').href = '<?= u("partner/edit/") ?>' + (partner.idPartner || 0);
+    }
+
+    // Función para mostrar imagen desde el modal de detalles
+    function showImageFromDetails(type) {
+      if (!currentPartnerData) return;
+      
+      const imagePath = type === 'front' ? currentPartnerData.frontImageURL : currentPartnerData.backImageURL;
+      const title = `CI ${type === 'front' ? 'Frente' : 'Atrás'} - ${currentPartnerData.name || 'Socio'}`;
+      
+      showImageModal(imagePath, title);
+    }
+
+    // Función para cerrar modal de detalles
+    function closeDetailsModal() {
+      const modal = document.getElementById('detailsModal');
+      const modalContent = modal.querySelector('.details-modal-content');
+      
+      // Animar salida del modal
+      modalContent.style.transition = 'all 0.3s ease';
+      modalContent.style.transform = 'scale(0.8)';
+      modalContent.style.opacity = '0';
+      
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modalContent.style.transform = 'scale(1)';
+        modalContent.style.opacity = '1';
+      }, 300);
+    }
     
-    // Cerrar modal al hacer click fuera de la imagen
+    // Cerrar modales al hacer click fuera
     document.getElementById('imageModal').addEventListener('click', function(e) {
       if (e.target === this) {
         closeImageModal();
       }
     });
+
+    document.getElementById('detailsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeDetailsModal();
+      }
+    });
     
-    // Cerrar modal con tecla Escape
+    // Cerrar modales con tecla Escape
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeImageModal();
+        closeDetailsModal();
       }
     });
   </script>
@@ -497,6 +1206,22 @@ ob_start();
             confirmDelete(id, name);
           });
         });
+
+        // Agregar efectos hover a los botones de paginación
+        [firstPageBtn, prevPageBtn, nextPageBtn, lastPageBtn].forEach(btn => {
+          btn.addEventListener('mouseenter', function() {
+            if (!this.disabled) {
+              this.style.background = '#e9ecef';
+              this.style.transform = 'translateY(-1px)';
+            }
+          });
+          btn.addEventListener('mouseleave', function() {
+            if (!this.disabled) {
+              this.style.background = '#fff';
+              this.style.transform = 'translateY(0)';
+            }
+          });
+        });
       }
       
       // Función de confirmación de eliminación con SweetAlert
@@ -524,7 +1249,6 @@ ob_start();
             return new Promise((resolve) => {
               // Redirigir para eliminar
               window.location.href = '<?= u("partner/delete/") ?>' + id + '?return_url=' + encodeURIComponent(window.location.pathname + window.location.search);
-              // No resolvemos la promesa para que el loader se mantenga durante la redirección
             });
           },
           allowOutsideClick: () => !Swal.isLoading()
@@ -566,7 +1290,10 @@ ob_start();
           
           // Mostrar info de búsqueda
           searchInfo.style.display = 'block';
-          searchInfo.textContent = `Se encontraron ${filteredRows.length} resultado(s) para "${searchTerm}"`;
+          searchInfo.innerHTML = `
+            <i class="fas fa-search" style="margin-right: 8px;"></i>
+            Se encontraron <strong>${filteredRows.length}</strong> resultado(s) para "<strong>${searchTerm}</strong>"
+          `;
         }
         
         currentPage = 1;
@@ -625,8 +1352,8 @@ ob_start();
         
         firstPageBtn.disabled = currentPage <= 1;
         prevPageBtn.disabled = currentPage <= 1;
-        nextPageBtn.disabled = currentPage >= totalPages;
-        lastPageBtn.disabled = currentPage >= totalPages;
+        nextPageBtn.disabled = currentPage >= totalPages || totalPages === 0;
+        lastPageBtn.disabled = currentPage >= totalPages || totalPages === 0;
         
         // Actualizar estilos de botones deshabilitados
         [firstPageBtn, prevPageBtn, nextPageBtn, lastPageBtn].forEach(btn => {
@@ -750,21 +1477,25 @@ ob_start();
                   }
                   
                   const formatDate = (dateString) => {
-                      if (!dateString) return 'N/A';
+                      if (!dateString) return 'Sin información';
                       try {
                           return new Date(dateString).toLocaleDateString();
                       } catch (e) {
-                          return 'N/A';
+                          return 'Sin información';
                       }
+                  };
+
+                  const displayValue = (value) => {
+                      return value && value.trim() !== '' ? value : 'Sin información';
                   };
                   
                   const row = [
-                      partner.name || 'N/A',
-                      partner.ci || 'N/A',
-                      partner.login || 'N/A',
-                      partner.email || 'N/A',
-                      partner.cellPhoneNumber || 'N/A',
-                      (partner.address || 'N/A').substring(0, 25),
+                      displayValue(partner.name),
+                      displayValue(partner.ci),
+                      displayValue(partner.login),
+                      displayValue(partner.email),
+                      displayValue(partner.cellPhoneNumber),
+                      displayValue((partner.address || '').substring(0, 25)),
                       formatDate(partner.birthday),
                       formatDate(partner.dateRegistration),
                       formatDate(partner.dateCreation)
@@ -783,7 +1514,12 @@ ob_start();
               
           } catch (error) {
               console.error('Error al generar el PDF:', error);
-              alert('Error al generar el PDF: ' + error.message);
+              Swal.fire({
+                title: 'Error',
+                text: 'Error al generar el PDF: ' + error.message,
+                icon: 'error',
+                confirmButtonColor: '#e74c3c'
+              });
           } finally {
               // Restore button state
               button.innerHTML = originalText;
