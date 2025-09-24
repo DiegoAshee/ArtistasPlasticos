@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/Competence.php';
 require_once __DIR__ . '/../Models/Cobro.php';
+require_once __DIR__ . '/../Helpers/auth.php';
 
 class CobroController extends BaseController
 {
