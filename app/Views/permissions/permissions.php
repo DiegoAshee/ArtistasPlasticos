@@ -1,10 +1,5 @@
 <?php
 // Check if user is logged in and has admin role
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-    header('Location: /dashboard');
-    exit;
-}
-
 // Set up variables for the layout
 $title = 'Gestión de Permisos - Asociación de Artistas';
 $currentPath = 'permissions';
