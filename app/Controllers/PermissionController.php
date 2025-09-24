@@ -1,106 +1,165 @@
-<?php 
+<?php
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Config/database.php'; // Asegúrate de tener tu clase Database aquí
-require_once __DIR__ . '/../Models/Competence.php';
+require_once __DIR__ . '/../Models/Competence.php'; // Asegúrate de que el modelo Competence esté cargado correctamente
 
 class PermissionController extends BaseController
 {
+    // Constructor de la clase, se ejecuta cuando se crea una instancia de la clase
     public function __construct()
     {
-        parent::__construct();
-        $this->db = Database::singleton()->getConnection();
+        parent::__construct();  // Llama al constructor de la clase base (BaseController)
+        $this->db = Database::singleton()->getConnection();  // Establece la conexión con la base de datos
     }
 
+    // Método principal que se ejecuta para cargar la página de gestión de permisos
     public function index()
     {
-        // Solo administradores (rol = 1)
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-            $this->redirect('dashboard');
+        // Verificar si el usuario ha iniciado sesión
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = 'Debe iniciar sesión para acceder a esta sección';  // Establece un mensaje de error en la sesión
+            $this->redirect('login');  // Redirige al usuario al formulario de inicio de sesión
             return;
         }
 
+        // Limpiar mensajes de error previos
+        unset($_SESSION['error']);  // Elimina cualquier mensaje de error que pueda haber quedado en la sesión
+
+        // Obtener el ID del usuario actual desde la sesión
+        $userId = $_SESSION['user_id'];
+
+        // Verificar si el usuario tiene acceso al menú de permisos
+        $db = $this->db;
+        
+        // Primero obtenemos el rol del usuario
+        $stmt = $db->prepare("
+            SELECT idRol FROM user WHERE idUser = :user_id
+        ");
+        $stmt->execute([':user_id' => $userId]);  // Ejecuta la consulta pasando el ID del usuario
+        $userRole = $stmt->fetch(PDO::FETCH_COLUMN);  // Obtiene el rol del usuario
+        
+        // Verificamos si el rol tiene permiso para acceder a 'Permisos' en el menú
+        $stmt = $db->prepare("
+            SELECT 1 
+            FROM permission p
+            JOIN competence c ON p.idCompetence = c.idCompetence
+            WHERE p.idRol = :rol_id AND c.menuOption = 'Permisos'
+            LIMIT 1
+        ");
+        $stmt->execute([':rol_id' => $userRole]);  // Ejecuta la consulta para verificar el permiso
+        $hasPermission = $stmt->fetchColumn();  // Si se obtiene un valor, significa que el usuario tiene el permiso para "Permisos"
+        
+        // Si el usuario no tiene permiso, se redirige al dashboard
+        if (!$hasPermission) {
+            $_SESSION['error'] = 'No tienes permiso para acceder a esta sección';  // Establece un mensaje de error
+            $this->redirect('dashboard');  // Redirige al usuario al dashboard
+            return;
+        }
+
+        // Si el usuario tiene el permiso, continua con la carga de la vista de permisos
         try {
-            $db = $this->db;
-
-            // 1️⃣ Obtener todos los roles dinámicamente
+            // Obtener roles disponibles
             $rolesQuery = $db->query("SELECT idRol, rol FROM rol ORDER BY idRol");
-            $roles = $rolesQuery->fetchAll(PDO::FETCH_ASSOC);
+            $roles = $rolesQuery->fetchAll(PDO::FETCH_ASSOC);  // Obtiene todos los roles disponibles
 
-            // 2️⃣ Obtener todas las opciones de menú (competencias)
+            // Obtener opciones de menú disponibles
             $competencesQuery = $db->query("SELECT idCompetence, menuOption FROM competence ORDER BY menuOption");
-            $competences = $competencesQuery->fetchAll(PDO::FETCH_ASSOC);
+            $competences = $competencesQuery->fetchAll(PDO::FETCH_ASSOC);  // Obtiene todas las opciones de menú
 
-            // 3️⃣ Obtener los permisos actuales
+            // Obtener permisos actuales para cada competencia (permiso por rol)
             $permissionsQuery = $db->query("
                 SELECT p.idCompetence, p.idRol 
                 FROM permission p
                 INNER JOIN competence c ON p.idCompetence = c.idCompetence
                 INNER JOIN rol r ON p.idRol = r.idRol
             ");
-            $permissions = $permissionsQuery->fetchAll(PDO::FETCH_ASSOC);
+            $permissions = $permissionsQuery->fetchAll(PDO::FETCH_ASSOC);  // Obtiene los permisos actuales
 
-            // 4️⃣ Construir arreglo de permisos para la vista
+            // Construir la vista de permisos
             $permissionsView = [];
-            
-            // Inicializar la matriz de permisos
             foreach ($competences as $menu) {
+                // Para cada menú, inicializa los roles sin permisos
                 $permissionsView[$menu['idCompetence']] = [
                     'id' => $menu['idCompetence'],
                     'name' => $menu['menuOption'],
                     'roles' => []
                 ];
-                
-                // Inicializar todos los roles como no seleccionados
+
+                // Inicializa todos los roles como no seleccionados
                 foreach ($roles as $role) {
                     $permissionsView[$menu['idCompetence']]['roles'][$role['idRol']] = false;
                 }
             }
 
-            // Marcar los permisos existentes
+            // Marcar los permisos existentes en la vista
             foreach ($permissions as $permission) {
                 if (isset($permissionsView[$permission['idCompetence']])) {
                     $permissionsView[$permission['idCompetence']]['roles'][$permission['idRol']] = true;
                 }
             }
 
+            // Pasar la información a la vista
             $data = [
-                'title'       => 'Gestión de Permisos',
-                'permissions' => $permissionsView,
-                'roles'       => $roles,
-                'currentPath' => 'permissions',
-                'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)
+                'title' => 'Gestión de Permisos',  // Título de la página
+                'permissions' => $permissionsView,  // Datos de permisos para mostrar en la vista
+                'roles' => $roles,  // Datos de roles disponibles
+                'currentPath' => 'permissions',  // Ruta actual
+                'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)  // Opciones de menú según el rol del usuario
             ];
 
-            // Renderizar la vista
+            // Renderizar la vista de permisos
             $this->view('permissions/permissions', $data);
+
         } catch (Exception $e) {
-            error_log('Error in PermissionController::index(): ' . $e->getMessage());
-            $_SESSION['error'] = 'Error al cargar la página de permisos';
-            $this->redirect('dashboard');
+            // Manejo de errores en caso de que algo falle durante la obtención de datos o la construcción de la vista
+            $_SESSION['error'] = 'Ocurrió un error al cargar los permisos. Intente de nuevo más tarde.';  // Establece un mensaje de error en la sesión
+            error_log('Error en PermissionController::index(): ' . $e->getMessage());  // Loguea el error
+            // Mostrar el error en la vista de error
+            $this->view('error/error', ['message' => $_SESSION['error']]);
         }
     }
 
+    // Método para crear un nuevo permiso (solo accesible para administradores)
     public function create()
     {
-        error_log('PermissionController::create() called'); // Debug log
-        
-        // Verify admin access
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-            error_log('Access denied - User ID: ' . ($_SESSION['user_id'] ?? 'not set') . ', Role: ' . ($_SESSION['role'] ?? 'not set'));
-            $this->redirect('dashboard');
+        // Verificar si el usuario está autenticado
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');  // Si no está autenticado, redirige al login
+            return;
+        }
+
+        // Verificar si el usuario tiene la opción "Permisos" en el menú
+        $userId = $_SESSION['user_id'];
+        $db = $this->db;
+
+        // Consulta para verificar si el usuario tiene permiso para "Permisos"
+        $stmt = $db->prepare("
+            SELECT c.menuOption
+            FROM permission p
+            JOIN competence c ON p.idCompetence = c.idCompetence
+            JOIN rol r ON p.idRol = r.idRol
+            JOIN user u ON u.idRol = r.idRol
+            WHERE u.idUser = :user_id AND c.menuOption = 'Permisos'
+        ");
+        $stmt->execute([':user_id' => $userId]);
+        $hasPermission = $stmt->fetchColumn();  // Si existe, el usuario tiene permiso
+
+        // Si no tiene el permiso, muestra un mensaje de error
+        if (!$hasPermission) {
+            $_SESSION['error'] = 'No tienes permiso para acceder a esta sección';
+            $this->view('error/error', ['message' => $_SESSION['error']]);  // Mostrar el error sin redirigir al dashboard
             return;
         }
 
         try {
             $db = $this->db;
-            
-            // Get all roles
+
+            // Obtener todos los roles
             $stmt = $db->query("SELECT * FROM rol");
             $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            error_log('Roles found: ' . count($roles)); // Debug log
 
+            // Pasar los datos a la vista
             $data = [
                 'title' => 'Crear Nuevo Permiso',
                 'roles' => $roles,
@@ -108,110 +167,145 @@ class PermissionController extends BaseController
                 'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)
             ];
 
-            $viewPath = __DIR__ . '/../Views/permissions/create.php';
-            error_log('View path: ' . $viewPath); // Debug log
-            error_log('View exists: ' . (file_exists($viewPath) ? 'yes' : 'no')); // Debug log
-            
+            // Renderizar la vista de creación de permisos
             $this->view('permissions/create', $data);
             
         } catch (Exception $e) {
             error_log('Error in PermissionController::create(): ' . $e->getMessage());
             $_SESSION['error'] = 'Error al cargar el formulario de creación de permisos';
-            $this->redirect('permissions');
+            // Mostrar el error sin redirigir
+            $this->view('error/error', ['message' => $_SESSION['error']]);
         }
     }
 
+    // Método para actualizar permisos (solo accesible para administradores)
     public function update()
     {
-        // Solo administradores (rol = 1)
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-            $this->redirect('dashboard');
+        // Verificar que el usuario tenga el permiso adecuado
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
             return;
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permissions'])) {
+        // Verificar si el usuario tiene la opción "Permisos" en el menú
+        $userId = $_SESSION['user_id'];
+        $db = $this->db;
+
+        // Consulta para verificar si el usuario tiene el permiso para editar "Permisos"
+        $stmt = $db->prepare("
+            SELECT c.menuOption
+            FROM permission p
+            JOIN competence c ON p.idCompetence = c.idCompetence
+            JOIN rol r ON p.idRol = r.idRol
+            JOIN user u ON u.idRol = r.idRol
+            WHERE u.idUser = :user_id AND c.menuOption = 'Permisos'
+        ");
+        $stmt->execute([':user_id' => $userId]);
+        $hasPermission = $stmt->fetchColumn();
+
+        if (!$hasPermission) {
+            $_SESSION['error'] = 'No tienes permiso para editar los permisos';
+            $this->view('error/error', ['message' => $_SESSION['error']]);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['permissions'])) {
             $permissions = $_POST['permissions'];
             
             try {
-                $db = $this->db;
-                
-                // Iniciar transacción para asegurar la integridad de los datos
                 $db->beginTransaction();
-                
-                // 1. Eliminar todos los permisos existentes
+
+                // Eliminar todos los permisos existentes
                 $db->query('DELETE FROM permission');
-                
-                // 2. Insertar los nuevos permisos
+
+                // Insertar los nuevos permisos
                 $stmt = $db->prepare('INSERT INTO permission (idCompetence, idRol) VALUES (?, ?)');
                 
+                // Recorrer las competencias y sus roles
                 foreach ($permissions as $permission) {
-                    $competenceId = (int)$permission['id'];
+                    $competenceId = $permission['id'];
                     
+                    // Verificar si hay roles seleccionados para esta competencia
                     if (isset($permission['roles']) && is_array($permission['roles'])) {
-                        foreach ($permission['roles'] as $roleId => $value) {
-                            if ($value == '1') {
-                                $roleId = (int)$roleId;
+                        foreach ($permission['roles'] as $roleId => $isChecked) {
+                            // Si el checkbox está marcado (valor '1'), insertar el permiso
+                            if ($isChecked === '1') {
                                 $stmt->execute([$competenceId, $roleId]);
                             }
                         }
                     }
                 }
-                
-                // Confirmar la transacción
+
                 $db->commit();
-                
                 $_SESSION['success'] = 'Permisos actualizados correctamente';
-            } catch (PDOException $e) {
-                // Revertir en caso de error
-                if (isset($db) && $db->inTransaction()) {
+                
+                // Obtener datos actualizados para la vista
+                $this->refreshViewData();
+                
+            } catch (Exception $e) {
+                if ($db->inTransaction()) {
                     $db->rollBack();
                 }
                 error_log('Error al actualizar permisos: ' . $e->getMessage());
-                $_SESSION['error'] = 'Error al actualizar los permisos. Por favor, inténtelo de nuevo.';
-            } catch (Exception $e) {
-                if (isset($db) && $db->inTransaction()) {
-                    $db->rollBack();
-                }
-                error_log('Error inesperado: ' . $e->getMessage());
-                $_SESSION['error'] = 'Ocurrió un error inesperado. Por favor, contacte al administrador.';
+                $_SESSION['error'] = 'Error al actualizar los permisos: ' . $e->getMessage();
             }
-            
-            $this->redirect('permissions');
         } else {
-            // Si no es una petición POST o no vienen permisos, redirigir
-            $this->redirect('permissions');
-        }
-    }
-
-    // Helpers internos =========================
-
-    private function getAllMenus()
-    {
-        $db = $this->db;
-        $query = 'SELECT * FROM menu_options ORDER BY display_order ASC';
-        $stmt = $db->query($query);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    private function getAllRoles()
-    {
-        $db = $this->db;
-        $query = 'SELECT * FROM roles ORDER BY id ASC';
-        $stmt = $db->query($query);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    private function getAllPermissions()
-    {
-        $db = $this->db;
-        $query = 'SELECT role_id, menu_id FROM role_permissions';
-        $stmt = $db->query($query);
-        $permissions = [];
-        
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $permissions[$row['menu_id']][$row['role_id']] = true;
+            $_SESSION['error'] = 'No se recibieron datos para actualizar';
         }
         
-        return $permissions;
+        // Redirigir de vuelta a la vista de permisos
+        $this->redirect('permissions');
+    }
+    
+    // Método auxiliar para refrescar los datos de la vista
+    private function refreshViewData()
+    {
+        $db = $this->db;
+        
+        // Obtener roles disponibles
+        $rolesQuery = $db->query("SELECT idRol, rol FROM rol ORDER BY idRol");
+        $roles = $rolesQuery->fetchAll(PDO::FETCH_ASSOC);
+
+        // Obtener opciones de menú disponibles
+        $competencesQuery = $db->query("SELECT idCompetence, menuOption FROM competence ORDER BY menuOption");
+        $competences = $competencesQuery->fetchAll(PDO::FETCH_ASSOC);
+
+        // Obtener permisos actuales
+        $permissionsQuery = $db->query("
+            SELECT p.idCompetence, p.idRol 
+            FROM permission p
+            INNER JOIN competence c ON p.idCompetence = c.idCompetence
+            INNER JOIN rol r ON p.idRol = r.idRol
+        ");
+        $permissions = $permissionsQuery->fetchAll(PDO::FETCH_ASSOC);
+
+        // Construir la vista de permisos
+        $permissionsView = [];
+        foreach ($competences as $menu) {
+            $permissionsView[$menu['idCompetence']] = [
+                'id' => $menu['idCompetence'],
+                'name' => $menu['menuOption'],
+                'roles' => []
+            ];
+
+            foreach ($roles as $role) {
+                $permissionsView[$menu['idCompetence']]['roles'][$role['idRol']] = false;
+            }
+        }
+
+        // Marcar los permisos existentes
+        foreach ($permissions as $permission) {
+            if (isset($permissionsView[$permission['idCompetence']])) {
+                $permissionsView[$permission['idCompetence']]['roles'][$permission['idRol']] = true;
+            }
+        }
+
+        return [
+            'title' => 'Gestión de Permisos',
+            'permissions' => $permissionsView,
+            'roles' => $roles,
+            'currentPath' => 'permissions',
+            'menuOptions' => (new Competence())->getByRole($_SESSION['role'] ?? 2)
+        ];
     }
 }
