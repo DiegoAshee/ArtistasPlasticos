@@ -710,15 +710,14 @@ public function update($id, $dataOrLogin, $password = null, $idRole = null, $idP
             $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
             $sql = "UPDATE " . self::TABLE . "
                     SET password = :password,
-                        firstLogin = 1,
-                        updated_at = NOW()
+                        firstSession = 1
                     WHERE idUser = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':password', $hashed, \PDO::PARAM_STR);
             $stmt->bindParam(':id', $userId, \PDO::PARAM_INT);
             return $stmt->execute();
         } catch (\PDOException $e) {
-            error_log("Error al actualizar contraseña y firstLogin: " . $e->getMessage());
+            error_log("Error al actualizar contraseña y firstSession: " . $e->getMessage());
             return false;
         }
     }

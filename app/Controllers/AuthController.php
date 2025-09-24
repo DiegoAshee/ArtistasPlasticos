@@ -56,12 +56,16 @@ class AuthController extends BaseController
                     $_SESSION['username'] = (string)$user['login'];
                     $_SESSION['role']     = (int)$user['idRol'];
 
-                    // (opcional) primer login -> enviar correo
-                    if ((int)($user['firstLogin'] ?? 0) === 0) {
+                    // Forzar cambio de contraseña si es primer inicio de sesión
+                    if ((int)($user['firstSession'] ?? 1) === 0) {
+                        // Enviar correo de primer inicio (opcional)
                         $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
+                        $_SESSION['force_pw_change'] = true;
+                        $this->redirect('change-password');
+                        return;
                     }
 
-                    // Ir siempre al dashboard tras login correcto
+                    // Ir al dashboard si no requiere cambio de contraseña
                     $this->redirect('dashboard');
                 } else {
                     $error = "Usuario o contraseña incorrectos";
@@ -292,10 +296,35 @@ class AuthController extends BaseController
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            $new     = (string)($_POST['new_password']     ?? '');
-            $confirm = (string)($_POST['confirm_password'] ?? '');
+            $new     = trim((string)($_POST['new_password']     ?? ''));
+            $confirm = trim((string)($_POST['confirm_password'] ?? ''));
 
-            if ($new === $confirm && $new !== '') {
+            $errors = [];
+
+            // Reglas: 8-12, 1 mayúscula, 1 minúscula, 1 número, 1 símbolo
+            if ($new === '') {
+                $errors[] = 'La contraseña no puede estar vacía';
+            }
+            if (strlen($new) < 8 || strlen($new) > 12) {
+                $errors[] = 'La contraseña debe tener entre 8 y 12 caracteres';
+            }
+            if (!preg_match('/[A-Z]/', $new)) {
+                $errors[] = 'Debe contener al menos una letra mayúscula';
+            }
+            if (!preg_match('/[a-z]/', $new)) {
+                $errors[] = 'Debe contener al menos una letra minúscula';
+            }
+            if (!preg_match('/[0-9]/', $new)) {
+                $errors[] = 'Debe contener al menos un número';
+            }
+            if (!preg_match('/[^A-Za-z0-9]/', $new)) {
+                $errors[] = 'Debe contener al menos un símbolo';
+            }
+            if ($new !== $confirm) {
+                $errors[] = 'Las contraseñas no coinciden';
+            }
+
+            if (empty($errors)) {
                 require_once __DIR__ . '/../Models/Usuario.php';
                 $userModel = new \Usuario();
                 if ($userModel->updatePasswordAndUnsetFirstLogin((int)$_SESSION['user_id'], $new)) {
@@ -303,14 +332,15 @@ class AuthController extends BaseController
                     $this->redirect('dashboard');
                     return;
                 } else {
-                    echo "Error al actualizar la contraseña";
+                    $error = 'Error al actualizar la contraseña. Intenta nuevamente.';
                 }
             } else {
-                echo "Las contraseñas no coinciden";
+                $error = implode('<br>', $errors);
             }
         }
 
-        $this->view('change_password');
+        $viewData = isset($error) ? ['error' => $error] : [];
+        $this->view('change_password', $viewData);
     }
 
 
@@ -344,7 +374,7 @@ class AuthController extends BaseController
                    "Hemos detectado tu primer inicio de sesión en el Sistema MVC.\r\n" .
                    "Por seguridad, se te solicitará cambiar la contraseña.\r\n\r\n" .
                    "Si no fuiste tú, contacta al administrador.\r\n\r\n" .
-                   "Saludos,\r\nSistema MVC";
+                   "Saludos";
 
         $headers = [];
         $headers[] = 'From: Sistema MVC <no-reply@localhost>';
