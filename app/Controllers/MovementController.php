@@ -37,6 +37,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         $roleId = (int)($_SESSION['role'] ?? 2);
         $competenceModel = new \Competence();
@@ -122,6 +123,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         // Sidebar menu options
         require_once __DIR__ . '/../Models/Competence.php';
@@ -169,6 +171,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect("movement/edit/{$id}");
@@ -235,6 +238,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         // Get menu options for the sidebar
         require_once __DIR__ . '/../Models/Competence.php';
@@ -283,6 +287,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect("movement/delete/{$id}");
@@ -308,6 +313,7 @@ class MovementController extends BaseController
             echo json_encode(['success' => false, 'error' => 'No autorizado']);
             return;
         }
+        requireRole([1], 'login');
 
         // Check if it's an AJAX request
         if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/Role.php';
+require_once __DIR__ . '/../Helpers/auth.php';
 
 class RoleController extends BaseController
 {
@@ -15,6 +16,8 @@ class RoleController extends BaseController
             return;
         }
 
+        requireRole([1], 'login');
+        
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new Competence())->getByRole($roleId);

@@ -27,6 +27,7 @@ class PartnerOnlineController extends BaseController
             return;
         }
 
+
         // Si la solicitud es POST, procesar los datos
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Obtener los datos del formulario
@@ -76,7 +77,7 @@ public function pending(): void
 {
     $this->startSession();
     if (!isset($_SESSION['user_id'])) { $this->redirect('login'); return; }
-
+    requireRole([1], 'login');
     // Menú dinámico desde BD
     require_once __DIR__ . '/../Models/Competence.php';
     $roleId      = (int)($_SESSION['role'] ?? 2);
@@ -128,6 +129,7 @@ public function approve(): void
         $this->redirect('login'); 
         return; 
     }
+    requireRole([1], 'login');
     
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
         $this->redirect('partnerOnline/pending'); 
@@ -424,8 +426,9 @@ public function reject(): void
 {
     $this->startSession();
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('partnerOnline/pending'); return; }
+    
     if (!isset($_POST['id'])) { $this->redirect('partnerOnline/pending'); return; }
-
+    
     $id = (int)$_POST['id'];
     if ($id <= 0) { $this->redirect('partnerOnline/pending'); return; }
 

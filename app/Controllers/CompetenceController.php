@@ -25,6 +25,7 @@ class CompetenceController extends BaseController
             $this->redirect('dashboard');
             return;
         }
+        requireRole([1], 'login');
 
         try {
             $competences = $this->competenceModel->listAll();  // Obtiene las competencias a través del modelo
@@ -78,6 +79,7 @@ class CompetenceController extends BaseController
             $this->redirect('dashboard');
             return;
         }
+        requireRole([1], 'login');
 
         $menuOptions = $this->competenceModel->getByRole($_SESSION['role'] ?? 2);
         
@@ -153,7 +155,7 @@ class CompetenceController extends BaseController
     public function update(int $idCompetence, string $name = null)
     {
         $db = Database::singleton()->getConnection();
-
+        requireRole([1], 'login');
         // Si es una petición GET, mostrar el formulario de edición
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             try {
@@ -256,6 +258,7 @@ class CompetenceController extends BaseController
      */
     public function delete(int $idCompetence)
     {
+        requireRole([1], 'login');
         // Clear any previous output
         if (ob_get_level()) {
             ob_clean();

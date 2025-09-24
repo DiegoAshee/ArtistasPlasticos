@@ -22,6 +22,7 @@ class PermissionController extends BaseController
             $this->redirect('login');  // Redirige al usuario al formulario de inicio de sesión
             return;
         }
+        requireRole([1], 'login');
 
         // Limpiar mensajes de error previos
         unset($_SESSION['error']);  // Elimina cualquier mensaje de error que pueda haber quedado en la sesión
@@ -128,6 +129,7 @@ class PermissionController extends BaseController
             $this->redirect('login');  // Si no está autenticado, redirige al login
             return;
         }
+        requireRole([1], 'login');
 
         // Verificar si el usuario tiene la opción "Permisos" en el menú
         $userId = $_SESSION['user_id'];
@@ -186,6 +188,7 @@ class PermissionController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         // Verificar si el usuario tiene la opción "Permisos" en el menú
         $userId = $_SESSION['user_id'];

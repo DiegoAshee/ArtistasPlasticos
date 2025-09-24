@@ -6,9 +6,25 @@ error_reporting(E_ALL);
 
 // Incluir archivos necesarios
 require_once 'app/Core/Router.php';
+require_once __DIR__ . '/app/Helpers/auth.php';
 
 // Crear instancia del router
 $router = new Router();
+
+//Control de Acceso
+$route = $_GET['url'] ?? 'login';
+
+// 👇 Definimos qué roles pueden acceder a cada ruta
+$protectedRoutes = [
+    'dashboard' => [1, 2, 3], // todos los roles logueados
+    'role/list' => [1],       // solo admin
+    'users/list' => [1],       // solo admin
+    'partner'   => [3],       // solo socios conceptos/list
+    'conceptos/list/create'   => [1],
+];
+
+// Validar permisos automáticamente
+checkRoutePermissions($route, $protectedRoutes);
 
 /*
 |--------------------------------------------------------------------------

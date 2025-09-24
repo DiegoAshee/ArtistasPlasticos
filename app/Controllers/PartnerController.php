@@ -16,6 +16,7 @@ class PartnerController extends BaseController
             $this->redirect('login');
             return;
         }
+        requireRole([1], 'login');
 
         // Get menu options for the sidebar
         require_once __DIR__ . '/../Models/Competence.php';
@@ -335,6 +336,7 @@ class PartnerController extends BaseController
             $this->redirect('login'); 
             return;
         }
+        requireRole([1], 'login');
 
         // Menú dinámico desde BD (según rol)
         require_once __DIR__ . '/../Models/Competence.php';
