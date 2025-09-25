@@ -7,6 +7,8 @@ require_once __DIR__ . '/../Config/helpers.php';
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/PartnerOnline.php';
 
+require_once __DIR__ . '/../Models/Option.php';
+
 class OnlinePartnerController extends BaseController
 {
 public function registerPartner(): void
@@ -222,6 +224,74 @@ public function registerPartner(): void
 }
 
 /**
+     * Handles token verification and sends confirmation email.
+     */
+    public function verifyEmail(): void
+    {
+        $token = trim((string)($_GET['token'] ?? ''));
+
+        if (!$token) {
+            $this->view('partner/verify', ['error' => 'Token inválido o no proporcionado.']);
+            return;
+        }
+
+        $partnerOnlineModel = new \PartnerOnline();
+        $record = $partnerOnlineModel->verifyToken($token);
+
+        if (!$record) {
+            $this->view('partner/verify', ['error' => 'El enlace de verificación es inválido o ha expirado.']);
+            return;
+        }
+        $this->sendPartnerRegistrationEmail($record['email'], [
+            'name'             => $record['name'],
+            'ci'               => $record['ci'],
+            'email'            => $record['email'],
+            'cellphoneNumber'  => $record['cellPhoneNumber'],
+            'birthday'         => $record['birthday']
+        ]);
+
+        // Send confirmation email after successful verification
+        /* sendRegistrationConfirmationEmail($record['email'], [
+        'name'             => $record['name'],
+        'ci'               => $record['ci'],
+        'email'            => $record['email'],
+        'cellphoneNumber'  => $record['cellPhoneNumber'],
+        'birthday'         => $record['birthday']
+    ]);  */
+
+        $this->view('partner/verify', ['success' => 'Correo verificado con éxito. Tu solicitud está en revisión por un administrador.']);
+    }
+
+    /**
+     * Obtiene el título de la organización desde la tabla option
+     */
+    private function getOrganizationTitle(): string
+    {
+        try {
+            $optionModel = new \Option();
+            $activeOption = $optionModel->getActive();
+            
+            if ($activeOption && !empty($activeOption['title'])) {
+                return $activeOption['title'];
+            }
+            
+            // Si no hay opción activa, obtener la primera disponible
+            $allOptions = $optionModel->getAll();
+            if (!empty($allOptions) && !empty($allOptions[0]['title'])) {
+                return $allOptions[0]['title'];
+            }
+            
+            // Fallback por defecto
+            return 'asociación Boliviana de Artistas Plásticos';
+            
+        } catch (\Exception $e) {
+            error_log('Error al obtener título de organización: ' . $e->getMessage());
+            // Fallback por defecto en caso de error
+            return 'asociación Boliviana de Artistas Plásticos';
+        }
+    }
+
+/**
  * Valida un archivo subido
  */
 private function validateUploadedFile(string $fieldName, string $displayName): string|true
@@ -283,46 +353,8 @@ private function getFileInfo(string $fieldName): array|null
     ];
 }
 
-    /**
-     * Handles token verification and sends confirmation email.
-     */
-    public function verifyEmail(): void
-    {
-        $token = trim((string)($_GET['token'] ?? ''));
 
-        if (!$token) {
-            $this->view('partner/verify', ['error' => 'Token inválido o no proporcionado.']);
-            return;
-        }
-
-        $partnerOnlineModel = new \PartnerOnline();
-        $record = $partnerOnlineModel->verifyToken($token);
-
-        if (!$record) {
-            $this->view('partner/verify', ['error' => 'El enlace de verificación es inválido o ha expirado.']);
-            return;
-        }
-        $this->sendPartnerRegistrationEmail($record['email'], [
-            'name'             => $record['name'],
-            'ci'               => $record['ci'],
-            'email'            => $record['email'],
-            'cellphoneNumber'  => $record['cellPhoneNumber'],
-            'birthday'         => $record['birthday']
-        ]);
-
-        // Send confirmation email after successful verification
-        /* sendRegistrationConfirmationEmail($record['email'], [
-        'name'             => $record['name'],
-        'ci'               => $record['ci'],
-        'email'            => $record['email'],
-        'cellphoneNumber'  => $record['cellPhoneNumber'],
-        'birthday'         => $record['birthday']
-    ]); */
-
-        $this->view('partner/verify', ['success' => 'Correo verificado con éxito. Tu solicitud está en revisión por un administrador.']);
-    }
-
-    /**
+   /**
      * Sends the email verification link with detailed debugging.
      */
     private function sendVerificationEmail(string $email, string $token, array $data): bool
@@ -330,6 +362,9 @@ private function getFileInfo(string $fieldName): array|null
         try {
             error_log("=== INICIO sendVerificationEmail ===");
             error_log("Email destino: " . $email);
+
+            // Obtener título dinámico
+            $organizationTitle = $this->getOrganizationTitle();
 
             // Validar email
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -352,7 +387,7 @@ private function getFileInfo(string $fieldName): array|null
                 error_log("Exception.php: " . (is_file($exceptionPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
                 error_log("SMTP.php: " . (is_file($smtpPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
                 error_log("Usando mail() como fallback");
-                return $this->sendWithMailFunction($email, $token, $data);
+                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
             }
 
             // Cargar PHPMailer
@@ -389,30 +424,30 @@ private function getFileInfo(string $fieldName): array|null
                 $mail->SMTPDebug = 0; // Desactivar debug output en producción
 
                 // Remitente y destinatario
-                $mail->setFrom('abap@algoritmos.com.bo', 'Asociación Boliviana de Artistas Plásticos');
+                $mail->setFrom('abap@algoritmos.com.bo', $organizationTitle);
                 $mail->addAddress($email, $data['name'] ?? '');
                 $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
 
                 // Contenido del correo
                 $verificationLink = u('partner/verify?token=' . urlencode($token));
                 $mail->isHTML(true);
-                $mail->Subject = 'Verifica tu correo - Asociación Boliviana de Artistas Plásticos';
+                $mail->Subject = "Verifica tu correo - {$organizationTitle}";
                 $mail->Body    = "
                     <h2>¡Hola " . htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8') . "!</h2>
-                    <p>Gracias por registrarte en la Asociación Boliviana de Artistas Plásticos.</p>
+                    <p>Gracias por registrarte en {$organizationTitle}.</p>
                     <p>Por favor, verifica tu correo haciendo clic en el siguiente enlace:</p>
                     <p><a href=\"$verificationLink\" style=\"display:inline-block; padding:10px 20px; background:#bca478; color:#fff; text-decoration:none; border-radius:8px;\">Verificar Correo</a></p>
                     <p>Este enlace expirará en 24 horas.</p>
                     <p>Si no solicitaste este registro, ignora este correo.</p>
                     <br>
-                    <p>Saludos,<br><b>Asociación Boliviana de Artistas Plásticos</b></p>
+                    <p>Saludos,<br><b>{$organizationTitle}</b></p>
                 ";
                 $mail->AltBody = "Hola {$data['name']},\n\n" .
                                  "Por favor, verifica tu correo haciendo clic en el siguiente enlace:\n" .
                                  "$verificationLink\n\n" .
                                  "Este enlace expirará en 24 horas.\n\n" .
                                  "Si no solicitaste este registro, ignora este correo.\n\n" .
-                                 "Saludos,\nAsociación Boliviana de Artistas Plásticos";
+                                 "Saludos,\n{$organizationTitle}";
 
                 // Intentar enviar
                 $result = $mail->send();
@@ -424,37 +459,37 @@ private function getFileInfo(string $fieldName): array|null
                 }
 
                 error_log("❌ Error al enviar con PHPMailer: " . $mail->ErrorInfo);
-                return $this->sendWithMailFunction($email, $token, $data);
+                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
                 
             } catch (\Exception $e) {
                 error_log("❌ Excepción PHPMailer: " . $e->getMessage());
-                return $this->sendWithMailFunction($email, $token, $data);
+                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
             }
         } catch (\Throwable $e) {
             error_log("❌ Error general: " . $e->getMessage());
-            return $this->sendWithMailFunction($email, $token, $data);
+            return $this->sendWithMailFunction($email, $token, $data, $organizationTitle ?? 'asociación Boliviana de Artistas Plásticos');
         } finally {
             error_log("=== FIN sendVerificationEmail ===");
         }
-    } 
+    }
 
-    /**
+   /**
      * Fallback method using mail() function.
      */
-    private function sendWithMailFunction(string $email, string $token, array $data): bool
+    private function sendWithMailFunction(string $email, string $token, array $data, string $organizationTitle = 'asociación Boliviana de Artistas Plásticos'): bool
     {
         try {
             $verificationLink = u('partner/verify?token=' . urlencode($token));
-            $subject = 'Verifica tu correo -Asociación Boliviana de Artistas Plásticos';
+            $subject = "Verifica tu correo - {$organizationTitle}";
             $message = "Hola {$data['name']},\r\n\r\n" .
                        "Por favor, verifica tu correo haciendo clic en el siguiente enlace:\r\n" .
                        "$verificationLink\r\n\r\n" .
                        "Este enlace expirará en 24 horas.\r\n\r\n" .
                        "Si no solicitaste este registro, ignora este correo.\r\n\r\n" .
-                       "Saludos,\r\nAsociación Boliviana de Artistas Plásticos";
+                       "Saludos,\r\n{$organizationTitle}";
 
             $headers = [
-                'From: Asociación Boliviana de Artistas Plásticos<abap@algoritmos.com.bo>',
+                "From: {$organizationTitle} <abap@algoritmos.com.bo>",
                 'Reply-To: abap@algoritmos.com.bo',
                 'MIME-Version: 1.0',
                 'Content-Type: text/plain; charset=UTF-8',
@@ -474,11 +509,17 @@ private function getFileInfo(string $fieldName): array|null
     /**
      * Sends the partner registration confirmation email.
      */
+    /**
+     * Sends the partner registration confirmation email.
+     */
     private function sendPartnerRegistrationEmail(string $email, array $data): bool
     {
         try {
             error_log("=== INICIO sendPartnerRegistrationEmail ===");
             error_log("Email destino: " . $email);
+
+            // Obtener título dinámico
+            $organizationTitle = $this->getOrganizationTitle();
 
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 error_log("Email inválido: " . $email);
@@ -498,7 +539,7 @@ private function getFileInfo(string $fieldName): array|null
                 error_log("Exception.php: " . (is_file($exceptionPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
                 error_log("SMTP.php: " . (is_file($smtpPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
                 error_log("Usando mail() como fallback");
-                return $this->sendConfirmationWithMailFunction($email, $data);
+                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
             }
 
             require_once $phpmailerPath;
@@ -531,22 +572,22 @@ private function getFileInfo(string $fieldName): array|null
                 $mail->Timeout   = 30;
                 $mail->SMTPDebug = 0;
 
-                $mail->setFrom('abap@algoritmos.com.bo', 'Asociación Boliviana de Artistas Plásticos');
+                $mail->setFrom('abap@algoritmos.com.bo', $organizationTitle);
                 $mail->addAddress($email, $data['name'] ?? '');
                 $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
 
                 $mail->isHTML(true);
-                $mail->Subject = 'Confirmación de Registro de Solicitud - Asociación Boliviana de Artistas Plásticos';
+                $mail->Subject = "Confirmación de Registro de Solicitud - {$organizationTitle}";
                 $mail->Body    = "
                     <h2>¡Hola " . htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8') . "!</h2>
-                    <p>Tu registro fue recibido exitosamente en la Asociación Boliviana de Artistas Plásticos.</p>
+                    <p>Tu registro fue recibido exitosamente en {$organizationTitle}.</p>
                     <p><b>CI:</b> " . htmlspecialchars($data['ci'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
                     <b>Correo:</b> " . htmlspecialchars($data['email'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
                     <b>Celular:</b> " . htmlspecialchars($data['cellphoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
                     <b>Fecha de nacimiento:</b> " . htmlspecialchars($data['birthday'] ?? '', ENT_QUOTES, 'UTF-8') . "</p>
                     <p>Nos pondremos en contacto contigo muy pronto.</p>
                     <br>
-                    <p>Saludos,<br><b>Asociación Boliviana de Artistas Plásticos</b></p>
+                    <p>Saludos,<br><b>{$organizationTitle}</b></p>
                 ";
                 $mail->AltBody = "Hola {$data['name']},\n\n" .
                                  "Tu registro fue recibido exitosamente.\n\n" .
@@ -554,7 +595,7 @@ private function getFileInfo(string $fieldName): array|null
                                  "Correo: {$data['email']}\n" .
                                  "Celular: {$data['cellphoneNumber']}\n" .
                                  "Fecha de nacimiento: {$data['birthday']}\n\n" .
-                                 "Saludos,\nAsociación Boliviana de Artistas Plásticos";
+                                 "Saludos,\n{$organizationTitle}";
 
                 $result = $mail->send();
                 error_log("PHPMailer resultado (confirmación): " . ($result ? "ÉXITO" : "FALLO"));
@@ -565,15 +606,15 @@ private function getFileInfo(string $fieldName): array|null
                 }
 
                 error_log("❌ Error al enviar con PHPMailer: " . $mail->ErrorInfo);
-                return $this->sendConfirmationWithMailFunction($email, $data);
+                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
                 
             } catch (\Exception $e) {
                 error_log("❌ Excepción PHPMailer (confirmación): " . $e->getMessage());
-                return $this->sendConfirmationWithMailFunction($email, $data);
+                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
             }
         } catch (\Throwable $e) {
             error_log("❌ Error general (confirmación): " . $e->getMessage());
-            return $this->sendConfirmationWithMailFunction($email, $data);
+            return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle ?? 'asociación Boliviana de Artistas Plásticos');
         } finally {
             error_log("=== FIN sendPartnerRegistrationEmail ===");
         }
@@ -582,20 +623,20 @@ private function getFileInfo(string $fieldName): array|null
     /**
      * Fallback method for confirmation email using mail() function.
      */
-    private function sendConfirmationWithMailFunction(string $email, array $data): bool
+    private function sendConfirmationWithMailFunction(string $email, array $data, string $organizationTitle = 'asociación Boliviana de Artistas Plásticos'): bool
     {
         try {
-            $subject = 'Confirmación de Registro - Asociación Boliviana de Artistas Plásticos';
+            $subject = "Confirmación de Registro - {$organizationTitle}";
             $message = "Hola {$data['name']},\r\n\r\n" .
                        "Tu registro fue recibido exitosamente.\r\n\n" .
                        "CI: {$data['ci']}\r\n" .
                        "Correo: {$data['email']}\r\n" .
                        "Celular: {$data['cellphoneNumber']}\r\n" .
                        "Fecha de nacimiento: {$data['birthday']}\r\n\r\n" .
-                       "Saludos,\r\nAsociación Boliviana de Artistas Plásticos";
+                       "Saludos,\r\n{$organizationTitle}";
 
             $headers = [
-                'From: Asociación Boliviana de Artistas Plásticos <abap@algoritmos.com.bo>',
+                "From: {$organizationTitle} <abap@algoritmos.com.bo>",
                 'Reply-To: abap@algoritmos.com.bo',
                 'MIME-Version: 1.0',
                 'Content-Type: text/plain; charset=UTF-8',
