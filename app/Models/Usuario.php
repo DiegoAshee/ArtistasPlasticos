@@ -704,6 +704,23 @@ public function update($id, $dataOrLogin, $password = null, $idRole = null, $idP
         }
     }
 
+    /** Verificar contraseña actual por idUser (para cambio desde perfil) */
+    public function verifyPasswordByUserId(int $userId, string $plainPassword): bool {
+        try {
+            $sql = "SELECT password FROM " . self::TABLE . " WHERE idUser = :id LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $userId, \PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$row) { return false; }
+            $hash = (string)($row['password'] ?? '');
+            return $hash !== '' && password_verify($plainPassword, $hash);
+        } catch (\PDOException $e) {
+            error_log("Error al verificar contraseña actual: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /** Tu versión: cambio de contraseña y marcar que ya no es primer login */
     public function updatePasswordAndUnsetFirstLogin(int $userId, string $newPassword): bool {
         try {

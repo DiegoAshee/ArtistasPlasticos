@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Helpers por si no existen
 if (!function_exists('u')) {
     function u(string $path = ''): string {
@@ -195,10 +195,10 @@ ob_start();
                 <div class="security-details">
                     <h4>Contraseña</h4>
                     <p>Última actualización: <?= date('d/m/Y') ?></p>
-                    <button class="btn btn-outline" onclick="changePassword()">
-                        <i class="fas fa-edit"></i>
-                        Cambiar Contraseña
-                    </button>
+                    <a href="<?= u('users/change-password') ?>" class="btn btn-outline">
+  <i class="fas fa-edit"></i>
+  Cambiar Contraseña
+</a>
                 </div>
             </div>
         </div>
@@ -217,27 +217,44 @@ ob_start();
     <?php endif; ?>
 </div>
 
-<!-- Modal para confirmar envío de cambios -->
-<div class="modal fade" id="confirmChangesModal" tabindex="-1" role="dialog" aria-labelledby="confirmChangesModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmChangesModalLabel">Confirmar cambios</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>¿Estás seguro de que deseas enviar estos cambios para su aprobación?</p>
-                <div id="changes-summary"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="submitChanges()">Enviar solicitud</button>
-            </div>
+<!-- Modal para cambio de contraseña
+<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="changePasswordModalLabel">Cambiar contraseña</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="pw-error" class="alert alert-danger d-none"></div>
+        <div id="pw-success" class="alert alert-success d-none"></div>
+
+        <div class="form-group">
+          <label>Contraseña actual</label>
+          <input type="password" id="pw_current" class="form-control" autocomplete="current-password" />
         </div>
+
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input type="password" id="pw_new" class="form-control" autocomplete="new-password" />
+          <small class="form-text text-muted">8-12 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.</small>
+        </div>
+
+        <div class="form-group">
+          <label>Confirmar nueva contraseña</label>
+          <input type="password" id="pw_confirm" class="form-control" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="submitPasswordChange()">Guardar</button>
+      </div>
     </div>
-</div>
+  </div>
+</div> -->
 
 <script>
 // Variables para almacenar los cambios
@@ -352,8 +369,63 @@ function submitChanges() {
 }
 
 function changePassword() {
-    // Implementar cambio de contraseña
-    alert('Funcionalidad de cambio de contraseña');
+  // Abrir modal de cambio de contraseña
+  $('#changePasswordModal').modal('show');
+}
+
+function showPwAlert(id, message) {
+  const el = document.getElementById(id);
+  el.textContent = message;
+  el.classList.remove('d-none');
+}
+
+function hidePwAlerts() {
+  ['pw-error', 'pw-success'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('d-none');
+    el.textContent = '';
+  });
+}
+
+function submitPasswordChange() {
+  hidePwAlerts();
+
+  const current = document.getElementById('pw_current').value.trim();
+  const pw = document.getElementById('pw_new').value.trim();
+  const cf = document.getElementById('pw_confirm').value.trim();
+
+  // Validación rápida en cliente
+  const reLen = /^.{8,12}$/; const reUp=/[A-Z]/; const reLo=/[a-z]/; const reNum=/[0-9]/; const reSym=/[^A-Za-z0-9]/;
+  if (!current) { showPwAlert('pw-error', 'La contraseña actual es obligatoria'); return; }
+  if (!reLen.test(pw) || !reUp.test(pw) || !reLo.test(pw) || !reNum.test(pw) || !reSym.test(pw)) {
+    showPwAlert('pw-error', 'La nueva contraseña no cumple con los requisitos');
+    return;
+  }
+  if (pw !== cf) { showPwAlert('pw-error', 'Las contraseñas no coinciden'); return; }
+
+  fetch('<?= u('users/change-password-profile') ?>', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: current, new_password: pw, confirm_password: cf })
+  })
+  .then(async (res) => {
+    const data = await res.json().catch(() => ({ success: false, message: 'Error inesperado' }));
+    if (!res.ok || !data.success) {
+      showPwAlert('pw-error', data.message || 'No se pudo actualizar la contraseña');
+      return;
+    }
+    showPwAlert('pw-success', data.message || 'Contraseña actualizada correctamente');
+    setTimeout(() => {
+      $('#changePasswordModal').modal('hide');
+      document.getElementById('pw_current').value = '';
+      document.getElementById('pw_new').value = '';
+      document.getElementById('pw_confirm').value = '';
+      hidePwAlerts();
+    }, 1500);
+  })
+  .catch(() => {
+    showPwAlert('pw-error', 'Error de red al intentar actualizar la contraseña');
+  });
 }
 </script>
 
