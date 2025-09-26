@@ -46,34 +46,62 @@ class AuthController extends BaseController
                 $error = "Por favor, complete todos los campos";
             } else {
                 $modelPath = __DIR__ . '/../Models/Usuario.php';
-                if (is_file($modelPath)) {
+                $modelPathOption = __DIR__ . '/../Models/Option.php';
+                if (is_file($modelPath)&&is_file($modelPathOption)) {
                     require_once $modelPath;
+                    require_once $modelPathOption;
+                    
                     $userModel = new \Usuario();
-                    $user = $userModel->authenticate($login, $password);
+                    $optionModel = new \Option();
+
+                    // Verificar si el usuario está bloqueado
+                    if ($userModel->isUserBlocked($login)) {
+                        $error = "Su cuenta ha sido bloqueada por exceso de intentos fallidos. Contacte al administrador.";
+                    } else {
+                        // Obtener el límite de intentos desde la configuración
+                        $activeOption = $optionModel->getActive();
+                        $maxAttempts = $activeOption ? (int)($activeOption['NumberAttempts'] ?? 3) : 3;
+                        
+                        // Intentar autenticar
+                        $user = $userModel->authenticate($login, $password);
+                        
+                        if ($user) {
+                            // Login exitoso - resetear intentos fallidos
+                            $userModel->resetFailedAttempts($login);
+                            
+                            session_regenerate_id(true);
+                            $_SESSION['user_id']  = (int)$user['idUser'];
+                            $_SESSION['username'] = (string)$user['login'];
+                            $_SESSION['role']     = (int)$user['idRol'];
+
+                            // Forzar cambio de contraseña si es primer inicio de sesión
+                            if ((int)($user['firstSession'] ?? 1) === 0) {
+                                // Enviar correo de primer inicio (opcional)
+                                $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
+                                $_SESSION['force_pw_change'] = true;
+                                $this->redirect('change-password');
+                                return;
+                            }
+
+                            // Ir al dashboard si no requiere cambio de contraseña
+                            $this->redirect('dashboard');
+                        } else {
+                            // Login fallido - incrementar intentos
+                            $userModel->incrementFailedAttempts($login);
+                            $currentAttempts = $userModel->getFailedAttempts($login);
+                            
+                            // Verificar si se alcanzó el límite
+                            if ($currentAttempts >= $maxAttempts) {
+                                $userModel->blockUser($login);
+                                $error = "Ha excedido el número máximo de intentos ({$maxAttempts}). Su cuenta ha sido bloqueada. Contacte al administrador.";
+                            } else {
+                                $remainingAttempts = $maxAttempts - $currentAttempts;
+                                $error = "Usuario o contraseña incorrectos. Le quedan {$remainingAttempts} intentos antes de que su cuenta sea bloqueada.";
+                            }
+                        }
+                    }
                 } else {
                     $error = "Error del sistema: Modelo no encontrado";
-                    $user = null;
-                }
-
-                if ($user) {
-                    session_regenerate_id(true);
-                    $_SESSION['user_id']  = (int)$user['idUser'];
-                    $_SESSION['username'] = (string)$user['login'];
-                    $_SESSION['role']     = (int)$user['idRol'];
-
-                    // Forzar cambio de contraseña si es primer inicio de sesión
-                    if ((int)($user['firstSession'] ?? 1) === 0) {
-                        // Enviar correo de primer inicio (opcional)
-                        $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
-                        $_SESSION['force_pw_change'] = true;
-                        $this->redirect('change-password');
-                        return;
-                    }
-
-                    // Ir al dashboard si no requiere cambio de contraseña
-                    $this->redirect('dashboard');
-                } else {
-                    $error = "Usuario o contraseña incorrectos";
                 }
             }
         }
@@ -82,7 +110,47 @@ class AuthController extends BaseController
         $viewData = isset($error) ? ['error' => $error] : [];
         $this->view('login', $viewData);
     }
+/**
+     * Método para que los administradores desbloqueen usuarios
+     */
+    public function unblockUser(): void
+    {
+        $this->startSession();
+        
+        // Verificar que sea un administrador (ajusta según tu lógica de roles)
+        if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
+            $this->redirect('login');
+            return;
+        }
 
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+            $loginToUnblock = isset($_POST['login']) ? trim((string)$_POST['login']) : '';
+            
+            if ($loginToUnblock !== '') {
+                $modelPath = __DIR__ . '/../Models/Usuario.php';
+                if (is_file($modelPath)) {
+                    require_once $modelPath;
+                    $userModel = new \Usuario();
+                    
+                    if ($userModel->unblockUser($loginToUnblock)) {
+                        $success = "Usuario {$loginToUnblock} desbloqueado correctamente.";
+                    } else {
+                        $error = "Error al desbloquear el usuario.";
+                    }
+                } else {
+                    $error = "Error del sistema: Modelo no encontrado";
+                }
+            } else {
+                $error = "Debe especificar un usuario para desbloquear.";
+            }
+        }
+
+        $viewData = [];
+        if (isset($success)) $viewData['success'] = $success;
+        if (isset($error)) $viewData['error'] = $error;
+        
+        $this->view('admin/unblock_user', $viewData);
+    }
     // ====== LOGOUT ======
     public function logout(): void
     {

@@ -452,6 +452,37 @@ ob_start();
                         </td> -->
                         <td class="actions">
                             <div class="action-buttons" style="display: flex; gap: 8px;">
+                                
+                                <!-- Mostrar estado del usuario y botón de desbloqueo si está bloqueado -->
+                                <?php if (isset($usuario['isBlocked']) && (int)$usuario['isBlocked'] === 1): ?>
+                                    <!-- Usuario bloqueado - mostrar badge y botón de desbloqueo -->
+                                    <span class="status-badge blocked" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-lock"></i> BLOQUEADO
+                                    </span>
+                                    
+                                    <button onclick="unblockUser('<?= htmlspecialchars($usuario['login']) ?>', '<?= $usuario['idUser'] ?>')"
+                                            class="btn btn-sm btn-warning"
+                                            title="Desbloquear usuario"
+                                            style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #f39c12; color: #fff; border: none; cursor: pointer;">
+                                        <i class="fas fa-unlock"></i>
+                                    </button>
+                                <?php elseif (isset($usuario['failedAttempts']) && (int)$usuario['failedAttempts'] > 0): ?>
+                                    <!-- Usuario con intentos fallidos pero no bloqueado -->
+                                    <span class="status-badge warning" 
+                                        title="<?= (int)$usuario['failedAttempts'] ?> intento(s) fallido(s)"
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-exclamation-triangle"></i> <?= (int)$usuario['failedAttempts'] ?>
+                                    </span>
+                                <?php else: ?>
+                                    <!-- Usuario activo normal -->
+                                    <span class="status-badge active" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-check-circle"></i> ACTIVO
+                                    </span>
+                                <?php endif; ?>
+
+                            
                                 <a href="<?= u('users/edit/' . urlencode((string)($usuario['idUser'] ?? ''))) ?>"
                                    class="btn btn-sm btn-outline"
                                    title="Editar"

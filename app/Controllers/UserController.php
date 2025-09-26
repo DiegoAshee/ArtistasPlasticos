@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/BaseController.php';
+require_once __DIR__ . '/../Helpers/auth.php';
 
 class UserController extends BaseController
 {
@@ -207,7 +208,133 @@ public function listUsers(): void
         // 'currentPath' lo fija la propia vista como 'users'
     ]);
 }
+/**
+ * Desbloquear usuario (AJAX)
+ */
+public function unblock(): void
+{
+    $this->startSession();
+    
+    // Verificar que sea administrador
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permisos']);
+        exit;
+    }
 
+    // Solo aceptar POST
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+        exit;
+    }
+
+    $login = trim($_POST['login'] ?? '');
+    $userId = (int)($_POST['userId'] ?? 0);
+
+    if ($login === '' || $userId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/../Models/Usuario.php';
+        $userModel = new \Usuario();
+        
+        // Verificar que el usuario existe
+        $user = $userModel->getById($userId);
+        if (!$user || $user['login'] !== $login) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+            exit;
+        }
+
+        // Desbloquear usuario
+        $success = $userModel->unblockUser($login);
+        
+        if ($success) {
+            // Log de la acción
+            error_log("Admin {$_SESSION['username']} desbloqueó al usuario: {$login}");
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Usuario desbloqueado correctamente'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Error al desbloquear usuario'
+            ]);
+        }
+    } catch (Exception $e) {
+        error_log("Error en UserController::unblock: " . $e->getMessage());
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error interno del servidor'
+        ]);
+    }
+    exit;
+}
+
+/**
+ * Resetear intentos fallidos (AJAX)
+ */
+public function resetAttempts(): void
+{
+    $this->startSession();
+    
+    // Verificar que sea administrador
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permisos']);
+        exit;
+    }
+
+    // Solo aceptar POST
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+        exit;
+    }
+
+    $login = trim($_POST['login'] ?? '');
+    $userId = (int)($_POST['userId'] ?? 0);
+
+    if ($login === '' || $userId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/../Models/Usuario.php';
+        $userModel = new \Usuario();
+        
+        // Verificar que el usuario existe
+        $user = $userModel->getById($userId);
+        if (!$user || $user['login'] !== $login) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+            exit;
+        }
+
+        // Solo resetear intentos fallidos
+        $userModel->resetFailedAttempts($login);
+        
+        // Log de la acción
+        error_log("Admin {$_SESSION['username']} reseteó intentos fallidos del usuario: {$login}");
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Intentos fallidos reseteados'
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error en UserController::resetAttempts: " . $e->getMessage());
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error interno del servidor'
+        ]);
+    }
+    exit;
+}
 public function createUser(): void
 {
     $this->startSession();
