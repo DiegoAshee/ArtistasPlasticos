@@ -46,34 +46,62 @@ class AuthController extends BaseController
                 $error = "Por favor, complete todos los campos";
             } else {
                 $modelPath = __DIR__ . '/../Models/Usuario.php';
-                if (is_file($modelPath)) {
+                $modelPathOption = __DIR__ . '/../Models/Option.php';
+                if (is_file($modelPath)&&is_file($modelPathOption)) {
                     require_once $modelPath;
+                    require_once $modelPathOption;
+                    
                     $userModel = new \Usuario();
-                    $user = $userModel->authenticate($login, $password);
+                    $optionModel = new \Option();
+
+                    // Verificar si el usuario está bloqueado
+                    if ($userModel->isUserBlocked($login)) {
+                        $error = "Su cuenta ha sido bloqueada por exceso de intentos fallidos. Contacte al administrador.";
+                    } else {
+                        // Obtener el límite de intentos desde la configuración
+                        $activeOption = $optionModel->getActive();
+                        $maxAttempts = $activeOption ? (int)($activeOption['NumberAttempts'] ?? 3) : 3;
+                        
+                        // Intentar autenticar
+                        $user = $userModel->authenticate($login, $password);
+                        
+                        if ($user) {
+                            // Login exitoso - resetear intentos fallidos
+                            $userModel->resetFailedAttempts((int)$user['idUser']);
+                            
+                            session_regenerate_id(true);
+                            $_SESSION['user_id']  = (int)$user['idUser'];
+                            $_SESSION['username'] = (string)$user['login'];
+                            $_SESSION['role']     = (int)$user['idRol'];
+
+                            // Forzar cambio de contraseña si es primer inicio de sesión
+                            if ((int)($user['firstSession'] ?? 1) === 0) {
+                                // Enviar correo de primer inicio (opcional)
+                                $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
+                                $_SESSION['force_pw_change'] = true;
+                                $this->redirect('change-password');
+                                return;
+                            }
+
+                            // Ir al dashboard si no requiere cambio de contraseña
+                            $this->redirect('dashboard');
+                        } else {
+                            // Login fallido - incrementar intentos
+                            $userModel->incrementFailedAttempts($login);
+                            $currentAttempts = $userModel->getFailedAttempts($login);
+                            
+                            // Verificar si se alcanzó el límite
+                            if ($currentAttempts >= $maxAttempts) {
+                                $userModel->blockUser($login);
+                                $error = "Ha excedido el número máximo de intentos ({$maxAttempts}). Su cuenta ha sido bloqueada. Contacte al administrador.";
+                            } else {
+                                $remainingAttempts = $maxAttempts - $currentAttempts;
+                                $error = "Usuario o contraseña incorrectos. Le quedan {$remainingAttempts} intentos antes de que su cuenta sea bloqueada.";
+                            }
+                        }
+                    }
                 } else {
                     $error = "Error del sistema: Modelo no encontrado";
-                    $user = null;
-                }
-
-                if ($user) {
-                    session_regenerate_id(true);
-                    $_SESSION['user_id']  = (int)$user['idUser'];
-                    $_SESSION['username'] = (string)$user['login'];
-                    $_SESSION['role']     = (int)$user['idRol'];
-
-                    // Forzar cambio de contraseña si es primer inicio de sesión
-                    if ((int)($user['firstSession'] ?? 1) === 0) {
-                        // Enviar correo de primer inicio (opcional)
-                        $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
-                        $_SESSION['force_pw_change'] = true;
-                        $this->redirect('change-password');
-                        return;
-                    }
-
-                    // Ir al dashboard si no requiere cambio de contraseña
-                    $this->redirect('dashboard');
-                } else {
-                    $error = "Usuario o contraseña incorrectos";
                 }
             }
         }

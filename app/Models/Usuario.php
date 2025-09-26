@@ -20,7 +20,7 @@ class Usuario
      * Obtiene todos los usuarios
      * @return array Lista de usuarios
      */
-    public function getAll() {
+    /* public function getAll() {
         try {
             $query = "SELECT u.*, p.name as partner_name, p.lastName as partner_lastname 
                      FROM " . self::TABLE . " u
@@ -42,7 +42,7 @@ class Usuario
             error_log("Error en Usuario::getAll(): " . $e->getMessage());
             return [];
         }
-    }
+    } */
 
     // =========================================================
     // ===============        AUTENTICACIÓN        =============
@@ -297,7 +297,7 @@ public function getUsersAdmin(): array {
 
 // Renombrar y modificar getUsersAdmin a getNonSocioUsers
 // Agregar JOIN con tabla rol para obtener el nombre del rol
-public function getNonSocioUsers(): array {
+/*public function getNonSocioUsers(): array {
     try {
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -326,7 +326,7 @@ public function getNonSocioUsers(): array {
         error_log("Error al obtener usuarios no socios: " . $e->getMessage());
         return [];
     }
-}
+} */
 
 // El resto de funciones (create, update, delete) permanecen iguales, ya que ya manejan idRol dinámicamente
 
@@ -862,4 +862,177 @@ public function hardDelete(int $id): bool {
             return 0;
         }
     }
+    /**
+ * Verificar si el usuario está bloqueado
+ */
+public function isUserBlocked(string $login): bool
+{
+    try {
+        $sql = "SELECT isBlocked FROM user WHERE login = :login AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ? (bool)$result['isBlocked'] : false;
+    } catch (\PDOException $e) {
+        error_log('Usuario::isUserBlocked error: ' . $e->getMessage());
+        return true; // En caso de error, asumir bloqueado por seguridad
+    }
+}
+
+/**
+ * Incrementar intentos fallidos
+ */
+public function incrementFailedAttempts(string $login): void
+{
+    try {
+        $sql = "UPDATE user SET failedAttempts = failedAttempts + 1 WHERE login = :login AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->execute();
+    } catch (\PDOException $e) {
+        error_log('Usuario::incrementFailedAttempts error: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Bloquear usuario
+ */
+public function blockUser(string $login): void
+{
+    try {
+        $sql = "UPDATE user SET isBlocked = 1 WHERE login = :login AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->execute();
+    } catch (\PDOException $e) {
+        error_log('Usuario::blockUser error: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Resetear intentos fallidos (cuando login es exitoso)
+ */
+public function resetFailedAttempts(int $id): void
+{
+    try {
+        $sql = "UPDATE user SET failedAttempts = 0 WHERE idUser = :id AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+    } catch (\PDOException $e) {
+        error_log('Usuario::resetFailedAttempts error: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Obtener intentos fallidos actuales
+ */
+public function getFailedAttempts(string $login): int
+{
+    try {
+        $sql = "SELECT failedAttempts FROM user WHERE login = :login AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ? (int)$result['failedAttempts'] : 0;
+    } catch (\PDOException $e) {
+        error_log('Usuario::getFailedAttempts error: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Desbloquear usuario (para administradores)
+ */
+public function unblockUser(int $id): bool
+{
+    try {
+        $sql = "UPDATE user SET isBlocked = 0, failedAttempts = 0 WHERE idUser = :id AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch (\PDOException $e) {
+        error_log('Usuario::unblockUser error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Obtener usuarios no socios (incluir campos de bloqueo)
+ */
+public function getNonSocioUsers(): array
+{
+    try {
+        $sql = "SELECT u.idUser, u.login, u.password, u.email, u.firstSession, 
+                       u.isBlocked, u.failedAttempts, u.status, u.idRol, u.idPartner,
+                       r.rol as rolName
+                FROM user u
+                LEFT JOIN rol r ON u.idRol = r.idRol
+                WHERE u.status != 0 
+                AND u.idRol != 2
+                ORDER BY u.idUser DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+        // $this->setError('Error al obtener usuarios no socios: ' . $e->getMessage(), $e->getCode());
+        error_log('Usuario::getNonSocioUsers error: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtener usuario por ID (incluir campos de bloqueo)
+ */
+public function getById(int $id): ?array
+{
+    try {
+        $sql = "SELECT u.*, r.rol as rolName 
+                FROM user u
+                LEFT JOIN rol r ON u.idRol = r.idRol
+                WHERE u.idUser = :id AND u.status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ?: null;
+    } catch (\PDOException $e) {
+        //$this->setError('Error al obtener usuario: ' . $e->getMessage(), $e->getCode());
+        error_log('Usuario::getById error: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Obtener todos los usuarios (incluir campos de bloqueo)
+ */
+public function getAll(): array
+{
+    try {
+        $sql = "SELECT u.idUser, u.login, u.password, u.email, u.firstSession, 
+                       u.isBlocked, u.failedAttempts, u.status, u.idRol, u.idPartner,
+                       u.dateCreated, u.created_at,
+                       r.name as rolName
+                FROM user u
+                LEFT JOIN rol r ON u.idRol = r.idRol
+                WHERE u.status != 0 
+                ORDER BY u.idUser DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+        //$this->setError('Error al obtener usuarios: ' . $e->getMessage(), $e->getCode());
+        error_log('Usuario::getAll error: ' . $e->getMessage());
+        return [];
+    }
+}
 }

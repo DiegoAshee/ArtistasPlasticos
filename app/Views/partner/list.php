@@ -22,6 +22,9 @@ if (!empty($socios) && is_array($socios)) {
 // ---- Contenido específico de la página ----
 ob_start();
 ?>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <!-- Estilos optimizados para mejor uso del espacio -->
   <style>
     .modern-table th, .modern-table td {
@@ -815,8 +818,39 @@ ob_start();
                 <!-- Columna Acciones -->
                 <td class="col-actions">
                   <div class="actions-container">
+                    
                     <!-- Fila superior: Editar + Eliminar -->
                     <div class="action-row">
+
+                    <!-- Mostrar estado del usuario y botón de desbloqueo si está bloqueado -->
+                                <?php if (isset($socio['isBlocked']) && (int)$socio['isBlocked'] === 1): ?>
+                                    <!-- Usuario bloqueado - mostrar badge y botón de desbloqueo -->
+                                    <span class="status-badge blocked" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-lock"></i> BLOQUEADO
+                                    </span>
+                                    
+                                    <button onclick="unblockPartner('<?= htmlspecialchars($socio['login']) ?>', '<?= $socio['idPartner'] ?>')"
+                                            class="btn btn-sm btn-warning"
+                                            title="Desbloquear usuario"
+                                            style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #f39c12; color: #fff; border: none; cursor: pointer;">
+                                        <i class="fas fa-unlock"></i>
+                                    </button>
+                                <?php elseif (isset($socio['failedAttempts']) && (int)$socio['failedAttempts'] > 0): ?>
+                                    <!-- Usuario con intentos fallidos pero no bloqueado -->
+                                    <span class="status-badge warning" 
+                                        title="<?= (int)$socio['failedAttempts'] ?> intento(s) fallido(s)"
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-exclamation-triangle"></i> <?= (int)$socio['failedAttempts'] ?>
+                                    </span>
+                                <?php else: ?>
+                                    <!-- Usuario activo normal -->
+                                    <span class="status-badge active" 
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: #fff; font-size: 10px; font-weight: 600;">
+                                        <i class="fas fa-check-circle"></i> ACTIVO
+                                    </span>
+                                <?php endif; ?>
+
                       <a href="<?= u('partner/edit/' . (int)($socio['idPartner'] ?? 0)) ?>" 
                         class="action-btn btn-edit" 
                         title="Editar socio">
@@ -1006,6 +1040,79 @@ ob_start();
 
   <!-- JavaScript para funcionalidad de imágenes y detalles -->
   <script>
+    // Función específica para socios
+function unblockPartner(login, idPartner) {
+    console.log('🔓 unblockPartner llamada:', { login, idPartner });
+    
+    if (!login || !idPartner || parseInt(idPartner) <= 0) {
+        console.error('❌ Parámetros inválidos:', { login, idPartner });
+        alert('Error: Parámetros inválidos');
+        return;
+    }
+    
+    if (typeof Swal === 'undefined') {
+        alert('Error: SweetAlert2 no está disponible');
+        return;
+    }
+    
+    const url = '<?= u("partner/unblock") ?>';
+    console.log('🌐 URL:', url);
+    
+    Swal.fire({
+        title: '¿Desbloquear Socio?',
+        html: `¿Desbloquear al socio <strong>${login}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, desbloquear',
+        cancelButtonText: 'Cancelar',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            const postData = `login=${encodeURIComponent(login)}&idPartner=${encodeURIComponent(idPartner)}`;
+            console.log('📤 Enviando datos:', postData);
+            
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: postData
+            })
+            .then(response => {
+                console.log('📥 Status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('📄 Respuesta:', data);
+                if (data.success) {
+                    return data;
+                } else {
+                    throw new Error(data.message || 'Error al desbloquear');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                Swal.showValidationMessage(`Error: ${error.message}`);
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Socio Desbloqueado',
+                text: `El socio ${login} ha sido desbloqueado correctamente.`,
+                icon: 'success',
+                confirmButtonColor: '#28a745'
+            }).then(() => {
+                location.reload();
+            });
+        }
+    });
+}
+
     // Variables globales para el modal de detalles
     let currentPartnerData = null;
 

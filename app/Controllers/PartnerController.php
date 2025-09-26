@@ -364,7 +364,133 @@ class PartnerController extends BaseController
             'errorMessage'   => $errorMessage,
         ]);
     }
+/**
+ * Desbloquear usuario (AJAX) - CORREGIDO
+ */
+public function unblock(): void
+{
+    $this->startSession();
+    
+    // Verificar que sea administrador
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permisos']);
+        exit;
+    }
 
+    // Solo aceptar POST
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+        exit;
+    }
+
+    $login = trim($_POST['login'] ?? '');
+    $idPartner = (int)($_POST['idPartner'] ?? 0); // ← Corregido: usar idPartner
+
+    if ($login === '' || $idPartner <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/../Models/Partner.php';
+        $partnerModel = new \Partner();
+        
+        // Verificar que el usuario existe
+        $partner = $partnerModel->getUserByIdPartner($idPartner);
+        if (!$partner || $partner['login'] !== $login) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+            exit;
+        }
+
+        // Desbloquear usuario
+        $success = $partnerModel->unblockUser($idPartner);
+        
+        if ($success) {
+            // Log de la acción
+            error_log("Admin {$_SESSION['username']} desbloqueó al socio: {$login}");
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Socio desbloqueado correctamente'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Error al desbloquear socio'
+            ]);
+        }
+    } catch (Exception $e) {
+        error_log("Error en PartnerController::unblock: " . $e->getMessage());
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error interno del servidor'
+        ]);
+    }
+    exit;
+}
+
+/**
+ * Resetear intentos fallidos (AJAX) - CORREGIDO
+ */
+public function resetAttempts(): void
+{
+    $this->startSession();
+    
+    // Verificar que sea administrador
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permisos']);
+        exit;
+    }
+
+    // Solo aceptar POST
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+        exit;
+    }
+
+    $login = trim($_POST['login'] ?? '');
+    $idPartner = (int)($_POST['idPartner'] ?? 0); // ← Corregido: usar idPartner
+
+    if ($login === '' || $idPartner <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/../Models/Partner.php';
+        $partnerModel = new \Partner();
+        
+        // Verificar que el usuario existe
+        $user = $partnerModel->getUserByIdPartner($idPartner);
+        if (!$user || $user['login'] !== $login) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+            exit;
+        }
+
+        // Solo resetear intentos fallidos
+        $partnerModel->resetFailedAttempts($idPartner);
+        
+        // Log de la acción
+        error_log("Admin {$_SESSION['username']} reseteó intentos fallidos del socio: {$login}");
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Intentos fallidos reseteados'
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error en PartnerController::resetAttempts: " . $e->getMessage());
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error interno del servidor'
+        ]);
+    }
+    exit;
+}
     /*public function updatePartner(int $id): void
     {
         $this->startSession();

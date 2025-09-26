@@ -1,5 +1,6 @@
 <?php
 // app/Services/EmailService.php
+declare(strict_types=1);
 
 require_once __DIR__ . '/../Config/EmailConfig.php';
 
@@ -75,37 +76,39 @@ class EmailService
         array $options
     ): bool {
         try {
-            // Verificar archivos PHPMailer
-            $phpmailerPath = __DIR__ . EmailConfig::PHPMAILER_PATHS['phpmailer'];
-            $exceptionPath = __DIR__ . EmailConfig::PHPMAILER_PATHS['exception'];
-            $smtpPath = __DIR__ . EmailConfig::PHPMAILER_PATHS['smtp'];
-
-            if (!is_file($phpmailerPath) || !is_file($exceptionPath) || !is_file($smtpPath)) {
-                $this->addDebug("❌ Archivos PHPMailer no encontrados");
+            // Verificar si PHPMailer está disponible
+            if (!EmailConfig::isPHPMailerAvailable()) {
+                $this->addDebug("❌ PHPMailer no está disponible");
                 return false;
             }
 
+            // Obtener rutas
+            $paths = EmailConfig::getPHPMailerPaths();
+
             // Cargar PHPMailer
-            require_once $phpmailerPath;
-            require_once $exceptionPath; 
-            require_once $smtpPath;
+            require_once $paths['phpmailer'];
+            require_once $paths['exception']; 
+            require_once $paths['smtp'];
 
             $this->addDebug("✅ PHPMailer cargado correctamente");
 
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
 
+            // Obtener configuración SMTP
+            $smtpConfig = EmailConfig::getSmtpConfig();
+
             // Configurar SMTP
             $mail->isSMTP();
-            $mail->Host       = EmailConfig::SMTP_CONFIG['host'];
+            $mail->Host       = $smtpConfig['host'];
             $mail->SMTPAuth   = true;
-            $mail->Username   = EmailConfig::SMTP_CONFIG['username'];
-            $mail->Password   = EmailConfig::SMTP_CONFIG['password'];
-            $mail->SMTPSecure = EmailConfig::SMTP_CONFIG['encryption'] === 'ssl' 
+            $mail->Username   = $smtpConfig['username'];
+            $mail->Password   = $smtpConfig['password'];
+            $mail->SMTPSecure = $smtpConfig['encryption'] === 'ssl' 
                               ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS 
                               : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = EmailConfig::SMTP_CONFIG['port'];
-            $mail->CharSet    = EmailConfig::SMTP_CONFIG['charset'];
-            $mail->Timeout    = EmailConfig::SMTP_CONFIG['timeout'];
+            $mail->Port       = $smtpConfig['port'];
+            $mail->CharSet    = $smtpConfig['charset'];
+            $mail->Timeout    = $smtpConfig['timeout'];
             $mail->SMTPDebug  = 0;
 
             // Configurar SSL

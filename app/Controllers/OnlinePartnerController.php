@@ -6,154 +6,200 @@ require_once __DIR__ . '/../Config/config.php';
 require_once __DIR__ . '/../Config/helpers.php';
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/PartnerOnline.php';
-
 require_once __DIR__ . '/../Models/Option.php';
 
 class OnlinePartnerController extends BaseController
 {
-public function registerPartner(): void
-{
-    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-        // === Inputs ===
-        $name             = trim((string)($_POST['name'] ?? ''));
-        $ci               = trim((string)($_POST['ci'] ?? ''));
-        $cellPhoneNumber  = trim((string)($_POST['cellPhoneNumber'] ?? ''));
-        $address          = trim((string)($_POST['address'] ?? ''));
-        $birthday         = trim((string)($_POST['birthday'] ?? ''));
-        $email            = trim((string)($_POST['email'] ?? ''));
-        $dateRegistration = trim((string)($_POST['dateRegistration'] ?? ''));
-        $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    public function registerPartner(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+            // === Inputs ===
+            $name             = trim((string)($_POST['name'] ?? ''));
+            $ci               = trim((string)($_POST['ci'] ?? ''));
+            $cellPhoneNumber  = trim((string)($_POST['cellPhoneNumber'] ?? ''));
+            $address          = trim((string)($_POST['address'] ?? ''));
+            $birthday         = trim((string)($_POST['birthday'] ?? ''));
+            $email            = trim((string)($_POST['email'] ?? ''));
+            $dateRegistration = trim((string)($_POST['dateRegistration'] ?? ''));
+            $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
 
-        // Array para errores específicos por campo
-        $fieldErrors = [];
-        $generalErrors = [];
+            // Array para errores específicos por campo
+            $fieldErrors = [];
+            $generalErrors = [];
 
-        // === VALIDACIONES UNIFICADAS ===
-        
-        // Validar campos básicos
-        if ($name === '') {
-            $fieldErrors['name'] = "El nombre es obligatorio.";
-        } elseif (strlen($name) < 3) {
-            $fieldErrors['name'] = "El nombre debe tener al menos 3 caracteres.";
-        } elseif (strlen($name) > 100) {
-            $fieldErrors['name'] = "El nombre no puede exceder 100 caracteres.";
-        } elseif (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $name)) {
-            $fieldErrors['name'] = "El nombre solo puede contener letras y espacios.";
-        }
-
-        if ($ci === '') {
-            $fieldErrors['ci'] = "La cédula de identidad es obligatoria.";
-        } elseif (!preg_match('/^[0-9]+$/', $ci)) {
-            $fieldErrors['ci'] = "La cédula solo puede contener números.";
-        } elseif (strlen($ci) < 6 || strlen($ci) > 12) {
-            $fieldErrors['ci'] = "La cédula debe tener entre 6 y 12 dígitos.";
-        }
-
-        if ($cellPhoneNumber === '') {
-            $fieldErrors['cellPhoneNumber'] = "El número de celular es obligatorio.";
-        } elseif (!preg_match('/^[67][0-9]{7}$/', $cellPhoneNumber)) {
-            $fieldErrors['cellPhoneNumber'] = "El celular debe tener 8 dígitos y comenzar con 6 o 7.";
-        }
-
-        if ($address === '') {
-            $fieldErrors['address'] = "La dirección es obligatoria.";
-        } elseif (strlen($address) < 10) {
-            $fieldErrors['address'] = "La dirección debe ser más específica (mínimo 10 caracteres).";
-        } elseif (strlen($address) > 255) {
-            $fieldErrors['address'] = "La dirección no puede exceder 255 caracteres.";
-        }
-
-        if ($email === '') {
-            $fieldErrors['email'] = "El correo electrónico es obligatorio.";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $fieldErrors['email'] = "El formato del correo no es válido.";
-        } elseif (strlen($email) > 100) {
-            $fieldErrors['email'] = "El correo no puede exceder 100 caracteres.";
-        }
-
-        if ($birthday === '') {
-            $fieldErrors['birthday'] = "La fecha de nacimiento es obligatoria.";
-        } else {
-            try {
-                $dob = new \DateTime($birthday);
-                $today = new \DateTime('today');
-                $age = $dob->diff($today)->y;
-                
-                $minDate = new \DateTime('-120 years');
-                $maxDate = new \DateTime('-18 years');
-                
-                if ($dob > $today) {
-                    $fieldErrors['birthday'] = "La fecha de nacimiento no puede ser futura.";
-                } elseif ($dob < $minDate) {
-                    $fieldErrors['birthday'] = "La fecha de nacimiento es demasiado antigua.";
-                } elseif ($dob > $maxDate) {
-                    $fieldErrors['birthday'] = "Debes ser mayor de edad (18+ años).";
-                }
-            } catch (\Exception $e) {
-                $fieldErrors['birthday'] = "Formato de fecha inválido.";
-            }
-        }
-
-        // Validar archivos
-        $frontImageValid = $this->validateUploadedFile('frontImage', 'frontImage');
-        if ($frontImageValid !== true) {
-            $fieldErrors['frontImage'] = $frontImageValid;
-        }
-
-        $backImageValid = $this->validateUploadedFile('backImage', 'backImage');
-        if ($backImageValid !== true) {
-            $fieldErrors['backImage'] = $backImageValid;
-        }
-
-        // Validar reCAPTCHA
-        if (empty($recaptchaResponse)) {
-            $generalErrors[] = 'Por favor, complete el reCAPTCHA.';
-        } else {
-            $secretKey = RECAPTCHA_SECRET;
-            $verify = file_get_contents(
-                'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($secretKey) .
-                '&response=' . urlencode($recaptchaResponse)
-            );
-            $resp = json_decode($verify);
+            // === VALIDACIONES UNIFICADAS ===
             
-            if (!$resp->success) {
-                $generalErrors[] = 'Verificación de reCAPTCHA fallida. Por favor, intente nuevamente.';
+            // Validar campos básicos
+            if ($name === '') {
+                $fieldErrors['name'] = "El nombre es obligatorio.";
+            } elseif (strlen($name) < 3) {
+                $fieldErrors['name'] = "El nombre debe tener al menos 3 caracteres.";
+            } elseif (strlen($name) > 100) {
+                $fieldErrors['name'] = "El nombre no puede exceder 100 caracteres.";
+            } elseif (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $name)) {
+                $fieldErrors['name'] = "El nombre solo puede contener letras y espacios.";
             }
-        }
 
-        // Validaciones de base de datos (solo si no hay errores críticos)
-        if (empty($fieldErrors) && empty($generalErrors)) {
-            $partnerOnlineModel = new \PartnerOnline();
-            $partnerOnlineModel->deleteExpiredUnverified();
-
-            if ($partnerOnlineModel->emailExistsAnywhere($email)) {
-                $fieldErrors['email'] = "Este correo ya está registrado en el sistema.";
+            if ($ci === '') {
+                $fieldErrors['ci'] = "La cédula de identidad es obligatoria.";
+            } elseif (!preg_match('/^[0-9]+$/', $ci)) {
+                $fieldErrors['ci'] = "La cédula solo puede contener números.";
+            } elseif (strlen($ci) < 6 || strlen($ci) > 12) {
+                $fieldErrors['ci'] = "La cédula debe tener entre 6 y 12 dígitos.";
             }
-            if ($partnerOnlineModel->ciExistsAnywhere($ci)) {
-                $fieldErrors['ci'] = "Esta cédula ya está registrada en el sistema.";
+
+            if ($cellPhoneNumber === '') {
+                $fieldErrors['cellPhoneNumber'] = "El número de celular es obligatorio.";
+            } elseif (!preg_match('/^[67][0-9]{7}$/', $cellPhoneNumber)) {
+                $fieldErrors['cellPhoneNumber'] = "El celular debe tener 8 dígitos y comenzar con 6 o 7.";
             }
-        }
 
-        // Si hay cualquier tipo de error, mostrar el formulario con errores
-        if (!empty($fieldErrors) || !empty($generalErrors)) {
-            $this->view('partner/register', [
-                'field_errors' => $fieldErrors,
-                'general_errors' => $generalErrors,
-                'form_data' => $_POST,
-                'uploaded_files' => [
-                    'frontImage' => $this->getFileInfo('frontImage'),
-                    'backImage' => $this->getFileInfo('backImage')
-                ]
-            ]);
-            return;
-        }
+            if ($address === '') {
+                $fieldErrors['address'] = "La dirección es obligatoria.";
+            } elseif (strlen($address) < 10) {
+                $fieldErrors['address'] = "La dirección debe ser más específica (mínimo 10 caracteres).";
+            } elseif (strlen($address) > 255) {
+                $fieldErrors['address'] = "La dirección no puede exceder 255 caracteres.";
+            }
 
-        // === PROCESAMIENTO EXITOSO ===
-        try {
-            $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
-            $backImageRel = $this->handleUpload('backImage', $ci, 'back');
-        } catch (\Exception $e) {
-            $generalErrors[] = 'Error al procesar los archivos: ' . $e->getMessage();
+            if ($email === '') {
+                $fieldErrors['email'] = "El correo electrónico es obligatorio.";
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $fieldErrors['email'] = "El formato del correo no es válido.";
+            } elseif (strlen($email) > 100) {
+                $fieldErrors['email'] = "El correo no puede exceder 100 caracteres.";
+            }
+
+            if ($birthday === '') {
+                $fieldErrors['birthday'] = "La fecha de nacimiento es obligatoria.";
+            } else {
+                try {
+                    $dob = new \DateTime($birthday);
+                    $today = new \DateTime('today');
+                    $age = $dob->diff($today)->y;
+                    
+                    $minDate = new \DateTime('-120 years');
+                    $maxDate = new \DateTime('-18 years');
+                    
+                    if ($dob > $today) {
+                        $fieldErrors['birthday'] = "La fecha de nacimiento no puede ser futura.";
+                    } elseif ($dob < $minDate) {
+                        $fieldErrors['birthday'] = "La fecha de nacimiento es demasiado antigua.";
+                    } elseif ($dob > $maxDate) {
+                        $fieldErrors['birthday'] = "Debes ser mayor de edad (18+ años).";
+                    }
+                } catch (\Exception $e) {
+                    $fieldErrors['birthday'] = "Formato de fecha inválido.";
+                }
+            }
+
+            // Validar archivos
+            $frontImageValid = $this->validateUploadedFile('frontImage', 'frontImage');
+            if ($frontImageValid !== true) {
+                $fieldErrors['frontImage'] = $frontImageValid;
+            }
+
+            $backImageValid = $this->validateUploadedFile('backImage', 'backImage');
+            if ($backImageValid !== true) {
+                $fieldErrors['backImage'] = $backImageValid;
+            }
+
+            // Validar reCAPTCHA
+            if (empty($recaptchaResponse)) {
+                $generalErrors[] = 'Por favor, complete el reCAPTCHA.';
+            } else {
+                $secretKey = RECAPTCHA_SECRET;
+                $verify = file_get_contents(
+                    'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($secretKey) .
+                    '&response=' . urlencode($recaptchaResponse)
+                );
+                $resp = json_decode($verify);
+                
+                if (!$resp->success) {
+                    $generalErrors[] = 'Verificación de reCAPTCHA fallida. Por favor, intente nuevamente.';
+                }
+            }
+
+            // Validaciones de base de datos (solo si no hay errores críticos)
+            if (empty($fieldErrors) && empty($generalErrors)) {
+                $partnerOnlineModel = new \PartnerOnline();
+                $partnerOnlineModel->deleteExpiredUnverified();
+
+                if ($partnerOnlineModel->emailExistsAnywhere($email)) {
+                    $fieldErrors['email'] = "Este correo ya está registrado en el sistema.";
+                }
+                if ($partnerOnlineModel->ciExistsAnywhere($ci)) {
+                    $fieldErrors['ci'] = "Esta cédula ya está registrada en el sistema.";
+                }
+            }
+
+            // Si hay cualquier tipo de error, mostrar el formulario con errores
+            if (!empty($fieldErrors) || !empty($generalErrors)) {
+                $this->view('partner/register', [
+                    'field_errors' => $fieldErrors,
+                    'general_errors' => $generalErrors,
+                    'form_data' => $_POST,
+                    'uploaded_files' => [
+                        'frontImage' => $this->getFileInfo('frontImage'),
+                        'backImage' => $this->getFileInfo('backImage')
+                    ]
+                ]);
+                return;
+            }
+
+            // === PROCESAMIENTO EXITOSO ===
+            try {
+                $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
+                $backImageRel = $this->handleUpload('backImage', $ci, 'back');
+            } catch (\Exception $e) {
+                $generalErrors[] = 'Error al procesar los archivos: ' . $e->getMessage();
+                $this->view('partner/register', [
+                    'general_errors' => $generalErrors,
+                    'form_data' => $_POST
+                ]);
+                return;
+            }
+
+            // Crear registro
+            $verificationToken = bin2hex(random_bytes(32));
+            $tokenExpiresAt = (new \DateTime())->modify('+24 hours')->format('Y-m-d H:i:s');
+
+            $partnerId = $partnerOnlineModel->create(
+                $name,
+                $ci,
+                $cellPhoneNumber,
+                $address,
+                $birthday,
+                $email,
+                $frontImageRel,
+                $backImageRel,
+                $verificationToken,
+                $tokenExpiresAt
+            );
+
+            if ($partnerId) {
+                // Usar el nuevo helper para envío de email
+                $emailSent = sendVerificationEmail($email, $verificationToken, [
+                    'name' => $name
+                ]);
+                
+                if ($emailSent) {
+                    $this->view('partner/register', [
+                        'success' => 'Se ha enviado un enlace de verificación a tu correo. Por favor, verifica tu email para completar el registro.',
+                        'email' => $email
+                    ]);
+                } else {
+                    $partnerOnlineModel->delete((int)$partnerId);
+                    $generalErrors[] = 'No se pudo enviar el correo de verificación. Por favor, intenta nuevamente.';
+                    $this->view('partner/register', [
+                        'general_errors' => $generalErrors,
+                        'form_data' => $_POST
+                    ]);
+                }
+                return;
+            }
+            
+            $generalErrors[] = 'Error interno del servidor. Por favor, intenta más tarde.';
             $this->view('partner/register', [
                 'general_errors' => $generalErrors,
                 'form_data' => $_POST
@@ -161,69 +207,18 @@ public function registerPartner(): void
             return;
         }
 
-        // Crear registro
-        $verificationToken = bin2hex(random_bytes(32));
-        $tokenExpiresAt = (new \DateTime())->modify('+24 hours')->format('Y-m-d H:i:s');
-
-        $partnerId = $partnerOnlineModel->create(
-            $name,
-            $ci,
-            $cellPhoneNumber,
-            $address,
-            $birthday,
-            $email,
-            $frontImageRel,
-            $backImageRel,
-            $verificationToken,
-            $tokenExpiresAt
-        );
-
-        if ($partnerId) {
-            $emailSent = $this->sendVerificationEmail($email, $verificationToken, [
-                    'name' => $name
-                ]);
-            /* $emailSent = sendVerificationEmail($email, $verificationToken, [
-                'name' => $name,
-                'ci' => $ci,
-                'email' => $email
-            ]); */
-            
-            if ($emailSent) {
-                $this->view('partner/register', [
-                    'success' => 'Se ha enviado un enlace de verificación a tu correo. Por favor, verifica tu email para completar el registro.',
-                    'email' => $email
-                ]);
-            } else {
-                $partnerOnlineModel->delete((int)$partnerId);
-                $generalErrors[] = 'No se pudo enviar el correo de verificación. Por favor, intenta nuevamente.';
-                $this->view('partner/register', [
-                    'general_errors' => $generalErrors,
-                    'form_data' => $_POST
-                ]);
-            }
+        // GET request
+        if (isset($_GET['success'])) {
+            $this->view('partner/register', [
+                'success' => "Solicitud enviada con éxito. Por favor, verifica tu correo para completar el registro."
+            ]);
             return;
         }
-        
-        $generalErrors[] = 'Error interno del servidor. Por favor, intenta más tarde.';
-        $this->view('partner/register', [
-            'general_errors' => $generalErrors,
-            'form_data' => $_POST
-        ]);
-        return;
+
+        $this->view('partner/register');
     }
 
-    // GET request
-    if (isset($_GET['success'])) {
-        $this->view('partner/register', [
-            'success' => "Solicitud enviada con éxito. Por favor, verifica tu correo para completar el registro."
-        ]);
-        return;
-    }
-
-    $this->view('partner/register');
-}
-
-/**
+    /**
      * Handles token verification and sends confirmation email.
      */
     public function verifyEmail(): void
@@ -242,7 +237,9 @@ public function registerPartner(): void
             $this->view('partner/verify', ['error' => 'El enlace de verificación es inválido o ha expirado.']);
             return;
         }
-        $this->sendPartnerRegistrationEmail($record['email'], [
+
+        // Usar el nuevo helper para envío de email de confirmación
+        $emailSent = sendRegistrationConfirmationEmail($record['email'], [
             'name'             => $record['name'],
             'ci'               => $record['ci'],
             'email'            => $record['email'],
@@ -250,407 +247,73 @@ public function registerPartner(): void
             'birthday'         => $record['birthday']
         ]);
 
-        // Send confirmation email after successful verification
-        /* sendRegistrationConfirmationEmail($record['email'], [
-        'name'             => $record['name'],
-        'ci'               => $record['ci'],
-        'email'            => $record['email'],
-        'cellphoneNumber'  => $record['cellPhoneNumber'],
-        'birthday'         => $record['birthday']
-    ]);  */
+        if (!$emailSent) {
+            error_log("No se pudo enviar email de confirmación para: " . $record['email']);
+        }
 
         $this->view('partner/verify', ['success' => 'Correo verificado con éxito. Tu solicitud está en revisión por un administrador.']);
     }
 
     /**
-     * Obtiene el título de la organización desde la tabla option
+     * Valida un archivo subido
      */
-    private function getOrganizationTitle(): string
+    private function validateUploadedFile(string $fieldName, string $displayName): string|true
     {
-        try {
-            $optionModel = new \Option();
-            $activeOption = $optionModel->getActive();
-            
-            if ($activeOption && !empty($activeOption['title'])) {
-                return $activeOption['title'];
-            }
-            
-            // Si no hay opción activa, obtener la primera disponible
-            $allOptions = $optionModel->getAll();
-            if (!empty($allOptions) && !empty($allOptions[0]['title'])) {
-                return $allOptions[0]['title'];
-            }
-            
-            // Fallback por defecto
-            return 'asociación Boliviana de Artistas Plásticos';
-            
-        } catch (\Exception $e) {
-            error_log('Error al obtener título de organización: ' . $e->getMessage());
-            // Fallback por defecto en caso de error
-            return 'asociación Boliviana de Artistas Plásticos';
+        if (!isset($_FILES[$fieldName])) {
+            return "Falta el archivo de $displayName.";
         }
-    }
 
-/**
- * Valida un archivo subido
- */
-private function validateUploadedFile(string $fieldName, string $displayName): string|true
-{
-    if (!isset($_FILES[$fieldName])) {
-        return "Falta el archivo de $displayName.";
-    }
-
-    $file = $_FILES[$fieldName];
-    
-    if ($file['error'] === UPLOAD_ERR_NO_FILE) {
-        return "Debe seleccionar un archivo para $displayName.";
-    }
-    
-    if ($file['error'] === UPLOAD_ERR_FORM_SIZE || $file['error'] === UPLOAD_ERR_INI_SIZE) {
-        return "El archivo de $displayName excede el tamaño máximo de 2MB.";
-    }
-    
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        return "Error al subir el archivo de $displayName.";
-    }
-
-    // Validar tamaño (2MB)
-    if ($file['size'] > 2 * 1024 * 1024) {
-        return "El archivo de $displayName excede el tamaño máximo de 2MB.";
-    }
-
-    // Validar tipo de archivo
-    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
-
-    if (!in_array($mimeType, $allowedTypes)) {
-        return "El archivo de $displayName debe ser JPG, PNG o JPEG.";
-    }
-
-    // Validar que no esté vacío
-    if ($file['size'] === 0) {
-        return "El archivo de $displayName está vacío.";
-    }
-
-    return true;
-}
-
-/**
- * Obtiene información básica del archivo para mantener referencia
- */
-private function getFileInfo(string $fieldName): array|null
-{
-    if (!isset($_FILES[$fieldName]) || $_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) {
-        return null;
-    }
-
-    return [
-        'name' => $_FILES[$fieldName]['name'],
-        'size' => $_FILES[$fieldName]['size'],
-        'type' => $_FILES[$fieldName]['type']
-    ];
-}
-
-
-   /**
-     * Sends the email verification link with detailed debugging.
-     */
-    private function sendVerificationEmail(string $email, string $token, array $data): bool
-    {
-        try {
-            error_log("=== INICIO sendVerificationEmail ===");
-            error_log("Email destino: " . $email);
-
-            // Obtener título dinámico
-            $organizationTitle = $this->getOrganizationTitle();
-
-            // Validar email
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                error_log("Email inválido: " . $email);
-                return false;
-            }
-            error_log("Email válido: " . $email);
-
-            // Rutas de PHPMailer
-            $phpmailerPath = __DIR__ . '/../Lib/PHPMailer/PHPMailer.php';
-            $exceptionPath = __DIR__ . '/../Lib/PHPMailer/Exception.php';
-            $smtpPath      = __DIR__ . '/../Lib/PHPMailer/SMTP.php';
-
-            error_log("Buscando PHPMailer en: " . $phpmailerPath);
-
-            // Verificar que todos los archivos existan
-            if (!is_file($phpmailerPath) || !is_file($exceptionPath) || !is_file($smtpPath)) {
-                error_log("❌ Archivos PHPMailer no encontrados:");
-                error_log("PHPMailer.php: " . (is_file($phpmailerPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("Exception.php: " . (is_file($exceptionPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("SMTP.php: " . (is_file($smtpPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("Usando mail() como fallback");
-                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
-            }
-
-            // Cargar PHPMailer
-            require_once $phpmailerPath;
-            require_once $exceptionPath;
-            require_once $smtpPath;
-
-            error_log("✅ PHPMailer cargado correctamente");
-
-            try {
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-                // Configuración SMTP
-                $mail->isSMTP();
-                $mail->Host       = 'mail.algoritmos.com.bo';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'abap@algoritmos.com.bo';
-                $mail->Password   = 'Pl4st1c0s2025*';
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-                $mail->Port       = 465;
-
-                // Configuración SSL
-                $mail->SMTPOptions = [
-                    'ssl' => [
-                        'verify_peer'       => false,
-                        'verify_peer_name'  => false,
-                        'allow_self_signed' => true,
-                    ]
-                ];
-
-                // Configuración general
-                $mail->CharSet   = 'UTF-8';
-                $mail->Timeout   = 30;
-                $mail->SMTPDebug = 0; // Desactivar debug output en producción
-
-                // Remitente y destinatario
-                $mail->setFrom('abap@algoritmos.com.bo', $organizationTitle);
-                $mail->addAddress($email, $data['name'] ?? '');
-                $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
-
-                // Contenido del correo
-                $verificationLink = u('partner/verify?token=' . urlencode($token));
-                $mail->isHTML(true);
-                $mail->Subject = "Verifica tu correo - {$organizationTitle}";
-                $mail->Body    = "
-                    <h2>¡Hola " . htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8') . "!</h2>
-                    <p>Gracias por registrarte en {$organizationTitle}.</p>
-                    <p>Por favor, verifica tu correo haciendo clic en el siguiente enlace:</p>
-                    <p><a href=\"$verificationLink\" style=\"display:inline-block; padding:10px 20px; background:#bca478; color:#fff; text-decoration:none; border-radius:8px;\">Verificar Correo</a></p>
-                    <p>Este enlace expirará en 24 horas.</p>
-                    <p>Si no solicitaste este registro, ignora este correo.</p>
-                    <br>
-                    <p>Saludos,<br><b>{$organizationTitle}</b></p>
-                ";
-                $mail->AltBody = "Hola {$data['name']},\n\n" .
-                                 "Por favor, verifica tu correo haciendo clic en el siguiente enlace:\n" .
-                                 "$verificationLink\n\n" .
-                                 "Este enlace expirará en 24 horas.\n\n" .
-                                 "Si no solicitaste este registro, ignora este correo.\n\n" .
-                                 "Saludos,\n{$organizationTitle}";
-
-                // Intentar enviar
-                $result = $mail->send();
-                error_log("PHPMailer resultado: " . ($result ? "ÉXITO" : "FALLO"));
-
-                if ($result) {
-                    error_log("✅ Correo enviado exitosamente con SMTP");
-                    return true;
-                }
-
-                error_log("❌ Error al enviar con PHPMailer: " . $mail->ErrorInfo);
-                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
-                
-            } catch (\Exception $e) {
-                error_log("❌ Excepción PHPMailer: " . $e->getMessage());
-                return $this->sendWithMailFunction($email, $token, $data, $organizationTitle);
-            }
-        } catch (\Throwable $e) {
-            error_log("❌ Error general: " . $e->getMessage());
-            return $this->sendWithMailFunction($email, $token, $data, $organizationTitle ?? 'asociación Boliviana de Artistas Plásticos');
-        } finally {
-            error_log("=== FIN sendVerificationEmail ===");
+        $file = $_FILES[$fieldName];
+        
+        if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+            return "Debe seleccionar un archivo para $displayName.";
         }
-    }
-
-   /**
-     * Fallback method using mail() function.
-     */
-    private function sendWithMailFunction(string $email, string $token, array $data, string $organizationTitle = 'asociación Boliviana de Artistas Plásticos'): bool
-    {
-        try {
-            $verificationLink = u('partner/verify?token=' . urlencode($token));
-            $subject = "Verifica tu correo - {$organizationTitle}";
-            $message = "Hola {$data['name']},\r\n\r\n" .
-                       "Por favor, verifica tu correo haciendo clic en el siguiente enlace:\r\n" .
-                       "$verificationLink\r\n\r\n" .
-                       "Este enlace expirará en 24 horas.\r\n\r\n" .
-                       "Si no solicitaste este registro, ignora este correo.\r\n\r\n" .
-                       "Saludos,\r\n{$organizationTitle}";
-
-            $headers = [
-                "From: {$organizationTitle} <abap@algoritmos.com.bo>",
-                'Reply-To: abap@algoritmos.com.bo',
-                'MIME-Version: 1.0',
-                'Content-Type: text/plain; charset=UTF-8',
-                'X-Mailer: PHP/' . phpversion()
-            ];
-
-            $result = mail($email, $subject, $message, implode("\r\n", $headers));
-            error_log("Resultado mail() fallback: " . ($result ? "TRUE" : "FALSE"));
-
-            return (bool)$result;
-        } catch (\Throwable $e) {
-            error_log("Error en fallback mail(): " . $e->getMessage());
-            return false;
+        
+        if ($file['error'] === UPLOAD_ERR_FORM_SIZE || $file['error'] === UPLOAD_ERR_INI_SIZE) {
+            return "El archivo de $displayName excede el tamaño máximo de 2MB.";
         }
+        
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return "Error al subir el archivo de $displayName.";
+        }
+
+        // Validar tamaño (2MB)
+        if ($file['size'] > 2 * 1024 * 1024) {
+            return "El archivo de $displayName excede el tamaño máximo de 2MB.";
+        }
+
+        // Validar tipo de archivo
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mimeType, $allowedTypes)) {
+            return "El archivo de $displayName debe ser JPG, PNG o JPEG.";
+        }
+
+        // Validar que no esté vacío
+        if ($file['size'] === 0) {
+            return "El archivo de $displayName está vacío.";
+        }
+
+        return true;
     }
 
     /**
-     * Sends the partner registration confirmation email.
+     * Obtiene información básica del archivo para mantener referencia
      */
-    /**
-     * Sends the partner registration confirmation email.
-     */
-    private function sendPartnerRegistrationEmail(string $email, array $data): bool
+    private function getFileInfo(string $fieldName): array|null
     {
-        try {
-            error_log("=== INICIO sendPartnerRegistrationEmail ===");
-            error_log("Email destino: " . $email);
-
-            // Obtener título dinámico
-            $organizationTitle = $this->getOrganizationTitle();
-
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                error_log("Email inválido: " . $email);
-                return false;
-            }
-            error_log("Email válido: " . $email);
-
-            $phpmailerPath = __DIR__ . '/../Lib/PHPMailer/PHPMailer.php';
-            $exceptionPath = __DIR__ . '/../Lib/PHPMailer/Exception.php';
-            $smtpPath      = __DIR__ . '/../Lib/PHPMailer/SMTP.php';
-
-            error_log("Buscando PHPMailer en: " . $phpmailerPath);
-
-            if (!is_file($phpmailerPath) || !is_file($exceptionPath) || !is_file($smtpPath)) {
-                error_log("❌ Archivos PHPMailer no encontrados:");
-                error_log("PHPMailer.php: " . (is_file($phpmailerPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("Exception.php: " . (is_file($exceptionPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("SMTP.php: " . (is_file($smtpPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                error_log("Usando mail() como fallback");
-                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
-            }
-
-            require_once $phpmailerPath;
-            require_once $exceptionPath;
-            require_once $smtpPath;
-
-            error_log("✅ PHPMailer cargado correctamente");
-
-            try {
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-                // Configuración SMTP
-                $mail->isSMTP();
-                $mail->Host       = 'mail.algoritmos.com.bo';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'abap@algoritmos.com.bo';
-                $mail->Password   = 'Pl4st1c0s2025*';
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-                $mail->Port       = 465;
-
-                $mail->SMTPOptions = [
-                    'ssl' => [
-                        'verify_peer'       => false,
-                        'verify_peer_name'  => false,
-                        'allow_self_signed' => true,
-                    ]
-                ];
-
-                $mail->CharSet   = 'UTF-8';
-                $mail->Timeout   = 30;
-                $mail->SMTPDebug = 0;
-
-                $mail->setFrom('abap@algoritmos.com.bo', $organizationTitle);
-                $mail->addAddress($email, $data['name'] ?? '');
-                $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
-
-                $mail->isHTML(true);
-                $mail->Subject = "Confirmación de Registro de Solicitud - {$organizationTitle}";
-                $mail->Body    = "
-                    <h2>¡Hola " . htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8') . "!</h2>
-                    <p>Tu registro fue recibido exitosamente en {$organizationTitle}.</p>
-                    <p><b>CI:</b> " . htmlspecialchars($data['ci'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
-                    <b>Correo:</b> " . htmlspecialchars($data['email'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
-                    <b>Celular:</b> " . htmlspecialchars($data['cellphoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') . "<br>
-                    <b>Fecha de nacimiento:</b> " . htmlspecialchars($data['birthday'] ?? '', ENT_QUOTES, 'UTF-8') . "</p>
-                    <p>Nos pondremos en contacto contigo muy pronto.</p>
-                    <br>
-                    <p>Saludos,<br><b>{$organizationTitle}</b></p>
-                ";
-                $mail->AltBody = "Hola {$data['name']},\n\n" .
-                                 "Tu registro fue recibido exitosamente.\n\n" .
-                                 "CI: {$data['ci']}\n" .
-                                 "Correo: {$data['email']}\n" .
-                                 "Celular: {$data['cellphoneNumber']}\n" .
-                                 "Fecha de nacimiento: {$data['birthday']}\n\n" .
-                                 "Saludos,\n{$organizationTitle}";
-
-                $result = $mail->send();
-                error_log("PHPMailer resultado (confirmación): " . ($result ? "ÉXITO" : "FALLO"));
-
-                if ($result) {
-                    error_log("✅ Correo de confirmación enviado exitosamente con SMTP");
-                    return true;
-                }
-
-                error_log("❌ Error al enviar con PHPMailer: " . $mail->ErrorInfo);
-                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
-                
-            } catch (\Exception $e) {
-                error_log("❌ Excepción PHPMailer (confirmación): " . $e->getMessage());
-                return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle);
-            }
-        } catch (\Throwable $e) {
-            error_log("❌ Error general (confirmación): " . $e->getMessage());
-            return $this->sendConfirmationWithMailFunction($email, $data, $organizationTitle ?? 'asociación Boliviana de Artistas Plásticos');
-        } finally {
-            error_log("=== FIN sendPartnerRegistrationEmail ===");
+        if (!isset($_FILES[$fieldName]) || $_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) {
+            return null;
         }
-    } 
 
-    /**
-     * Fallback method for confirmation email using mail() function.
-     */
-    private function sendConfirmationWithMailFunction(string $email, array $data, string $organizationTitle = 'asociación Boliviana de Artistas Plásticos'): bool
-    {
-        try {
-            $subject = "Confirmación de Registro - {$organizationTitle}";
-            $message = "Hola {$data['name']},\r\n\r\n" .
-                       "Tu registro fue recibido exitosamente.\r\n\n" .
-                       "CI: {$data['ci']}\r\n" .
-                       "Correo: {$data['email']}\r\n" .
-                       "Celular: {$data['cellphoneNumber']}\r\n" .
-                       "Fecha de nacimiento: {$data['birthday']}\r\n\r\n" .
-                       "Saludos,\r\n{$organizationTitle}";
-
-            $headers = [
-                "From: {$organizationTitle} <abap@algoritmos.com.bo>",
-                'Reply-To: abap@algoritmos.com.bo',
-                'MIME-Version: 1.0',
-                'Content-Type: text/plain; charset=UTF-8',
-                'X-Mailer: PHP/' . phpversion()
-            ];
-
-            $result = mail($email, $subject, $message, implode("\r\n", $headers));
-            error_log("Resultado mail() fallback (confirmación): " . ($result ? "TRUE" : "FALSE"));
-
-            return (bool)$result;
-        } catch (\Throwable $e) {
-            error_log("Error en fallback mail() (confirmación): " . $e->getMessage());
-            return false;
-        }
+        return [
+            'name' => $_FILES[$fieldName]['name'],
+            'size' => $_FILES[$fieldName]['size'],
+            'type' => $_FILES[$fieldName]['type']
+        ];
     }
 
     /**
