@@ -508,6 +508,7 @@ ob_start();
       gap: 8px;
     }
 
+    
     .ci-images-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -520,13 +521,88 @@ ob_start();
       padding: 15px;
       text-align: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
     }
 
     .ci-image-card h4 {
-      margin: 0 0 10px 0;
+      margin: 0 0 15px 0;
       color: #495057;
       font-size: 1rem;
       font-weight: 600;
+    }
+
+    .ci-image-display {
+      width: 100%;
+      height: 200px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f8f9fa;
+      border: 2px dashed #dee2e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .ci-image-display:hover {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
+
+    .ci-image-display img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 4px;
+      transition: transform 0.3s ease;
+    }
+
+    .ci-image-display:hover img {
+      transform: scale(1.05);
+    }
+
+    .no-image-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #6c757d;
+      font-size: 14px;
+    }
+
+    .no-image-display i {
+      font-size: 32px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    .image-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 6px;
+    }
+
+    .ci-image-display:hover .image-overlay {
+      opacity: 1;
+    }
+
+    .overlay-icon {
+      color: white;
+      font-size: 24px;
     }
 
     .details-actions {
@@ -883,27 +959,34 @@ ob_start();
           </div>
         </div>
 
+        
+
         <div class="details-images">
           <h3><i class="fas fa-id-badge"></i> Imágenes del CI</h3>
           <div class="ci-images-grid">
             <div class="ci-image-card">
               <h4>CI - Lado Frontal</h4>
-              <div id="detailFrontImage">
-                <button class="ci-view-btn front" onclick="showImageFromDetails('front')" style="margin: 10px 0;">
-                  <i class="fas fa-eye"></i> Ver Imagen Frontal
-                </button>
+              <div class="ci-image-display" onclick="showImageFromDetails('front')" id="frontImageContainer">
+                <div class="no-image-display">
+                  <i class="fas fa-image"></i>
+                  <span>Imagen no disponible</span>
+                </div>
               </div>
             </div>
             <div class="ci-image-card">
               <h4>CI - Lado Posterior</h4>
-              <div id="detailBackImage">
-                <button class="ci-view-btn back" onclick="showImageFromDetails('back')" style="margin: 10px 0;">
-                  <i class="fas fa-eye"></i> Ver Imagen Posterior
-                </button>
+              <div class="ci-image-display" onclick="showImageFromDetails('back')" id="backImageContainer">
+                <div class="no-image-display">
+                  <i class="fas fa-image"></i>
+                  <span>Imagen no disponible</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+
+
       </div>
 
       <div class="details-actions">
@@ -1006,78 +1089,106 @@ ob_start();
     }
 
     // Función para poblar el modal de detalles
-    function populateDetailsModal(partner) {
-      // Función auxiliar para formatear fechas
-      const formatDate = (dateString) => {
-        if (!dateString) return 'Sin información';
-        try {
-          const date = new Date(dateString);
-          return date.toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-        } catch (e) {
-          return 'Sin información';
-        }
-      };
+    // Función para poblar el modal de detalles
+function populateDetailsModal(partner) {
+    // Función auxiliar para formatear fechas
+    const formatDate = (dateString) => {
+      if (!dateString) return 'Sin información';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } catch (e) {
+        return 'Sin información';
+      }
+    };
 
-      const formatDateTime = (dateString) => {
-        if (!dateString) return 'Sin información';
-        try {
-          const date = new Date(dateString);
-          return date.toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        } catch (e) {
-          return 'Sin información';
-        }
-      };
+    const formatDateTime = (dateString) => {
+      if (!dateString) return 'Sin información';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return 'Sin información';
+      }
+    };
 
-      // Función auxiliar para mostrar valor o "Sin información"
-      const displayValue = (value) => {
-        return value && value.trim() !== '' ? value : 'Sin información';
-      };
+    // Función auxiliar para mostrar valor o "Sin información"
+    const displayValue = (value) => {
+      return value && value.trim() !== '' ? value : 'Sin información';
+    };
 
-      // Actualizar título del modal
-      document.getElementById('detailsTitle').innerHTML = `
-        <i class="fas fa-user-circle"></i>
-        Detalles del Socio: ${partner.name || 'Sin nombre'}
-      `;
-
-      // Información personal
-      document.getElementById('detailName').textContent = displayValue(partner.name);
-      document.getElementById('detailCI').textContent = displayValue(partner.ci);
-      document.getElementById('detailPhone').textContent = displayValue(partner.cellPhoneNumber);
-      document.getElementById('detailBirthday').textContent = formatDate(partner.birthday);
-
-      // Información de contacto
-      document.getElementById('detailEmail').textContent = displayValue(partner.email);
-      document.getElementById('detailLogin').textContent = displayValue(partner.login);
-      document.getElementById('detailAddress').textContent = displayValue(partner.address);
+    // Función para cargar imagen en contenedor
+    const loadImageInContainer = (containerId, imagePath, altText) => {
+      const container = document.getElementById(containerId);
       
-      // Estado del usuario
-      const userStatus = partner.userStatus == 1 ? 'Activo' : 'Inactivo';
-      document.getElementById('detailStatus').innerHTML = `
-        <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; 
-                     background: ${partner.userStatus == 1 ? '#d4edda' : '#f8d7da'}; 
-                     color: ${partner.userStatus == 1 ? '#155724' : '#721c24'};">
-          ${userStatus}
-        </span>
-      `;
+      if (imagePath && imagePath.trim() !== '') {
+        const fullImagePath = '<?= u("") ?>' + imagePath;
+        
+        container.innerHTML = `
+          <img src="${fullImagePath}" alt="${altText}" onerror="this.parentElement.innerHTML='<div class=&quot;no-image-display&quot;><i class=&quot;fas fa-image&quot;></i><span>Error al cargar imagen</span></div>'">
+          <div class="image-overlay">
+            <i class="fas fa-search-plus overlay-icon"></i>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="no-image-display">
+            <i class="fas fa-image"></i>
+            <span>Imagen no disponible</span>
+          </div>
+        `;
+      }
+    };
 
-      // Fechas importantes
-      document.getElementById('detailDateCreation').textContent = formatDateTime(partner.dateCreation);
-      document.getElementById('detailDateRegistration').textContent = formatDate(partner.dateRegistration);
-      document.getElementById('detailBirthdayFull').textContent = formatDate(partner.birthday);
+    // Actualizar título del modal
+    document.getElementById('detailsTitle').innerHTML = `
+      <i class="fas fa-user-circle"></i>
+      Detalles del Socio: ${partner.name || 'Sin nombre'}
+    `;
 
-      // Enlace de edición
-      document.getElementById('detailEditLink').href = '<?= u("partner/edit/") ?>' + (partner.idPartner || 0);
-    }
+    // Información personal
+    document.getElementById('detailName').textContent = displayValue(partner.name);
+    document.getElementById('detailCI').textContent = displayValue(partner.ci);
+    document.getElementById('detailPhone').textContent = displayValue(partner.cellPhoneNumber);
+    document.getElementById('detailBirthday').textContent = formatDate(partner.birthday);
+
+    // Información de contacto
+    document.getElementById('detailEmail').textContent = displayValue(partner.email);
+    document.getElementById('detailLogin').textContent = displayValue(partner.login);
+    document.getElementById('detailAddress').textContent = displayValue(partner.address);
+    
+    // Estado del usuario
+    const userStatus = partner.userStatus == 1 ? 'Activo' : 'Inactivo';
+    document.getElementById('detailStatus').innerHTML = `
+      <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; 
+                  background: ${partner.userStatus == 1 ? '#d4edda' : '#f8d7da'}; 
+                  color: ${partner.userStatus == 1 ? '#155724' : '#721c24'};">
+        ${userStatus}
+      </span>
+    `;
+
+    // Fechas importantes
+    document.getElementById('detailDateCreation').textContent = formatDateTime(partner.dateCreation);
+    document.getElementById('detailDateRegistration').textContent = formatDate(partner.dateRegistration);
+    document.getElementById('detailBirthdayFull').textContent = formatDate(partner.birthday);
+
+    // Cargar imágenes del CI
+    loadImageInContainer('frontImageContainer', partner.frontImageURL, 'CI Frontal');
+    loadImageInContainer('backImageContainer', partner.backImageURL, 'CI Posterior');
+
+    // Enlace de edición
+    document.getElementById('detailEditLink').href = '<?= u("partner/edit/") ?>' + (partner.idPartner || 0);
+  }
 
     // Función para mostrar imagen desde el modal de detalles
     function showImageFromDetails(type) {
