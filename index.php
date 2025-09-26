@@ -121,7 +121,6 @@ $router->addRoute('POST', '/permissions/update', 'PermissionController', 'update
 */
 $router->addRoute('GET', '/users/list', 'UserController', 'listUsers');
 $router->addRoute('GET', '/users/create', 'UserController', 'createUser');
-$router->addRoute('POST', '/users/create', 'UserController', 'createAdmin');
 $router->addRoute('GET', '/users/edit/([0-9]+)', 'UserController', 'editUser');
 $router->addRoute('POST', '/users/edit/([0-9]+)', 'UserController', 'editUser');
 
@@ -130,11 +129,16 @@ $router->addRoute('POST', '/users/delete/([0-9]+)', 'UserController', 'deleteUse
 $router->addRoute('GET', '/users/profile', 'UserController', 'userProfile');
 $router->addRoute('GET', '/users/profile/edit', 'UserController', 'editProfile');
 $router->addRoute('POST', '/users/profile/update', 'UserController', 'updateProfile');
+// Cambio de contraseña desde Mi Perfil (AJAX)
+$router->addRoute('POST', '/users/change-password-profile', 'UserController', 'changePasswordProfile');
+// Página dedicada para cambio de contraseña desde el perfil
+$router->addRoute('GET', '/users/change-password', 'UserController', 'changePasswordPage');
 
 /*
-|--------------------------------------------------------------------------
+|----------------------------------------------------------------
 | RUTAS DE SOCIOS (PARTNERS)
-|--------------------------------------------------------------------------
+|----------------------------------------------------------------
+{{ ... }}
 */
 $router->addRoute('GET', '/partner/create', 'PartnerController', 'createPartner');
 $router->addRoute('POST', '/partner/create', 'PartnerController', 'createPartner');

@@ -13,9 +13,14 @@ class AuthController extends BaseController
     {
         $this->startSession();
 
-        // Si ya está logueado y es GET, ir directo al dashboard
+        // Si ya está logueado y es GET, respetar forzado de cambio de contraseña
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && !empty($_SESSION['user_id'] ?? null)) {
+            if (!empty($_SESSION['force_pw_change'] ?? null)) {
+                $this->redirect('change-password');
+                return;
+            }
             $this->redirect('dashboard');
+            return;
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {

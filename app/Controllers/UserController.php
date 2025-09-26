@@ -65,6 +65,98 @@ class UserController extends BaseController
         // Por ahora solo redirigimos de vuelta al perfil
         $this->redirect('users/profile');
     }
+
+    /** Página dedicada para cambio de contraseña desde Mi Perfil */
+    public function changePasswordPage(): void
+    {
+        $this->startSession();
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
+            return;
+        }
+
+        // Menú lateral dinámico
+        require_once __DIR__ . '/../Models/Competence.php';
+        $roleId = (int)($_SESSION['role'] ?? 2);
+        $menuOptions = (new \Competence())->getByRole($roleId);
+
+        // Renderizar la vista dentro del layout principal
+        $this->view('users/change_password_profile', [
+            'menuOptions' => $menuOptions,
+            'currentPath' => 'users/change-password',
+            'roleId' => $roleId,
+        ]);
+    }
+
+    /** Cambio de contraseña desde "Mi Perfil" (AJAX JSON) */
+    public function changePasswordProfile(): void
+    {
+        $this->startSession();
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
+            return;
+        }
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+
+        $input = $_POST;
+        // Permitir también JSON
+        if (empty($input)) {
+            $raw = file_get_contents('php://input');
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) { $input = $decoded; }
+        }
+
+        $current = trim((string)($input['current_password'] ?? ''));
+        $new     = trim((string)($input['new_password'] ?? ''));
+        $confirm = trim((string)($input['confirm_password'] ?? ''));
+
+        $errors = [];
+        if ($current === '') { $errors[] = 'La contraseña actual es obligatoria'; }
+        if ($new === '') { $errors[] = 'La nueva contraseña es obligatoria'; }
+        if (strlen($new) < 8 || strlen($new) > 12) { $errors[] = 'La contraseña debe tener entre 8 y 12 caracteres'; }
+        if (!preg_match('/[A-Z]/', $new)) { $errors[] = 'Debe contener al menos una letra mayúscula'; }
+        if (!preg_match('/[a-z]/', $new)) { $errors[] = 'Debe contener al menos una letra minúscula'; }
+        if (!preg_match('/[0-9]/', $new)) { $errors[] = 'Debe contener al menos un número'; }
+        if (!preg_match('/[^A-Za-z0-9]/', $new)) { $errors[] = 'Debe contener al menos un símbolo'; }
+        if ($new !== $confirm) { $errors[] = 'Las contraseñas no coinciden'; }
+
+        if (!empty($errors)) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => implode("\n", $errors)]);
+            return;
+        }
+
+        require_once __DIR__ . '/../Models/Usuario.php';
+        $userModel = new \Usuario();
+        $userId = (int)$_SESSION['user_id'];
+
+        // Verificar contraseña actual
+        if (!$userModel->verifyPasswordByUserId($userId, $current)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+            return;
+        }
+
+        // Actualizar contraseña
+        if ($userModel->updatePassword($userId, $new)) {
+            // Si estaba forzado, liberar el flag
+            if (!empty($_SESSION['force_pw_change'] ?? null)) {
+                unset($_SESSION['force_pw_change']);
+            }
+            echo json_encode(['success' => true, 'message' => 'Contraseña actualizada correctamente']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'No se pudo actualizar la contraseña']);
+        }
+    }
     
    // Modificaciones en el controlador UserController.php
 
