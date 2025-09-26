@@ -297,7 +297,7 @@ public function getUsersAdmin(): array {
 
 // Renombrar y modificar getUsersAdmin a getNonSocioUsers
 // Agregar JOIN con tabla rol para obtener el nombre del rol
-/* public function getNonSocioUsers(): array {
+/*public function getNonSocioUsers(): array {
     try {
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -914,12 +914,12 @@ public function blockUser(string $login): void
 /**
  * Resetear intentos fallidos (cuando login es exitoso)
  */
-public function resetFailedAttempts(string $login): void
+public function resetFailedAttempts(int $id): void
 {
     try {
-        $sql = "UPDATE user SET failedAttempts = 0 WHERE login = :login AND status != 0";
+        $sql = "UPDATE user SET failedAttempts = 0 WHERE idUser = :id AND status != 0";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
         $stmt->execute();
     } catch (\PDOException $e) {
         error_log('Usuario::resetFailedAttempts error: ' . $e->getMessage());
@@ -948,12 +948,12 @@ public function getFailedAttempts(string $login): int
 /**
  * Desbloquear usuario (para administradores)
  */
-public function unblockUser(string $login): bool
+public function unblockUser(int $id): bool
 {
     try {
-        $sql = "UPDATE user SET isBlocked = 0, failedAttempts = 0 WHERE login = :login AND status != 0";
+        $sql = "UPDATE user SET isBlocked = 0, failedAttempts = 0 WHERE idUser = :id AND status != 0";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':login', $login, \PDO::PARAM_STR);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
         return $stmt->execute();
     } catch (\PDOException $e) {
         error_log('Usuario::unblockUser error: ' . $e->getMessage());
@@ -993,7 +993,7 @@ public function getNonSocioUsers(): array
 public function getById(int $id): ?array
 {
     try {
-        $sql = "SELECT u.*, r.name as rolName 
+        $sql = "SELECT u.*, r.rol as rolName 
                 FROM user u
                 LEFT JOIN rol r ON u.idRol = r.idRol
                 WHERE u.idUser = :id AND u.status != 0";

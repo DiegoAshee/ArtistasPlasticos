@@ -133,6 +133,9 @@ $router->addRoute('POST', '/users/profile/update', 'UserController', 'updateProf
 $router->addRoute('POST', '/users/change-password-profile', 'UserController', 'changePasswordProfile');
 // Página dedicada para cambio de contraseña desde el perfil
 $router->addRoute('GET', '/users/change-password', 'UserController', 'changePasswordPage');
+// NUEVAS RUTAS PARA DESBLOQUEO Y RESET DE INTENTOS
+$router->addRoute('POST', '/users/unblock', 'UserController', 'unblock');
+$router->addRoute('POST', '/users/reset-attempts', 'UserController', 'resetAttempts');
 
 /*
 |----------------------------------------------------------------
@@ -154,6 +157,9 @@ $router->addRoute('POST', '/partner/manage', 'PartnerController', 'manageRegistr
 
 // Exportar lista de socios a PDF
 $router->addRoute('GET', '/partner/export-pdf', 'PartnerController', 'export');
+// NUEVAS RUTAS PARA DESBLOQUEO Y RESET DE INTENTOS
+$router->addRoute('POST', '/partner/unblock', 'PartnerController', 'unblock');
+$router->addRoute('POST', '/partner/reset-attempts', 'PartnerController', 'resetAttempts');
 
 /*
 |--------------------------------------------------------------------------

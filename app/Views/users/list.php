@@ -36,7 +36,8 @@ if (!empty($users) && is_array($users)) {
 // === Contenido de la página ===
 ob_start();
 ?>
-
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     .modern-table th, .modern-table td { 
         padding: 12px 16px; 
@@ -589,6 +590,90 @@ ob_start();
 
 <!-- JavaScript para búsqueda, paginación y modal -->
 <script>
+    // Versión con debug - reemplazar la función unblockUser existente
+
+function unblockUser(login, userId) {
+    console.log('🔓 unblockUser llamada:', { login, userId });
+    
+    // Verificar si SweetAlert2 está disponible
+    if (typeof Swal === 'undefined') {
+        console.error('❌ SweetAlert2 no está cargado');
+        alert('Error: SweetAlert2 no está disponible');
+        return;
+    }
+    
+    // Verificar URL
+    const url = '<?= u("users/unblock") ?>';
+    console.log('🌐 URL de petición:', url);
+    
+    Swal.fire({
+        title: '¿Desbloquear Usuario?',
+        html: `¿Estás seguro de que deseas desbloquear al usuario <strong>${login}</strong>?<br><br>
+               <small>Esta acción:</small><br>
+               <small>• Desbloqueará la cuenta</small><br>
+               <small>• Reseteará los intentos fallidos a 0</small><br>
+               <small>• Permitirá al usuario iniciar sesión nuevamente</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, desbloquear',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            console.log('📤 Enviando petición...');
+            
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `login=${encodeURIComponent(login)}&userId=${encodeURIComponent(userId)}`
+            })
+            .then(response => {
+                console.log('📥 Respuesta recibida:', response);
+                console.log('📊 Status:', response.status);
+                console.log('📋 Headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('📄 Datos JSON:', data);
+                
+                if (data.success) {
+                    return data;
+                } else {
+                    throw new Error(data.message || 'Error al desbloquear usuario');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error en petición:', error);
+                Swal.showValidationMessage(`Error: ${error.message}`);
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        console.log('✅ Resultado final:', result);
+        
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Usuario Desbloqueado',
+                html: `El usuario <strong>${login}</strong> ha sido desbloqueado correctamente.<br>
+                       <small>Ya puede iniciar sesión normalmente.</small>`,
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'Entendido'
+            }).then(() => {
+                console.log('🔄 Recargando página...');
+                location.reload();
+            });
+        }
+    });
+}
     // Variables globales (serán inicializadas en DOMContentLoaded)
     let deleteModal = null;
     let deleteForm = null;

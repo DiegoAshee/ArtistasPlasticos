@@ -249,7 +249,7 @@ public function unblock(): void
         }
 
         // Desbloquear usuario
-        $success = $userModel->unblockUser($login);
+        $success = $userModel->unblockUser($userId);
         
         if ($success) {
             // Log de la acción
@@ -316,7 +316,7 @@ public function resetAttempts(): void
         }
 
         // Solo resetear intentos fallidos
-        $userModel->resetFailedAttempts($login);
+        $userModel->resetFailedAttempts($userId);
         
         // Log de la acción
         error_log("Admin {$_SESSION['username']} reseteó intentos fallidos del usuario: {$login}");

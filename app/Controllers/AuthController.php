@@ -67,7 +67,7 @@ class AuthController extends BaseController
                         
                         if ($user) {
                             // Login exitoso - resetear intentos fallidos
-                            $userModel->resetFailedAttempts($login);
+                            $userModel->resetFailedAttempts((int)$user['idUser']);
                             
                             session_regenerate_id(true);
                             $_SESSION['user_id']  = (int)$user['idUser'];
@@ -110,47 +110,7 @@ class AuthController extends BaseController
         $viewData = isset($error) ? ['error' => $error] : [];
         $this->view('login', $viewData);
     }
-/**
-     * Método para que los administradores desbloqueen usuarios
-     */
-    public function unblockUser(): void
-    {
-        $this->startSession();
-        
-        // Verificar que sea un administrador (ajusta según tu lógica de roles)
-        if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) !== 1) {
-            $this->redirect('login');
-            return;
-        }
 
-        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-            $loginToUnblock = isset($_POST['login']) ? trim((string)$_POST['login']) : '';
-            
-            if ($loginToUnblock !== '') {
-                $modelPath = __DIR__ . '/../Models/Usuario.php';
-                if (is_file($modelPath)) {
-                    require_once $modelPath;
-                    $userModel = new \Usuario();
-                    
-                    if ($userModel->unblockUser($loginToUnblock)) {
-                        $success = "Usuario {$loginToUnblock} desbloqueado correctamente.";
-                    } else {
-                        $error = "Error al desbloquear el usuario.";
-                    }
-                } else {
-                    $error = "Error del sistema: Modelo no encontrado";
-                }
-            } else {
-                $error = "Debe especificar un usuario para desbloquear.";
-            }
-        }
-
-        $viewData = [];
-        if (isset($success)) $viewData['success'] = $success;
-        if (isset($error)) $viewData['error'] = $error;
-        
-        $this->view('admin/unblock_user', $viewData);
-    }
     // ====== LOGOUT ======
     public function logout(): void
     {

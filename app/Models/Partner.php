@@ -64,6 +64,8 @@ class Partner {
                         DATE_FORMAT(p.dateRegistration, '%Y-%m-%d') as dateRegistration,
                         u.login,
                         u.email,
+                        u.isBlocked,
+                        u.failedAttempts,
                         u.status as userStatus
                       FROM " . self::TBL . " p 
                       JOIN " . self::TBL2 . " u ON p.idPartner = u.idPartner 
@@ -83,7 +85,74 @@ class Partner {
             return [];
         }
     }
+/**
+ * Obtener usuario por idPartner - CORREGIDO
+ */
+public function getUserByIdPartner(int $idPartner): ?array
+{
+    try {
+        // CORREGIDO: usar u.idPartner en lugar de u.idUser
+        $sql = "SELECT u.*, r.rol as rolName 
+                FROM user u
+                LEFT JOIN rol r ON u.idRol = r.idRol
+                WHERE u.idPartner = :idPartner AND u.status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':idPartner', $idPartner, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ?: null;
+    } catch (\PDOException $e) {
+        error_log('Partner::getUserByIdPartner error: ' . $e->getMessage());
+        return null;
+    }
+}
 
+/**
+ * Desbloquear usuario (para administradores) - MEJORADO
+ */
+public function unblockUser(int $partnerId): bool
+{
+    try {
+        $sql = "UPDATE user SET isBlocked = 0, failedAttempts = 0 WHERE idPartner = :partnerId AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':partnerId', $partnerId, \PDO::PARAM_INT);
+        
+        $result = $stmt->execute();
+        
+        // Log para debugging
+        if ($result) {
+            $affected = $stmt->rowCount();
+            error_log("Partner::unblockUser - Filas afectadas: {$affected} para partnerId: {$partnerId}");
+        }
+        
+        return $result;
+    } catch (\PDOException $e) {
+        error_log('Partner::unblockUser error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Resetear intentos fallidos - MEJORADO
+ */
+public function resetFailedAttempts(int $partnerId): void
+{
+    try {
+        $sql = "UPDATE user SET failedAttempts = 0 WHERE idPartner = :partnerId AND status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':partnerId', $partnerId, \PDO::PARAM_INT);
+        $result = $stmt->execute();
+        
+        // Log para debugging
+        if ($result) {
+            $affected = $stmt->rowCount();
+            error_log("Partner::resetFailedAttempts - Filas afectadas: {$affected} para partnerId: {$partnerId}");
+        }
+    } catch (\PDOException $e) {
+        error_log('Partner::resetFailedAttempts error: ' . $e->getMessage());
+    }
+}
     public function findById($id) {
         try {
             $query = "SELECT * FROM " . self::TBL . " WHERE idPartner = :id AND status = 1 LIMIT 1";
