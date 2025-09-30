@@ -354,3 +354,7 @@ set_exception_handler(function($e) {
 
 // Despachar la ruta
 $router->dispatch();
+
+// RUTAS DE NOTIFICACIONES (AJAX)
+$router->addRoute('POST', '/notifications/mark-read', 'NotificationController', 'markAsRead');
+$router->addRoute('POST', '/notifications/mark-all-read', 'NotificationController', 'markAllAsRead');

@@ -1,48 +1,29 @@
 <?php
 // Usa $pageTitle, $breadcrumbs, $sessionUser, $sessionEmail, $roleId
-// Mock notifications data - reemplaza con datos reales de tu base de datos
-$notifications = [
-    [
-        'id' => 1,
-        'title' => 'Nuevo movimiento registrado',
-        'message' => 'Se registró un nuevo pago de mensualidad por Bs. 150.00',
-        'type' => 'success', // success, warning, error, info
-        'time' => '2024-01-15 10:30:00',
-        'read' => false,
-        'icon' => 'fas fa-dollar-sign',
-        'url' => '/movement/list'
-    ],
-    [
-        'id' => 2,
-        'title' => 'Nuevo socio registrado',
-        'message' => 'Juan Pérez se ha registrado como nuevo socio',
-        'type' => 'info',
-        'time' => '2024-01-14 15:20:00',
-        'read' => false,
-        'icon' => 'fas fa-user-plus',
-        'url' => '/partner/list'
-    ],
-    [
-        'id' => 3,
-        'title' => 'Recordatorio de pago',
-        'message' => 'María García tiene una mensualidad pendiente',
-        'type' => 'warning',
-        'time' => '2024-01-14 09:15:00',
-        'read' => true,
-        'icon' => 'fas fa-exclamation-triangle',
-        'url' => '/partner/edit/3'
-    ],
-    [
-        'id' => 4,
-        'title' => 'Backup completado',
-        'message' => 'La copia de seguridad diaria se completó exitosamente',
-        'type' => 'success',
-        'time' => '2024-01-13 23:59:00',
-        'read' => true,
-        'icon' => 'fas fa-check-circle',
-        'url' => null
-    ]
-];
+require_once __DIR__ . '/../../Models/Notification.php';
+use App\Models\Notification;
+
+$userId = $_SESSION['user_id'] ?? 0;
+$notificationModel = new Notification();
+$notifications = $notificationModel->getNotificationsForUser($userId);
+
+// Adaptar los datos para la vista (icono, url, etc.) si es necesario
+foreach ($notifications as &$notif) {
+  // Icono por tipo
+  switch ($notif['type']) {
+    case 'success': $notif['icon'] = 'fas fa-check-circle'; break;
+    case 'warning': $notif['icon'] = 'fas fa-exclamation-triangle'; break;
+    case 'error': $notif['icon'] = 'fas fa-times-circle'; break;
+    case 'info': default: $notif['icon'] = 'fas fa-info-circle'; break;
+  }
+  // url opcional, si tienes campo 'data' puedes usarlo
+  $notif['url'] = $notif['data'] ?? null;
+  // Adaptar campo 'is_read' a 'read' para compatibilidad con la vista
+  $notif['read'] = isset($notif['is_read']) ? (bool)$notif['is_read'] : false;
+  // Adaptar campo 'created_at' a 'time' para compatibilidad con la vista
+  $notif['time'] = $notif['created_at'] ?? '';
+}
+unset($notif);
 
 $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
 ?>
@@ -479,12 +460,13 @@ function markAsRead(notificationId) {
     if (indicator) {
       indicator.remove();
     }
-    
-    // Update badge count
     updateBadgeCount();
-    
-    // Here you would send an AJAX request to mark as read in the backend
-    // fetch('/notifications/mark-read', { method: 'POST', body: JSON.stringify({id: notificationId}) });
+    // AJAX para marcar como leída en el backend
+    fetch('/notifications/mark-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: notificationId })
+    });
   }
 }
 
@@ -498,18 +480,17 @@ function markAllAsRead() {
       indicator.remove();
     }
   });
-  
-  // Hide the "mark all as read" button
+  // Oculta el botón de marcar todas
   const markAllButton = document.querySelector('.mark-all-read');
   if (markAllButton) {
     markAllButton.style.display = 'none';
   }
-  
-  // Update badge
   updateBadgeCount();
-  
-  // Here you would send an AJAX request to mark all as read in the backend
-  // fetch('/notifications/mark-all-read', { method: 'POST' });
+  // AJAX para marcar todas como leídas en el backend
+  fetch('/notifications/mark-all-read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
 
 // Update notification badge count
