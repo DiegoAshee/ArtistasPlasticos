@@ -19,7 +19,7 @@ $protectedRoutes = [
     'dashboard' => [1, 2, 3], // todos los roles logueados
     'role/list' => [1],       // solo admin
     'users/list' => [1],       // solo admin
-    'partner'   => [3],       // solo socios conceptos/list
+    'partner'   => [3,6],       // solo socios conceptos/list
     'conceptos/list/create'   => [1],
 ];
 

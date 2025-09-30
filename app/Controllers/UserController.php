@@ -168,7 +168,7 @@ public function listUsers(): void
     if (!isset($_SESSION['user_id'])) { 
         $this->redirect('login'); 
     }
-    requireRole([1], 'login');
+    requireRole([1,6], 'login');
 
     // Debug: verificar sesión
     error_log("DEBUG UserController::listUsers - Usuario en sesión: " . ($_SESSION['user_id'] ?? 'NO_ID'));
@@ -343,7 +343,7 @@ public function createUser(): void
         $this->redirect('login');
         return;
     }
-    requireRole([1], 'login');
+    requireRole([1,6], 'login');
 
     // Get menu options for the sidebar
     require_once __DIR__ . '/../Models/Competence.php';
@@ -475,7 +475,7 @@ public function editUser(int $id): void
         $this->redirect('login');
         return;
     }
-    requireRole([1], 'login');
+    requireRole([1,6], 'login');
 
     $userId = (int)($id ?? $_GET['id'] ?? 0);
     if ($userId <= 0) {
@@ -582,7 +582,7 @@ public function deleteUser(int $id): void
         $this->redirect('login');
         return;
     }
-    requireRole([1], 'login');
+    requireRole([1,6], 'login');
 
     $userId = (int)($id ?? $_GET['id'] ?? 0);
     if ($userId <= 0) {
