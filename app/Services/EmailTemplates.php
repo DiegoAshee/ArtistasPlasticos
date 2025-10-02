@@ -121,9 +121,66 @@ class EmailTemplates
         return compact('subject', 'htmlBody', 'textBody');
     }
 
+public static function LoginCredentialsNotification(array $data): array{
+    //$name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');
+    $login = htmlspecialchars($data['login'] ?? '', ENT_QUOTES, 'UTF-8');
+    $password = htmlspecialchars($data['password'] ?? '', ENT_QUOTES, 'UTF-8');
+    $loginUrl = $data['login_url'] ?? '#';
+    $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
+
+    $subject = "Credenciales de Acceso - {$title}";
+
+    $htmlBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #28a745;'>¡Bienvenido!</h2>"+
+            //<h2 style='color: #28a745;'>¡Bienvenido {$name}!</h2>
+            "<p>Se han generado tus credenciales de acceso al sistema de {$title}.</p>
+            
+            <div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;'>
+                <h3 style='color: #28a745; margin-top: 0;'>Datos de acceso al sistema:</h3>
+                <p><strong>Usuario:</strong> {$login}</p>
+                <p><strong>Contraseña temporal:</strong> {$password}</p>
+            </div>
+            
+            <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                <p style='margin: 0; color: #856404;'>
+                    <strong>IMPORTANTE:</strong> Por tu seguridad, al ingresar por primera vez 
+                    al sistema deberás cambiar tu contraseña.
+                </p>
+            </div>
+            
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href=\"{$loginUrl}\" 
+                   style=\"display:inline-block; padding:15px 30px; background:#28a745; color:#fff; 
+                          text-decoration:none; border-radius:8px; font-weight:bold; font-size: 16px;\">
+                    Acceder al Sistema
+                </a>
+            </div>
+            
+            <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+            <hr style='margin: 30px 0; border: 1px solid #eee;'>
+            <p><strong>Equipo Administrativo de {$title}</strong></p>
+        </div>
+    ";
+
+    $textBody = "¡Bienvenido!\n\n" .
+                // "¡Bienvenido {$name}!\n\n" .
+                "Se han generado tus credenciales de acceso al sistema de {$title}.\n\n" .
+                "DATOS DE ACCESO:\n" .
+                "Usuario: {$login}\n" .
+                "Contraseña temporal: {$password}\n\n" .
+                "IMPORTANTE: Al ingresar por primera vez deberás cambiar tu contraseña.\n\n" .
+                "Puedes acceder al sistema en: {$loginUrl}\n\n" .
+                "Si tienes alguna pregunta, no dudes en contactarnos.\n\n" .
+                "Equipo Administrativo de {$title}";
+
+    return compact('subject', 'htmlBody', 'textBody');
+}
     /**
      * Template para email de aprobación de solicitud
      */
+
+
     public static function approvalNotification(array $data): array
     {
         $name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');

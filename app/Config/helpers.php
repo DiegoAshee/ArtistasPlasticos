@@ -97,15 +97,15 @@ if (!function_exists('sendRegistrationConfirmationEmail')) {
     }
 }
 
-if (!function_exists('sendApprovalEmail')) {
+if (!function_exists('sendLoginCredentialsEmail')) {
     /**
      * Envía email de aprobación de solicitud
      */
-    function sendApprovalEmail(string $email, array $data): bool
+    function sendLoginCredentialsEmail(string $email, array $data): bool
     {
         require_once __DIR__ . '/../Services/EmailTemplates.php';
         
-        $template = EmailTemplates::approvalNotification($data);
+        $template = EmailTemplates::LoginCredentialsNotification($data);
         
         return sendEmail(
             $email, 
