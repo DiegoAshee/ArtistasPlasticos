@@ -239,7 +239,7 @@ public function approve(): void
         }
 
         // 6. Enviar correo de confirmación
-        $emailSent = $this->sendApprovalEmail($solicitud['email'], [
+        $emailSent = sendLoginCredentialsEmail($solicitud['email'], [
             'name' => $solicitud['name'],
             'login' => $loginFinal,
             'password' => $password

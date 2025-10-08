@@ -123,28 +123,16 @@ if (!function_exists('sendPasswordResetEmail')) {
      */
     function sendPasswordResetEmail(string $email, string $resetLink): bool
     {
+        /*  // Validar email
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                //$this->addDebug("Email inválido: " . $email);
+                return false;
+            }
+            //$this->addDebug("Email válido: " . $email); */
+
         require_once __DIR__ . '/../Services/EmailTemplates.php';
         
         $template = EmailTemplates::passwordReset(['reset_link' => $resetLink]);
-        
-        return sendEmail(
-            $email, 
-            $template['subject'], 
-            $template['htmlBody'], 
-            $template['textBody']
-        );
-    }
-}
-
-if (!function_exists('sendFirstLoginEmail')) {
-    /**
-     * Envía email de primer login
-     */
-    function sendFirstLoginEmail(string $email, string $username): bool
-    {
-        require_once __DIR__ . '/../Services/EmailTemplates.php';
-        
-        $template = EmailTemplates::firstLogin(['username' => $username]);
         
         return sendEmail(
             $email, 

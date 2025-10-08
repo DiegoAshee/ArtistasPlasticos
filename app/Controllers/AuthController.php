@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Config/config.php';
+require_once __DIR__ . '/../Config/helpers.php';
 
 class AuthController extends BaseController
 {
@@ -77,7 +78,6 @@ class AuthController extends BaseController
                             // Forzar cambio de contraseña si es primer inicio de sesión
                             if ((int)($user['firstSession'] ?? 1) === 0) {
                                 // Enviar correo de primer inicio (opcional)
-                                $this->sendFirstLoginEmailSafe($user['email'] ?? '', $user['login']);
                                 $_SESSION['force_pw_change'] = true;
                                 $this->redirect('change-password');
                                 return;
@@ -234,7 +234,7 @@ class AuthController extends BaseController
 
                                         // Enviar el correo
                                         $this->addDebug("Intentando enviar correo");
-                                        $emailResult = $this->sendResetPasswordEmailSimple($email, $resetLink);
+                                        $emailResult = sendPasswordResetEmail($email, $resetLink);
                                         $this->addDebug("Resultado envío correo: " . ($emailResult ? "Éxito" : "Fallo"));
 
                                         if ($emailResult) {
@@ -376,187 +376,4 @@ class AuthController extends BaseController
         $this->view('change_password', $viewData);
     }
 
-
-    /**
-     * Enviar correo de primer inicio de sesión con seguridad.
-     * Usa Mailer si está disponible; de lo contrario, mail().
-     */
-    private function sendFirstLoginEmailSafe(string $to, string $username): void
-    {
-        // 1) Intentar con Mailer si existe
-        $mailerPath = __DIR__ . '/../Lib/Mailer.php';
-        if (is_file($mailerPath)) {
-            require_once $mailerPath;
-            if (class_exists('Mailer') && method_exists('Mailer', 'sendFirstLoginEmail')) {
-                try {
-                    //\Mailer::sendFirstLoginEmail($to, $username);
-                    return;
-                } catch (\Throwable $e) {
-                    error_log("Mailer error, fallback to mail(): " . $e->getMessage());
-                }
-            }
-        }
-
-        // 2) Fallback a mail()
-        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
-            return;
-        }
-
-        $subject = 'Primer inicio de sesión detectado';
-        $message = "Hola {$username},\r\n\r\n" .
-                   "Hemos detectado tu primer inicio de sesión en el Sistema MVC.\r\n" .
-                   "Por seguridad, se te solicitará cambiar la contraseña.\r\n\r\n" .
-                   "Si no fuiste tú, contacta al administrador.\r\n\r\n" .
-                   "Saludos";
-
-        $headers = [];
-        $headers[] = 'From: Sistema MVC <no-reply@localhost>';
-        $headers[] = 'Reply-To: no-reply@localhost';
-        $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-Type: text/plain; charset=UTF-8';
-        $headers[] = 'X-Mailer: PHP/' . phpversion();
-
-        @mail($to, $subject, $message, implode("\r\n", $headers));
-    }
-
-    /**
-     * Versión simplificada para enviar correo de recuperación
-     * Con debugging detallado
-     */
-    private function sendResetPasswordEmailSimple(string $email, string $resetLink): bool
-    {
-        try {
-            $this->addDebug("=== INICIO sendResetPasswordEmailSimple ===");
-
-            // Validar email
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $this->addDebug("Email inválido: " . $email);
-                return false;
-            }
-            $this->addDebug("Email válido: " . $email);
-
-            // RUTAS CORRECTAS - verificamos la estructura exacta
-            $phpmailerPath = __DIR__ . '/../Lib/PHPMailer/PHPMailer.php';
-            $exceptionPath = __DIR__ . '/../Lib/PHPMailer/Exception.php';
-            $smtpPath      = __DIR__ . '/../Lib/PHPMailer/SMTP.php';
-
-            $this->addDebug("Buscando PHPMailer en: " . $phpmailerPath);
-
-            // Verificar que todos los archivos existan
-            if (!is_file($phpmailerPath) || !is_file($exceptionPath) || !is_file($smtpPath)) {
-                $this->addDebug("❌ Archivos PHPMailer no encontrados:");
-                $this->addDebug("PHPMailer.php: " . (is_file($phpmailerPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                $this->addDebug("Exception.php: " . (is_file($exceptionPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                $this->addDebug("SMTP.php: " . (is_file($smtpPath) ? 'ENCONTRADO' : 'NO ENCONTRADO'));
-                $this->addDebug("Usando mail() como fallback");
-                return $this->sendWithMailFunction($email, $resetLink);
-            }
-
-            // Cargar PHPMailer manualmente
-            require_once $phpmailerPath;
-            require_once $exceptionPath;
-            require_once $smtpPath;
-
-            $this->addDebug("✅ PHPMailer cargado correctamente");
-
-            try {
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-                // CONFIGURACIÓN SMTP - OPTIMIZADA
-                $mail->isSMTP();
-                $mail->Host       = 'mail.algoritmos.com.bo';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'abap@algoritmos.com.bo';
-                $mail->Password   = 'Pl4st1c0s2025*';
-                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-                $mail->Port       = 465;
-
-                // Configuración SSL mejorada
-                $mail->SMTPOptions = [
-                    'ssl' => [
-                        'verify_peer'       => false,
-                        'verify_peer_name'  => false,
-                        'allow_self_signed' => true,
-                    ]
-                ];
-
-                // Configuración general
-                $mail->CharSet   = 'UTF-8';
-                $mail->Timeout   = 30;
-                $mail->SMTPDebug = 0; // Desactivar debug output
-
-                // Remitente y destinatario
-                $mail->setFrom('abap@algoritmos.com.bo', 'Asociación de Artistas');
-                $mail->addAddress($email);
-                $mail->addReplyTo('abap@algoritmos.com.bo', 'No Responder');
-
-                // Contenido del correo - MEJOR FORMATEADO
-                $mail->isHTML(false);
-                $mail->Subject = 'Recuperación de Contraseña - Asociación de Artistas';
-
-                $message = "Hola,\n\n" .
-                           "Has solicitado restablecer tu contraseña en el Sistema de la Asociación de Artistas.\n" .
-                           "Visita el siguiente enlace para continuar:\n\n" .
-                           $resetLink . "\n\n" .
-                           "Este enlace expirará en 24 horas por seguridad.\n\n" .
-                           "Si no solicitaste este cambio, puedes ignorar este correo.\n\n" .
-                           "Saludos,\nEquipo de Asociación de Artistas";
-
-                $mail->Body    = $message;
-                $mail->AltBody = $message; // Versión texto plano adicional
-
-                // Intentar enviar
-                $result = $mail->send();
-                $this->addDebug("PHPMailer resultado: " . ($result ? "ÉXITO" : "FALLO"));
-
-                if ($result) {
-                    $this->addDebug("✅ Correo enviado exitosamente con SMTP");
-                    return true;
-                }
-
-                $this->addDebug("❌ Error al enviar con PHPMailer: " . $mail->ErrorInfo);
-                return $this->sendWithMailFunction($email, $resetLink);
-                
-            } catch (\Exception $e) {
-                $this->addDebug("❌ Excepción PHPMailer: " . $e->getMessage());
-                return $this->sendWithMailFunction($email, $resetLink);
-            }
-        } catch (\Throwable $e) {
-            $this->addDebug("❌ Error general: " . $e->getMessage());
-            return $this->sendWithMailFunction($email, $resetLink);
-        } finally {
-            $this->addDebug("=== FIN sendResetPasswordEmailSimple ===");
-        }
-    }
-
-    // Método de fallback con mail()
-    private function sendWithMailFunction(string $email, string $resetLink): bool
-    {
-        try {
-            $subject = 'Recuperación de Contraseña - Asociación de Artistas';
-            $message = "Hola,\r\n\r\n" .
-                       "Has solicitado restablecer tu contraseña.\r\n" .
-                       "Visita el siguiente enlace para continuar:\r\n\r\n" .
-                       $resetLink . "\r\n\r\n" .
-                       "Este enlace expirará en 24 horas por seguridad.\r\n\r\n" .
-                       "Si no solicitaste este cambio, puedes ignorar este correo.\r\n\r\n" .
-                       "Saludos,\r\nAsociación de Artistas";
-
-            $headers = [
-                'From: Asociación de Artistas <juancarlosrojasvargas2022@gmail.com>',
-                'Reply-To: juancarlosrojasvargas2022@gmail.com',
-                'MIME-Version: 1.0',
-                'Content-Type: text/plain; charset=UTF-8',
-                'X-Mailer: PHP/' . phpversion()
-            ];
-
-            $result = mail($email, $subject, $message, implode("\r\n", $headers));
-            $this->addDebug("Resultado mail() fallback: " . ($result ? "TRUE" : "FALSE"));
-
-            return (bool)$result;
-        } catch (\Throwable $e) {
-            $this->addDebug("Error en fallback mail(): " . $e->getMessage());
-            return false;
-        }
-    }
 }
