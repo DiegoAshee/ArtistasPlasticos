@@ -4,6 +4,7 @@
 .env
 config.php
 config/*.php
+EmailConfig.php
 *.sql
 *.bak
 *.tmp

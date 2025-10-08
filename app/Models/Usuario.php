@@ -413,7 +413,7 @@ public function create($loginOrData, $password = null, $email = null, $idRole = 
             ':login'       => $data['login'] ?? null,
             ':password'    => $hashed,
             ':email'       => $data['email'] ?? null,
-            ':firstSession' => (int)($data['firstSession'] ?? 1), // 1 = primer inicio de sesión
+            ':firstSession' => (int)($data['firstSession'] ?? 0), // 1 = primer inicio de sesión
             ':status'      => (int)($data['status'] ?? 1), // 1 = activo
             ':idRol'       => (int)($data['idRol'] ?? 0),
             ':idPartner'   => $data['idPartner'] ?? null,
