@@ -4,7 +4,7 @@
 require_once __DIR__ . '/../Config/database.php';
 
 class Movement {
-    private const TBL = '`movement`';
+    public const TBL = '`movement`';
     private $db;
 
     public function __construct() {
@@ -13,9 +13,10 @@ class Movement {
 
     /**
      * Obtiene todos los movimientos con información relacionada
+     * @param array $filters Filtros opcionales (start_date, end_date, concept_id, user_id)
      * @return array Lista de movimientos con información de concepto, usuario y tipo de pago
      */
-    public function getAllMovements() {
+    public function getAllMovements($filters = []) {
         try {
             $query = "SELECT 
                         m.idMovement,
@@ -33,10 +34,35 @@ class Movement {
                       LEFT JOIN `concept` c ON m.idConcept = c.idConcept
                       LEFT JOIN `user` u ON m.idUser = u.idUser
                       LEFT JOIN `paymenttype` pt ON m.idPaymentType = pt.idPaymentType
-                      ORDER BY m.dateCreation DESC";
+                      WHERE 1=1";
+            
+            $params = [];
+            
+            // Aplicar filtros de fecha
+            if (!empty($filters['start_date'])) {
+                $query .= " AND m.dateCreation >= :start_date";
+                $params[':start_date'] = $filters['start_date'];
+            }
+            
+            if (!empty($filters['end_date'])) {
+                $query .= " AND m.dateCreation <= :end_date";
+                $params[':end_date'] = $filters['end_date'];
+            }
+            
+            if (!empty($filters['concept_id'])) {
+                $query .= " AND m.idConcept = :concept_id";
+                $params[':concept_id'] = $filters['concept_id'];
+            }
+            
+            if (!empty($filters['user_id'])) {
+                $query .= " AND m.idUser = :user_id";
+                $params[':user_id'] = $filters['user_id'];
+            }
+            
+            $query .= " ORDER BY m.dateCreation DESC";
             
             $stmt = $this->db->prepare($query);
-            $stmt->execute();
+            $stmt->execute($params);
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -132,6 +158,40 @@ class Movement {
             
         } catch (PDOException $e) {
             error_log("Error al eliminar movimiento: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Crea un nuevo movimiento
+     * @param array $data Datos del movimiento a crear
+     * @return bool|int ID del movimiento creado o false en caso de error
+     */
+    public function create($data) {
+        try {
+            $query = "INSERT INTO " . self::TBL . " 
+                     (description, amount, dateCreation, idPaymentType, idConcept, idUser) 
+                     VALUES 
+                     (:description, :amount, :dateCreation, :idPaymentType, :idConcept, :idUser)";
+            
+            $stmt = $this->db->prepare($query);
+            $success = $stmt->execute([
+                ':description' => $data['description'],
+                ':amount' => $data['amount'],
+                ':dateCreation' => $data['dateCreation'],
+                ':idPaymentType' => $data['idPaymentType'],
+                ':idConcept' => $data['idConcept'],
+                ':idUser' => $data['idUser']
+            ]);
+            
+            if ($success) {
+                return $this->db->lastInsertId();
+            }
+            
+            return false;
+            
+        } catch (PDOException $e) {
+            error_log("Error al crear movimiento: " . $e->getMessage());
             return false;
         }
     }
