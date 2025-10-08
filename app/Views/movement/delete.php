@@ -291,8 +291,9 @@ ob_start();
                     <i class="fas fa-times"></i>
                     Cancelar
                 </a>
-                <form method="POST" action="<?= rtrim(BASE_URL,'/') ?>/movement/delete/<?= (int)($movement['idMovement'] ?? 0) ?>" style="display: inline;">
-                    <button type="submit" class="btn-danger" onclick="return confirmDelete()">
+                <form method="POST" action="<?= rtrim(BASE_URL, '/') ?>/movement/delete/<?= (int)($movement['idMovement'] ?? 0) ?>" style="display: inline;">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="btn-danger" onclick="return confirm('¿Está seguro de que desea eliminar este movimiento? Esta acción no se puede deshacer.')">
                         <i class="fas fa-trash"></i>
                         Eliminar Definitivamente
                     </button>
@@ -302,7 +303,7 @@ ob_start();
             <div class="error-message">
                 <i class="fas fa-exclamation-circle"></i>
                 No se encontró el movimiento especificado.
-            </div>
+{{ ... }}
             <div class="btn-group">
                 <a href="<?= u('movement/list') ?>" class="btn-cancel">
                     <i class="fas fa-arrow-left"></i>

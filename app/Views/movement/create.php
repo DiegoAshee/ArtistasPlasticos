@@ -11,15 +11,9 @@ if (!function_exists('asset')) {
 }
 
 // Set up variables for the layout
-$isEdit = isset($movement);
-$title = $isEdit ? 'Editar Movimiento' : 'Crear Movimiento';
-$currentPath = 'movement/' . ($isEdit ? 'edit' : 'create');
-$formAction = $isEdit ? u('movement/update/' . $movement['idMovement']) : u('movement/store');
-$breadcrumbs = [
-    ['label' => 'Inicio', 'url' => u('dashboard')],
-    ['label' => 'Movimientos', 'url' => u('movement/list')],
-    ['label' => $isEdit ? 'Editar Movimiento' : 'Crear Movimiento', 'url' => null],
-];
+$title = 'Crear Movimiento';
+$currentPath = 'movement/create';
+$formAction = u('movement/store');
 
 // Start output buffering
 ob_start();
@@ -28,26 +22,26 @@ ob_start();
 <style>
     .form-container {
         max-width: 800px;
-        margin: 0 auto;
+        margin: 2rem auto;
         background: #fff;
         padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
     }
     
     .form-header {
         text-align: center;
         margin-bottom: 2rem;
-        padding-bottom: 1rem;
+        padding-bottom: 1.5rem;
         border-bottom: 1px solid #eee;
     }
     
     .form-header h1 {
         color: #2c3e50;
         font-size: 1.8rem;
-        margin-bottom: 0.5rem;
-        width: 100px;
-        height: 4px;
+        margin: 0 0 0.5rem 0;
+        font-weight: 600;
+    }
         background: var(--cream-600);
         border-radius: 2px;
     }

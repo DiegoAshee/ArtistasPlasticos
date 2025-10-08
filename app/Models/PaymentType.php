@@ -17,7 +17,7 @@ class PaymentType {
      */
     public function getAll() {
         try {
-            $query = "SELECT * FROM " . self::TBL . " ORDER BY name ASC";
+            $query = "SELECT idPaymentType, description FROM " . self::TBL . " ORDER BY description ASC";
             $stmt = $this->db->prepare($query);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

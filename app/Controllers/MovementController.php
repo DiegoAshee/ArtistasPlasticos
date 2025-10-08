@@ -43,19 +43,24 @@ class MovementController extends BaseController
         $competenceModel = new \Competence();
         $menuOptions = $competenceModel->getByRole($roleId);
 
-        // Obtener todos los movimientos con la información relacionada
-        $movements = $this->movementModel->getAllMovements();
+        // Variables de filtros con valores por defecto (primer día del mes hasta hoy)
+        $startDate = !empty($_GET['start_date']) ? date('Y-m-d', strtotime($_GET['start_date'])) : date('Y-m-01');
+        $endDate = !empty($_GET['end_date']) ? date('Y-m-d 23:59:59', strtotime($_GET['end_date'])) : date('Y-m-d 23:59:59');
+        $conceptId = $_GET['concept_id'] ?? null;
+        $userId = $_GET['user_id'] ?? null;
 
+        // Obtener movimientos con filtros aplicados
+        $movements = $this->movementModel->getAllMovements([
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'concept_id' => $conceptId,
+            'user_id' => $userId
+        ]);
+        
         // Obtener datos para la vista
         $concepts = $this->conceptModel->getAll();
         $users = $this->userModel->getAll();
         $paymentTypes = $this->paymentTypeModel->getAll();
-
-        // Variables de filtros (compatibilidad con la vista)
-        $startDate = $_GET['start_date'] ?? null;
-        $endDate = $_GET['end_date'] ?? null;
-        $conceptId = $_GET['concept_id'] ?? null;
-        $userId = $_GET['user_id'] ?? null;
 
         // Calculate totals
         $totalAmount = array_reduce($movements, function($sum, $movement) {
@@ -95,21 +100,124 @@ class MovementController extends BaseController
     }
 
     /**
-     * Show create form (disabled)
+     * Show create form
      */
     public function create(): void
     {
-        // Crear movimiento deshabilitado: redirigir al listado
-        $this->redirect('movement/list');
+        $this->startSession();
+
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
+            return;
+        }
+        requireRole([1], 'login');
+
+        // Sidebar menu options
+        $roleId = (int)($_SESSION['role'] ?? 2);
+        $competenceModel = new \Competence();
+        $menuOptions = $competenceModel->getByRole($roleId);
+
+        // Obtener datos para el formulario
+        $paymentTypes = $this->paymentTypeModel->getAll();
+        $concepts = $this->conceptModel->getAll();
+        $users = $this->userModel->getAll();
+        
+        // Depuración - Ver los tipos de pago obtenidos
+        error_log('Payment Types: ' . print_r($paymentTypes, true));
+        
+        // Depuración temporal - Verificar la consulta SQL
+        error_log('SQL Query: SELECT idPaymentType, description FROM paymenttype ORDER BY description ASC');
+        
+        // Depuración temporal - Verificar la conexión a la base de datos
+        $db = Database::singleton()->getConnection();
+        $testQuery = $db->query("SELECT idPaymentType, description FROM paymenttype");
+        $testResult = $testQuery->fetchAll(PDO::FETCH_ASSOC);
+        error_log('Test Query Result: ' . print_r($testResult, true));
+
+        $viewData = [
+            'paymentTypes' => $paymentTypes,
+            'concepts' => $concepts,
+            'users' => $users,
+            'menuOptions' => $menuOptions,
+            'currentPath' => 'movement/create',
+            'roleId' => $roleId
+        ];
+
+        if (isset($_GET['error'])) {
+            $viewData['error'] = $_GET['error'];
+        }
+        
+        $this->view('movement/create_new', $viewData);
     }
 
     /**
-     * Store new movement (disabled)
+     * Store new movement
      */
     public function store(): void
     {
-        // Crear movimiento deshabilitado: redirigir al listado
-        $this->redirect('movement/list');
+        $this->startSession();
+
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('login');
+            return;
+        }
+        requireRole([1], 'login');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('movement/create');
+            return;
+        }
+
+        $error = null;
+
+        $description = trim($_POST['description'] ?? '');
+        $amount = $_POST['amount'] ?? '';
+        $dateCreation = $_POST['dateCreation'] ?? date('Y-m-d H:i:s');
+        $idPaymentType = $_POST['idPaymentType'] ?? '';
+        $idConcept = $_POST['idConcept'] ?? '';
+        $idUser = $_POST['idUser'] ?? $_SESSION['user_id'];
+
+        if ($description === '') {
+            $error = 'La descripción es requerida';
+        } elseif ($amount === '' || !is_numeric($amount)) {
+            $error = 'El monto debe ser un número válido';
+        } elseif ($idPaymentType === '') {
+            $error = 'El tipo de pago es requerido';
+        } elseif ($idConcept === '') {
+            $error = 'El concepto es requerido';
+        }
+
+        if ($error) {
+            $this->redirect('movement/create?error=' . urlencode($error));
+            return;
+        }
+
+        // Preparar datos para insertar
+        $movementData = [
+            'description' => $description,
+            'amount' => $amount,
+            'dateCreation' => $dateCreation,
+            'idPaymentType' => $idPaymentType,
+            'idConcept' => $idConcept,
+            'idUser' => $idUser
+        ];
+
+        try {
+            // Insertar en la base de datos utilizando el método del modelo
+            $success = $this->movementModel->create($movementData);
+
+            if ($success) {
+                $this->redirect('movement/list?success=' . urlencode('Movimiento creado correctamente'));
+                return;
+            } else {
+                $this->redirect('movement/create?error=' . urlencode('Error al crear el movimiento'));
+                return;
+            }
+        } catch (PDOException $e) {
+            error_log("Error al crear movimiento: " . $e->getMessage());
+            $this->redirect('movement/create?error=' . urlencode('Error en el servidor al crear el movimiento'));
+            return;
+        }
     }
 
     /**
@@ -157,7 +265,7 @@ class MovementController extends BaseController
         if (isset($_GET['success'])) {
             $viewData['success'] = $_GET['success'];
         }
-        $this->view('movement/edit', $viewData);
+        $this->view('movement/edit_new', $viewData);
     }
 
     /**
@@ -224,7 +332,7 @@ class MovementController extends BaseController
             return;
         }
 
-        $this->redirect("movement/edit/{$id}?success=" . urlencode('Movimiento actualizado correctamente'));
+        $this->redirect("movement/list?success=" . urlencode('Movimiento actualizado correctamente'));
     }
 
     /**
@@ -240,35 +348,54 @@ class MovementController extends BaseController
         }
         requireRole([1], 'login');
 
-        // Get menu options for the sidebar
+        // Obtener opciones del menú para la barra lateral
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new \Competence())->getByRole($roleId);
 
-        // Mock movement data (replace with real database query)
-        $movement = [
-            'idMovement' => $id,
-            'description' => 'Pago mensualidad enero',
-            'amount' => '150.00',
-            'dateCreation' => '2024-01-15 10:30:00',
-            'idPaymentType' => 1,
-            'idConcept' => 1,
-            'idUser' => 1,
-            'payment_type_description' => 'Efectivo',
-            'concept_description' => 'Mensualidad',
-            'user_login' => 'admin',
-            'user_email' => 'admin@test.com'
+        // Obtener los datos reales del movimiento desde la base de datos
+        $movement = $this->movementModel->getById($id);
+        
+        if (!$movement) {
+            $this->redirect('movement/list?error=' . urlencode('El movimiento no existe o ya ha sido eliminado'));
+            return;
+        }
+
+        // Obtener datos relacionados (tipo de pago, concepto, usuario)
+        $paymentType = $this->paymentTypeModel->getById($movement['idPaymentType']);
+        $concept = $this->conceptModel->find($movement['idConcept']);
+        // Usar el modelo User o Users según corresponda
+        $user = [];
+        if (method_exists($this->userModel, 'find')) {
+            $user = $this->userModel->find($movement['idUser']);
+        } elseif (method_exists($this->userModel, 'getById')) {
+            $user = $this->userModel->getById($movement['idUser']);
+        }
+
+        // Preparar los datos para la vista
+        $movementData = [
+            'idMovement' => $movement['idMovement'],
+            'description' => $movement['description'] ?? 'Sin descripción',
+            'amount' => $movement['amount'] ?? '0.00',
+            'dateCreation' => $movement['dateCreation'] ?? date('Y-m-d H:i:s'),
+            'idPaymentType' => $movement['idPaymentType'] ?? 0,
+            'idConcept' => $movement['idConcept'] ?? 0,
+            'idUser' => $movement['idUser'] ?? 0,
+            'payment_type_description' => $paymentType['description'] ?? 'No especificado',
+            'concept_description' => $concept['description'] ?? 'No especificado',
+            'user_login' => $user['login'] ?? 'Usuario desconocido',
+            'user_email' => $user['email'] ?? ''
         ];
 
-        // Prepare view data
+        // Preparar datos para la vista
         $viewData = [
-            'movement' => $movement,
+            'movement' => $movementData,
             'menuOptions' => $menuOptions,
             'currentPath' => 'movement/delete',
             'roleId' => $roleId
         ];
 
-        // Add error message if exists
+        // Agregar mensaje de error si existe
         if (isset($_GET['error'])) {
             $viewData['error'] = $_GET['error'];
         }
@@ -277,7 +404,7 @@ class MovementController extends BaseController
     }
 
     /**
-     * Actually delete movement (mock)
+     * Actually delete movement
      */
     public function destroy(int $id): void
     {
@@ -294,11 +421,14 @@ class MovementController extends BaseController
             return;
         }
 
-        // Mock deletion - in real app would delete from database
-        // Here you would delete from database
+        // Intentar eliminar el movimiento
+        $success = $this->movementModel->delete($id);
         
-        // Redirect to list with success message
-        $this->redirect('movement/list');
+        if ($success) {
+            $this->redirect('movement/list?success=' . urlencode('Movimiento eliminado correctamente'));
+        } else {
+            $this->redirect("movement/delete/{$id}?error=" . urlencode('No se pudo eliminar el movimiento'));
+        }
     }
 
     /**
@@ -322,13 +452,31 @@ class MovementController extends BaseController
             return;
         }
 
-        // Fetch real data for PDF export (same as list view)
-        $movements = $this->movementModel->getAllMovements();
+        // Obtener los mismos filtros que en la vista de lista
+        $startDate = !empty($_GET['start_date']) ? date('Y-m-d', strtotime($_GET['start_date'])) : date('Y-m-01');
+        $endDate = !empty($_GET['end_date']) ? date('Y-m-d 23:59:59', strtotime($_GET['end_date'])) : date('Y-m-d 23:59:59');
+        $conceptId = $_GET['concept_id'] ?? null;
+        $userId = $_GET['user_id'] ?? null;
+
+        // Obtener movimientos con los mismos filtros que la vista
+        $filters = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'concept_id' => $conceptId,
+            'user_id' => $userId
+        ];
+
+        // Obtener los movimientos con los filtros aplicados
+        $movements = $this->movementModel->getAllMovements($filters);
+
+        // Agregar información de filtros a la respuesta
+        $response = [
+            'success' => true,
+            'data' => $movements,
+            'filters' => $filters
+        ];
 
         header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
-            'data' => $movements
-        ]);
+        echo json_encode($response);
     }
 }

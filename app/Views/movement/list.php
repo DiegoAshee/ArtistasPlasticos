@@ -14,30 +14,27 @@ $montoTotal = 0;
 $movimientosHoy = 0;
 $hoy = date('Y-m-d');
 
-// Calcular rango de fechas para subtítulo
-$minDate = null;
-$maxDate = null;
+// Calcular métricas y procesar movimientos
+$totalMovimientos = is_array($movements ?? []) ? count($movements) : 0;
+$montoTotal = 0;
+$movimientosHoy = 0;
+$hoy = date('Y-m-d');
+$primerDiaMes = date('Y-m-01');
 
-if (!empty($movements) && is_array($movements)) {
-    foreach ($movements as $m) {
-        $montoTotal += (float)($m['amount'] ?? 0);
-        $fechaMovimiento = $m['dateMovement'] ?? '';
-        if ($fechaMovimiento && date('Y-m-d', strtotime($fechaMovimiento)) === $hoy) {
-            $movimientosHoy++;
-        }
-        if (!empty($m['dateCreation'])) {
-            $ts = strtotime($m['dateCreation']);
-            if ($ts) {
-                $minDate = $minDate === null ? $ts : min($minDate, $ts);
-                $maxDate = $maxDate === null ? $ts : max($maxDate, $ts);
-            }
-        }
+// Establecer el rango de fechas para el subtítulo
+$fechaInicio = strtotime($filters['start_date'] ?? $primerDiaMes);
+$fechaFin = strtotime($filters['end_date'] ?? $hoy);
+
+// Formatear fechas para mostrar en el subtítulo
+$subtitleText = 'Del ' . date('d/m/Y', $fechaInicio) . ' al ' . date('d/m/Y', $fechaFin);
+
+// Calcular totales
+foreach ($movements as $m) {
+    $montoTotal += (float)($m['amount'] ?? 0);
+    $fechaMovimiento = $m['dateMovement'] ?? '';
+    if ($fechaMovimiento && date('Y-m-d', strtotime($fechaMovimiento)) === $hoy) {
+        $movimientosHoy++;
     }
-}
-
-$subtitleText = '';
-if ($minDate !== null && $maxDate !== null) {
-    $subtitleText = 'Del ' . date('d/m/Y', $minDate) . ' al ' . date('d/m/Y', $maxDate);
 }
 
 ob_start();
@@ -168,33 +165,55 @@ ob_start();
   </div>
 
   <!-- Barra de acciones -->
-  <div class="toolbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
-    <div class="search-container" style="position:relative;flex:1 1 320px;">
-      <i class="fas fa-search search-icon" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6;"></i>
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Buscar por descripción, importe, usuario, concepto, tipo de pago..."
-        style="width:100%;border:2px solid #e1e5e9;border-radius:12px;padding:10px 40px 10px 38px;outline:none;background:#fff;transition:border-color .2s;"
-        onfocus="this.style.borderColor='var(--cream-400)';"
-        onblur="this.style.borderColor='#e1e5e9';"
-      />
-    </div>
+  <form id="filterForm" method="GET" action="" style="width: 100%;">
+    <div class="toolbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
+      <div class="search-container" style="position:relative;flex:1 1 320px;">
+        <i class="fas fa-search search-icon" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6;"></i>
+        <input
+          type="text"
+          id="searchInput"
+          name="search"
+          placeholder="Buscar por descripción, importe, usuario, concepto, tipo de pago..."
+          style="width:100%;border:2px solid #e1e5e9;border-radius:12px;padding:10px 40px 10px 38px;outline:none;background:#fff;transition:border-color .2s;"
+          onfocus="this.style.borderColor='var(--cream-400)';"
+          onblur="this.style.borderColor='#e1e5e9';"
+          value="<?= htmlspecialchars($_GET['search'] ?? '') ?>"
+        />
+      </div>
 
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <label for="startDate" style="font-size:0.85rem;color:#555;">Desde:</label>
-        <input type="date" id="startDate" style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;" />
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label for="start_date" style="font-size:0.85rem;color:#555;">Desde:</label>
+          <input 
+            type="date" 
+            id="startDate" 
+            name="start_date" 
+            value="<?= htmlspecialchars($filters['start_date'] ?? date('Y-m-01')) ?>" 
+            style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;"
+            onchange="document.getElementById('filterForm').submit()"
+          />
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label for="end_date" style="font-size:0.85rem;color:#555;">Hasta:</label>
+          <input 
+            type="date" 
+            id="endDate" 
+            name="end_date" 
+            value="<?= htmlspecialchars($filters['end_date'] ?? date('Y-m-d')) ?>" 
+            style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;"
+            onchange="document.getElementById('filterForm').submit()"
+          />
+        </div>
+        <!--   -->
+        <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;cursor:pointer;">
+          <i class="fas fa-plus"></i> Nuevo Movimiento
+        </a>
+        <button id="exportPdfBtn" type="button" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
+          <i class="fas fa-file-pdf"></i> Exportar PDF
+        </button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <label for="endDate" style="font-size:0.85rem;color:#555;">Hasta:</label>
-        <input type="date" id="endDate" style="border:2px solid #e1e5e9;border-radius:12px;padding:8px 10px;" />
-      </div>
-      <button id="exportPdfBtn" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
-        <i class="fas fa-file-pdf"></i> Exportar PDF
-      </button>
     </div>
-  </div>
+  </form>
 
   <!-- Tabla de movimientos -->
   <?php if (!empty($movements) && is_array($movements)): ?>
@@ -243,18 +262,18 @@ ob_start();
                 Bs. <?= number_format((float)($movement['amount'] ?? 0), 2) ?>
               </td>
               <td class="actions">
-                <div class="action-buttons">
-                  <!-- <a href="<?= u('movement/edit/' . (int)($movement['idMovement'] ?? 0)) ?>" 
+                <div class="action-buttons" style="display: flex; gap: 6px;">
+                  <a href="<?= u('movement/edit/' . (int)($movement['idMovement'] ?? 0)) ?>" 
                     class="btn btn-sm btn-outline" 
                     title="Editar" 
-                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #e1e5e9;color:#333;text-decoration:none;">
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#3498db;color:#fff;border:none;text-decoration:none;transition:all 0.2s ease;">
                     <i class="fas fa-edit"></i>
-                  </a> -->
+                  </a>
 
                   <button onclick="showDeleteModal(<?= (int)($movement['idMovement'] ?? 0) ?>, '<?= htmlspecialchars(addslashes($movement['description'] ?? ''), ENT_QUOTES) ?>')"
                     class="btn btn-sm btn-danger"
                     title="Eliminar"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;border:none;margin-left:6px;cursor:pointer;">
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -284,8 +303,7 @@ ob_start();
   <?php else: ?>
     <div class="empty-state" style="text-align:center;padding:40px 20px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);">
       <div class="empty-state-icon" style="font-size:42px;margin-bottom:10px;color:var(--cream-600);"><i class="fas fa-exchange-alt"></i></div>
-      <h3>No hay movimientos registrados</h3>
-      <p>Comienza agregando tu primer movimiento al sistema</p>
+      <h3 style="color: #000000; margin-bottom: 10px;">No hay movimientos registrados</h3>
       <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;">
         <i class="fas fa-plus"></i> Crear primer movimiento
       </a>
@@ -403,9 +421,34 @@ ob_start();
       subtitleEl.textContent = `Del ${fmt(s)} al ${fmt(e)}`;
     }
 
+    // Función para manejar el cambio de fecha
+    function handleDateChange() {
+      // Actualizar el subtítulo con las fechas seleccionadas
+      updateSubtitle();
+      
+      // Aplicar los filtros sin recargar la página
+      applyFilters();
+      
+      // Actualizar la URL sin recargar la página para mantener los filtros
+      const form = document.getElementById('filterForm');
+      const formData = new FormData(form);
+      const params = new URLSearchParams(formData).toString();
+      const newUrl = window.location.pathname + (params ? '?' + params : '');
+      window.history.pushState({}, '', newUrl);
+    }
+
     if (searchInput) searchInput.addEventListener('input', applyFilters);
-    if (startDateInput) startDateInput.addEventListener('change', () => { applyFilters(); updateSubtitle(); });
-    if (endDateInput) endDateInput.addEventListener('change', () => { applyFilters(); updateSubtitle(); });
+    
+    // Actualizar los manejadores de eventos de los inputs de fecha
+    if (startDateInput) {
+      startDateInput.removeEventListener('change', null); // Eliminar cualquier manejador anterior
+      startDateInput.addEventListener('change', handleDateChange);
+    }
+    
+    if (endDateInput) {
+      endDateInput.removeEventListener('change', null); // Eliminar cualquier manejador anterior
+      endDateInput.addEventListener('change', handleDateChange);
+    }
   });
   </script>
 
