@@ -111,81 +111,72 @@ class PartnerController extends BaseController
                 $hashedPassword = password_hash($temporalPassword, PASSWORD_BCRYPT);
 
                 try {
-                    if ($idRole === 2) { // Crear SOCIO
-                        error_log("DEBUG - Creando socio...");
-                        
-                        // Procesar uploads de imágenes (OPCIONAL)
-                        try {
-                            if (isset($_FILES['frontImage']) && $_FILES['frontImage']['error'] === UPLOAD_ERR_OK) {
-                                $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
-                            }
-                            
-                            if (isset($_FILES['backImage']) && $_FILES['backImage']['error'] === UPLOAD_ERR_OK) {
-                                $backImageRel = $this->handleUpload('backImage', $ci, 'back');
-                            }
-                        } catch (\Exception $e) {
-                            throw new \Exception("Error al subir archivos: " . $e->getMessage());
+                    error_log("DEBUG - Creando socio...");
+                    
+                    // Procesar uploads de imágenes (OPCIONAL)
+                    try {
+                        if (isset($_FILES['frontImage']) && $_FILES['frontImage']['error'] === UPLOAD_ERR_OK) {
+                            $frontImageRel = $this->handleUpload('frontImage', $ci, 'front');
                         }
-
-                        // Fechas para el socio
-                        $dateCreation = date('Y-m-d H:i:s');
-                        $dateRegistration = date('Y-m-d');
-
-                        // 1. Crear el socio en la tabla partner
-                        $partnerId = $partnerModel->create(
-                            $name,
-                            $ci,                 // CI en tabla partner
-                            $cellPhoneNumber,
-                            $address,
-                            $dateCreation,
-                            $birthday,
-                            $dateRegistration,
-                            $frontImageRel,      // Ruta de la imagen frontal (puede ser null)
-                            $backImageRel        // Ruta de la imagen posterior (puede ser null)
-                        );
                         
-                        error_log("DEBUG - Partner ID creado: " . ($partnerId ?: 'FALSO'));
-                        error_log("DEBUG - Imagen frontal: " . ($frontImageRel ?: 'NO SUBIDA'));
-                        error_log("DEBUG - Imagen posterior: " . ($backImageRel ?: 'NO SUBIDA'));
-                        
-                        if (!$partnerId) {
-                            throw new \Exception("No se pudo crear el socio en la tabla partner");
+                        if (isset($_FILES['backImage']) && $_FILES['backImage']['error'] === UPLOAD_ERR_OK) {
+                            $backImageRel = $this->handleUpload('backImage', $ci, 'back');
                         }
-
-                        // 2. Crear el usuario asociado al socio
-                        $userId = $userModel->create(
-                            $login,             // CI como login
-                            $hashedPassword,    // Contraseña hasheada
-                            $email,             // Email
-                            $idRole,            // Rol 2 = Socio
-                            (int)$partnerId     // ID del socio recién creado
-                        );
-                        
-                        error_log("DEBUG - Usuario ID creado: " . ($userId ?: 'FALSO'));
-                        
-                        // Validar que se creó correctamente
-                        if (!$userId || $userId === false) {
-                            throw new \Exception("No se pudo crear la cuenta de usuario para el socio");
-                        }
-
-                    } else { // Crear ADMINISTRADOR (idRole = 1)
-                        error_log("DEBUG - Creando administrador...");
-                        
-                        $userId = $userModel->create(
-                            $login,             // CI como login
-                            $hashedPassword,    // Contraseña hasheada
-                            $email,             // Email
-                            $idRole,            // Rol 1 = Admin
-                            null                // Sin partner asociado
-                        );
-                        
-                        error_log("DEBUG - Administrador ID creado: " . ($userId ?: 'FALSO'));
-                        
-                        // Validar que se creó correctamente
-                        if (!$userId || $userId === false) {
-                            throw new \Exception("No se pudo crear la cuenta de administrador");
-                        }
+                    } catch (\Exception $e) {
+                        throw new \Exception("Error al subir archivos: " . $e->getMessage());
                     }
+
+                    // Fechas para el socio
+                    $dateCreation = date('Y-m-d H:i:s');
+                    $dateRegistration = date('Y-m-d');
+
+                    // 1. Crear el socio en la tabla partner
+                    $partnerId = $partnerModel->create(
+                        $name,
+                        $ci,                 // CI en tabla partner
+                        $cellPhoneNumber,
+                        $address,
+                        $dateCreation,
+                        $birthday,
+                        $dateRegistration,
+                        $frontImageRel,      // Ruta de la imagen frontal (puede ser null)
+                        $backImageRel        // Ruta de la imagen posterior (puede ser null)
+                    );
+                    
+                    error_log("DEBUG - Partner ID creado: " . ($partnerId ?: 'FALSO'));
+                    error_log("DEBUG - Imagen frontal: " . ($frontImageRel ?: 'NO SUBIDA'));
+                    error_log("DEBUG - Imagen posterior: " . ($backImageRel ?: 'NO SUBIDA'));
+                    
+                    if (!$partnerId) {
+                        throw new \Exception("No se pudo crear el socio en la tabla partner");
+                    }
+
+                    // 2. Crear el usuario asociado al socio
+                    $userId = $userModel->create(
+                        $login,             // CI como login
+                        $hashedPassword,    // Contraseña hasheada
+                        $email,             // Email
+                        $idRole,            // Rol 2 = Socio
+                        (int)$partnerId     // ID del socio recién creado
+                    );
+                    
+                    error_log("DEBUG - Usuario ID creado: " . ($userId ?: 'FALSO'));
+                    
+                    // Validar que se creó correctamente
+                    if (!$userId || $userId === false) {
+                        throw new \Exception("No se pudo crear la cuenta de usuario para el socio");
+                    }
+                    // Enviar correo de confirmación
+                    $emailSent = sendLoginCredentialsEmail($email, [
+                        'name' => "",
+                        'login' => $login,
+                        'password' => $login
+                    ]);
+                    if (!$emailSent) {
+                                $successMessage .= " (Nota: No se pudo enviar el correo de confirmación)";
+                            }
+                    error_log("DEBUG - Usuario creado exitosamente");
+                    
 
                     $db->commit();
                     error_log("DEBUG - Transacción completada exitosamente");
@@ -491,193 +482,6 @@ public function resetAttempts(): void
     }
     exit;
 }
-    /*public function updatePartner(int $id): void
-    {
-        $this->startSession();
-        if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
-            $this->redirect('login');
-            return;
-        }
-
-        // Obtener opciones del menú para la barra lateral
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 2);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        require_once __DIR__ . '/../Models/Partner.php';
-        require_once __DIR__ . '/../Models/Usuario.php';
-        $partnerModel = new \Partner();
-        $userModel = new \Usuario();
-
-        error_log("DEBUG updatePartner - ID recibido: $id");
-
-        // Obtener datos actuales antes de cualquier operación
-        $partner = $partnerModel->findById($id);
-        error_log("DEBUG - Partner encontrado: " . print_r($partner, true));
-
-        $user = null;
-        if ($partner) {
-            // Buscar usuario por idPartner
-            $user = $userModel->findByPartnerId($id);
-            error_log("DEBUG - User encontrado: " . print_r($user, true));
-        }
-
-        if (!$partner) {
-            error_log("DEBUG - Partner no encontrado para ID: $id");
-            $_SESSION['error'] = 'Socio no encontrado';
-            $this->redirect('partner/list');
-            return;
-        }
-
-        if (!$user) {
-            error_log("DEBUG - Usuario no encontrado para Partner ID: $id");
-            $_SESSION['error'] = 'Usuario no encontrado para este socio';
-            $this->redirect('partner/list');
-            return;
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Obtener datos del formulario
-            $login = trim((string)($_POST['login'] ?? ''));
-            $email = trim((string)($_POST['email'] ?? ''));
-            $idRole = (int)($_POST['idRole'] ?? 2);
-            
-            // Datos del partner (solo si es socio)
-            $name = trim((string)($_POST['name'] ?? ''));
-            $ci = trim((string)($_POST['ci'] ?? ''));
-            $cellPhoneNumber = trim((string)($_POST['cellPhoneNumber'] ?? ''));
-            $address = trim((string)($_POST['address'] ?? ''));
-            $birthday = trim((string)($_POST['birthday'] ?? ''));
-            $dateRegistration = trim((string)($_POST['dateRegistration'] ?? ''));
-
-            error_log("DEBUG Update - Datos del formulario:");
-            error_log("- login: '$login'");
-            error_log("- email: '$email'");
-            error_log("- idRole: $idRole");
-            error_log("- name: '$name'");
-            error_log("- ci: '$ci'");
-
-            // Validaciones
-            $errors = [];
-
-            if ($login === '') {
-                $errors[] = "El campo Login es obligatorio";
-            }
-
-            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "El email es obligatorio y debe ser válido";
-            }
-
-            if ($idRole === 2) { // Socio
-                if ($name === '') $errors[] = "El nombre es obligatorio";
-                if ($ci === '') $errors[] = "La cédula es obligatoria";
-                if ($cellPhoneNumber === '') $errors[] = "El celular es obligatorio";
-                if ($address === '') $errors[] = "La dirección es obligatoria";
-                if ($birthday === '') $errors[] = "La fecha de nacimiento es obligatoria";
-                if ($dateRegistration === '') $errors[] = "La fecha de registro es obligatoria";
-            }
-
-            // Verificar duplicados (excluyendo el usuario actual)
-            if ($userModel->loginExists($login, $user['idUser'])) {
-                $errors[] = "El login $login ya está en uso por otro usuario";
-            }
-
-            if ($userModel->emailExists($email, $user['idUser'])) {
-                $errors[] = "El email $email ya está en uso por otro usuario";
-            }
-
-            if (!empty($errors)) {
-                error_log("DEBUG - Errores de validación: " . implode(', ', $errors));
-                $error = implode('<br>', $errors);
-            } else {
-                $db = \Database::singleton()->getConnection();
-                $db->beginTransaction();
-
-                try {
-                    if ($idRole === 2) { // Actualizar socio
-                        error_log("DEBUG - Actualizando socio ID: $id");
-                        
-                        // 1. Actualizar tabla partner
-                        $partnerUpdated = $partnerModel->update(
-                            $id, $name, $ci, $cellPhoneNumber, 
-                            $address, $birthday, $dateRegistration
-                        );
-                        
-                        error_log("DEBUG - Partner actualizado: " . ($partnerUpdated ? 'SÍ' : 'NO'));
-                        
-                        if (!$partnerUpdated) {
-                            throw new \Exception("No se pudo actualizar los datos del socio");
-                        }
-
-                        // 2. Actualizar usuario asociado
-                        error_log("DEBUG - Actualizando usuario ID: " . $user['idUser']);
-                        
-                        $userUpdated = $userModel->update($user['idUser'], [
-                            'login' => $login,
-                            'email' => $email,
-                            'idRol' => $idRole
-                        ]);
-                        
-                        error_log("DEBUG - Usuario actualizado: " . ($userUpdated ? 'SÍ' : 'NO'));
-                        
-                        if (!$userUpdated) {
-                            throw new \Exception("No se pudo actualizar el usuario del socio. Ver logs para detalles.");
-                        }
-
-                    } else { // Actualizar administrador (idRole = 1)
-                        error_log("DEBUG - Actualizando administrador");
-                        
-                        $userUpdated = $userModel->update($user['idUser'], [
-                            'login' => $login,
-                            'email' => $email,
-                            'idRol' => $idRole,
-                            'idPartner' => null // Los admins no tienen partner
-                        ]);
-                        
-                        if (!$userUpdated) {
-                            throw new \Exception("No se pudo actualizar el administrador. Ver logs para detalles.");
-                        }
-                    }
-
-                    $db->commit();
-                    error_log("DEBUG - Actualización exitosa, redirigiendo...");
-                    
-                    $_SESSION['success_message'] = "Usuario actualizado exitosamente";
-                    $this->redirect('partner/list');
-                    return;
-
-                } catch (\Throwable $e) {
-                    $db->rollBack();
-                    error_log("DEBUG - Error en transacción de actualización: " . $e->getMessage());
-                    error_log("DEBUG - Trace: " . $e->getTraceAsString());
-                    $error = $e->getMessage();
-                }
-            }
-        }
-
-        // Preparar datos para la vista
-        $viewData = [
-            'partner' => $partner,
-            'user' => $user,
-            'menuOptions' => $menuOptions,
-            'currentPath' => 'partner/edit/' . $id,
-            'roleId' => $roleId
-        ];
-
-        if (isset($error)) {
-            $viewData['error'] = $error;
-            error_log("DEBUG - Error enviado a vista: $error");
-        }
-
-        $this->view('partner/edit', $viewData);
-    }*/
-
-
-
-    
-
-
-
 
     public function updatePartner(int $id): void
 {
@@ -896,17 +700,6 @@ public function resetAttempts(): void
 
 
 
-
-
-
-
-
-
-
-
-
-
-
     public function deletePartner(int $id): void
     {
         $this->startSession();
@@ -999,107 +792,4 @@ public function resetAttempts(): void
             $this->redirect($returnUrl);
         }
     }
-
-    /* public function manageRegistrations(): void
-    {
-        $this->startSession();
-        if (!isset($_SESSION['user_id']) || (int)($_SESSION['role'] ?? 0) !== 1) {
-            $this->redirect('login');
-            return;
-        }
-
-        // Obtener opciones del menú
-        require_once __DIR__ . '/../Models/Competence.php';
-        $roleId = (int)($_SESSION['role'] ?? 1);
-        $menuOptions = (new \Competence())->getByRole($roleId);
-
-        require_once __DIR__ . '/../Models/PartnerOnline.php';
-        $partnerOnlineModel = new \PartnerOnline();
-        $registrations = $partnerOnlineModel->getAll();
-
-        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'], $_POST['id'])) {
-            $id     = (int)$_POST['id'];
-            $action = (string)$_POST['action'];
-
-            require_once __DIR__ . '/../Models/Partner.php';
-            require_once __DIR__ . '/../Models/Usuario.php';
-            $partnerModel = new \Partner();
-            $userModel    = new \Usuario();
-            $db           = \Database::singleton()->getConnection();
-
-            $db->beginTransaction();
-            try {
-                $registration = $partnerOnlineModel->findById($id);
-                if ($registration) {
-                    if ($action === 'accept') {
-                        $dateConfirmation = date('Y-m-d H:i:s');
-
-                        // 1. Crear el socio en la tabla partner
-                        $partnerId = $partnerModel->create(
-                            $registration['name'],
-                            $registration['CI'],
-                            $registration['cellPhoneNumber'],
-                            $registration['address'],
-                            $dateConfirmation,                        // dateCreation del socio
-                            $registration['birthday'],
-                            $registration['dateRegistration']         // viene de NOW() en la solicitud
-                        );
-                        
-                        if (!$partnerId) {
-                            throw new \Exception("No se pudo crear el socio en la tabla partner");
-                        }
-
-                        // 2. Crear el usuario asociado
-                        $login          = $registration['CI']; // CI como login
-                        $hashedPassword = password_hash($login, PASSWORD_BCRYPT); // CI como contraseña temporal hasheada
-                        $email          = (string)($registration['email'] ?? '');
-
-                        $userId = $userModel->create($login, $hashedPassword, $email, 2, (int)$partnerId);
-                        
-                        if (!$userId) {
-                            throw new \Exception("No se pudo crear el usuario para el socio");
-                        }
-
-                        // 3. Eliminar la solicitud de registro
-                        $partnerOnlineModel->delete($id);
-                        
-                        $_SESSION['success_message'] = "Solicitud aceptada y socio creado exitosamente";
-                        
-                    } elseif ($action === 'reject') {
-                        // Solo eliminar la solicitud
-                        $partnerOnlineModel->delete($id);
-                        $_SESSION['success_message'] = "Solicitud rechazada correctamente";
-                    }
-
-                    $db->commit();
-                } else {
-                    throw new \Exception("Solicitud no encontrada");
-                }
-                
-            } catch (\Throwable $e) {
-                $db->rollBack();
-                error_log("Error en manageRegistrations: " . $e->getMessage());
-                error_log("Trace: " . $e->getTraceAsString());
-                $_SESSION['error'] = $e->getMessage();
-            }
-            
-            $this->redirect('partner/manage');
-            return;
-        }
-
-        // Verificar mensajes de sesión
-        $successMessage = $_SESSION['success_message'] ?? null;
-        $errorMessage = $_SESSION['error'] ?? null;
-        
-        // Limpiar mensajes de sesión
-        unset($_SESSION['success_message'], $_SESSION['error']);
-
-        $this->view('partner/manage', [
-            'registrations'  => $registrations,
-            'menuOptions'    => $menuOptions,
-            'roleId'         => $roleId,
-            'successMessage' => $successMessage,
-            'errorMessage'   => $errorMessage,
-        ]);
-    } */
 }

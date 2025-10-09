@@ -417,7 +417,7 @@ public function createUser(): void
                     'idRol'     => $idRol,             // Rol seleccionado
                     'idPartner' => 226,                // Valor temporal (comentar cuando permita NULL)
                     'status'    => 1,                  // Activo
-                    'firstSession' => 1                // Primer inicio de sesión
+                    'firstSession' => 0                // Primer inicio de sesión
                 ]);
                 
                 error_log("DEBUG - Usuario ID creado: " . ($userId ?: 'FALSO'));
@@ -426,7 +426,15 @@ public function createUser(): void
                 if (!$userId || $userId === false) {
                     throw new \Exception("No se pudo crear la cuenta de usuario");
                 }
-
+                // Enviar correo de confirmación
+                $emailSent = sendLoginCredentialsEmail($email, [
+                    'name' => "",
+                    'login' => $login,
+                    'password' => $login
+                ]);
+                if (!$emailSent) {
+                            $successMessage .= " (Nota: No se pudo enviar el correo de confirmación)";
+                        }
                 error_log("DEBUG - Usuario creado exitosamente");
                 
                 // Mensaje de éxito
