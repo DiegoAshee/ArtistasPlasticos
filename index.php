@@ -346,6 +346,13 @@ $router->addRoute('GET', '/conceptos/export-pdf', 'ConceptController', 'exportPd
 | MANEJO DE ERRORES
 |--------------------------------------------------------------------------
 */
+// Rutas para Notificaciones (vista y endpoints AJAX)
+$router->addRoute('GET', '/notifications', 'NotificationController', 'index');
+$router->addRoute('GET', '/notifications/all', 'NotificationController', 'index');
+$router->addRoute('POST', '/notifications/mark-read', 'NotificationController', 'markRead');
+$router->addRoute('POST', '/notifications/mark-all-read', 'NotificationController', 'markAllRead');
+$router->addRoute('POST', '/notifications/delete', 'NotificationController', 'delete');
+
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     echo "<b>Error:</b> [$errno] $errstr - $errfile:$errline<br>";
 });
@@ -355,7 +362,3 @@ set_exception_handler(function($e) {
 
 // Despachar la ruta
 $router->dispatch();
-
-// RUTAS DE NOTIFICACIONES (AJAX)
-$router->addRoute('POST', '/notifications/mark-read', 'NotificationController', 'markAsRead');
-$router->addRoute('POST', '/notifications/mark-all-read', 'NotificationController', 'markAllAsRead');

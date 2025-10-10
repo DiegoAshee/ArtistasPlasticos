@@ -4,8 +4,9 @@ require_once __DIR__ . '/../../Models/Notification.php';
 use App\Models\Notification;
 
 $userId = $_SESSION['user_id'] ?? 0;
+$roleId = $_SESSION['role'] ?? 0;
 $notificationModel = new Notification();
-$notifications = $notificationModel->getNotificationsForUser($userId);
+$notifications = $notificationModel->getNotificationsForUser($userId, $roleId);
 
 // Adaptar los datos para la vista (icono, url, etc.) si es necesario
 foreach ($notifications as &$notif) {
@@ -17,9 +18,29 @@ foreach ($notifications as &$notif) {
     case 'info': default: $notif['icon'] = 'fas fa-info-circle'; break;
   }
   // url opcional, si tienes campo 'data' puedes usarlo
-  $notif['url'] = $notif['data'] ?? null;
-  // Adaptar campo 'is_read' a 'read' para compatibilidad con la vista
-  $notif['read'] = isset($notif['is_read']) ? (bool)$notif['is_read'] : false;
+  // Si el campo data contiene JSON con "url", extraerlo; si es una ruta relativa, convertirla con u().
+  $notif['url'] = null;
+  if (!empty($notif['data'])) {
+    // intentar decodificar JSON
+    $decoded = json_decode($notif['data'], true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) && !empty($decoded['url'])) {
+      $rawUrl = $decoded['url'];
+      // Normalizar: aceptar solo URLs absolutas o rutas que empiecen con '/'
+      if (preg_match('#^https?://#i', $rawUrl) || strpos($rawUrl, '/') === 0) {
+        $notif['url'] = $rawUrl;
+      } else {
+        // Si viene una ruta relativa (sin esquema ni /) construimos con u()
+        // pero sólo si no contiene espacios ni caracteres extraños
+        if (preg_match('#^[a-z0-9_\-/]+$#i', $rawUrl)) {
+          $notif['url'] = u($rawUrl);
+        } else {
+          $notif['url'] = null; // no es una URL válida
+        }
+      }
+    }
+  }
+  // Adaptar campo de lectura por usuario (user_is_read) a 'read' para compatibilidad con la vista
+  $notif['read'] = isset($notif['user_is_read']) ? (bool)$notif['user_is_read'] : false;
   // Adaptar campo 'created_at' a 'time' para compatibilidad con la vista
   $notif['time'] = $notif['created_at'] ?? '';
 }
@@ -53,7 +74,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
 
 <div class="topbar-actions">
   <!-- Notifications Bell -->
-  <div class="notification-container">
+  <div class="notification-container" data-endpoint-mark-read="<?= htmlspecialchars(addslashes(u('notifications/mark-read')), ENT_QUOTES) ?>" data-endpoint-mark-all-read="<?= htmlspecialchars(addslashes(u('notifications/mark-all-read')), ENT_QUOTES) ?>">
     <button class="notification-bell" id="notificationBell" aria-label="Notificaciones">
       <i class="fas fa-bell"></i>
       <?php if ($unreadCount > 0): ?>
@@ -65,7 +86,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
       <div class="notification-header">
         <h3>Notificaciones</h3>
         <?php if ($unreadCount > 0): ?>
-          <button class="mark-all-read" onclick="markAllAsRead()">
+          <button class="mark-all-read">
             <i class="fas fa-check-double"></i> Marcar todas como leídas
           </button>
         <?php endif; ?>
@@ -74,9 +95,14 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
       <div class="notification-list">
         <?php if (!empty($notifications)): ?>
           <?php foreach ($notifications as $notification): ?>
-            <div class="notification-item <?= !$notification['read'] ? 'unread' : '' ?>" 
-                 data-id="<?= $notification['id'] ?>"
-                 <?= $notification['url'] ? 'onclick="handleNotificationClick(' . $notification['id'] . ', \'' . htmlspecialchars($notification['url'], ENT_QUOTES) . '\')"' : '' ?>>
+            <?php
+              $nid = (int)$notification['id'];
+              // destino: si hay url válida, usarla; si no, usar la lista con focus
+              $dest = $notification['url'] ? $notification['url'] : (u('notifications/all') . '?focus=' . $nid);
+            ?>
+            <a class="notification-item <?= !$notification['read'] ? 'unread' : '' ?>" 
+               data-id="<?= $nid ?>"
+               href="<?= htmlspecialchars($dest, ENT_QUOTES, 'UTF-8') ?>">
               <div class="notification-icon <?= $notification['type'] ?>">
                 <i class="<?= $notification['icon'] ?>"></i>
               </div>
@@ -88,7 +114,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
               <?php if (!$notification['read']): ?>
                 <div class="unread-indicator"></div>
               <?php endif; ?>
-            </div>
+            </a>
           <?php endforeach; ?>
         <?php else: ?>
           <div class="no-notifications">
@@ -100,7 +126,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
       
       <?php if (!empty($notifications)): ?>
         <div class="notification-footer">
-          <a href="/notifications/all" class="view-all-link">
+          <a href="<?= htmlspecialchars(u('notifications/all'), ENT_QUOTES, 'UTF-8') ?>" class="view-all-link">
             <i class="fas fa-list"></i> Ver todas las notificaciones
           </a>
         </div>
@@ -408,115 +434,8 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
 }
 </style>
 
-<script>
-// Notification functionality
-document.addEventListener('DOMContentLoaded', function() {
-  const notificationBell = document.getElementById('notificationBell');
-  const notificationDropdown = document.getElementById('notificationDropdown');
-  
-  // Toggle notification dropdown
-  notificationBell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    notificationDropdown.classList.toggle('show');
-    
-    // Close user menu if open
-    const userDropdown = document.getElementById('userDropdown');
-    userDropdown.classList.remove('show');
-  });
-  
-  // Close dropdown when clicking outside
-  document.addEventListener('click', function(e) {
-    if (!notificationDropdown.contains(e.target) && !notificationBell.contains(e.target)) {
-      notificationDropdown.classList.remove('show');
-    }
-  });
-  
-  // Handle keyboard navigation
-  notificationBell.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      notificationDropdown.classList.toggle('show');
-    }
-  });
-});
-
-// Handle notification click
-function handleNotificationClick(notificationId, url) {
-  // Mark as read
-  markAsRead(notificationId);
-  
-  // Navigate to URL if provided
-  if (url) {
-    window.location.href = url;
-  }
-}
-
-// Mark single notification as read
-function markAsRead(notificationId) {
-  const notificationItem = document.querySelector(`[data-id="${notificationId}"]`);
-  if (notificationItem) {
-    notificationItem.classList.remove('unread');
-    const indicator = notificationItem.querySelector('.unread-indicator');
-    if (indicator) {
-      indicator.remove();
-    }
-    updateBadgeCount();
-    // AJAX para marcar como leída en el backend
-    fetch('/notifications/mark-read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: notificationId })
-    });
-  }
-}
-
-// Mark all notifications as read
-function markAllAsRead() {
-  const unreadItems = document.querySelectorAll('.notification-item.unread');
-  unreadItems.forEach(item => {
-    item.classList.remove('unread');
-    const indicator = item.querySelector('.unread-indicator');
-    if (indicator) {
-      indicator.remove();
-    }
-  });
-  // Oculta el botón de marcar todas
-  const markAllButton = document.querySelector('.mark-all-read');
-  if (markAllButton) {
-    markAllButton.style.display = 'none';
-  }
-  updateBadgeCount();
-  // AJAX para marcar todas como leídas en el backend
-  fetch('/notifications/mark-all-read', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-// Update notification badge count
-function updateBadgeCount() {
-  const badge = document.querySelector('.notification-badge');
-  const unreadCount = document.querySelectorAll('.notification-item.unread').length;
-  
-  if (unreadCount === 0) {
-    if (badge) {
-      badge.remove();
-    }
-  } else {
-    if (badge) {
-      badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-    }
-  }
-}
-
-// Add real-time notification (call this function when receiving new notifications)
-function addNewNotification(notification) {
-  // Add notification to the list
-  // Update badge count
-  // Show a toast or brief animation
-  console.log('New notification received:', notification);
-}
-</script>
+<!-- Carga lógica de notificaciones desde archivo estático para cumplir CSP (evita código inline/eval) -->
+<script src="<?= htmlspecialchars(u('assets/js/notifications.js'), ENT_QUOTES) ?>" defer></script>
 
 <?php
 // Helper function to calculate time ago
