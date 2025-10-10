@@ -38,31 +38,34 @@ class Notification
     }
 
     /**
-     * Marca todas las notificaciones del rol (o globales) como leídas para un usuario: inserta filas faltantes en Notification_Us.
-     * @param array $data keys: idRol (int), title, message, type, data
-     * @return int|false
+     * Crea una nueva notificación
+     * @param array $data keys: title, message, type, data, idRol (opcional)
+     * @return int|false ID de la notificación creada o false en caso de error
      */
     public function create(array $data)
     {
-                VALUES (:title, :message, :type, :data, 0, NOW(), NOW(), :idRol)";
+        $sql = "INSERT INTO notifications (title, message, type, data, isActive, createdAt, updatedAt, idRol) 
+                VALUES (:title, :message, :type, :data, 1, NOW(), NOW(), :idRol)";
 
         $stmt = $this->db->prepare($sql);
 
+        // Preparar los datos de la notificación
         $payload = [
-            'title'   => isset($data['title']) ? $data['title'] : '',
-            'message' => isset($data['message']) ? $data['message'] : '',
-            'type'    => isset($data['type']) ? $data['type'] : null,
-            'data'    => isset($data['data']) ? json_encode($data['data']) : null,
-            // permitir idRol NULL para notificación global
-            'idRol'   => array_key_exists('idRol', $data) && $data['idRol'] !== '' ? (is_null($data['idRol']) ? null : (int)$data['idRol']) : null,
+            'title'   => $data['title'] ?? '',
+            'message' => $data['message'] ?? '',
+            'type'    => $data['type'] ?? 'info',
+            'data'    => !empty($data['data']) ? json_encode($data['data']) : null,
+            'idRol'   => isset($data['idRol']) && $data['idRol'] !== '' ? (int)$data['idRol'] : null,
         ];
 
         try {
             if ($stmt->execute($payload)) {
                 return (int)$this->db->lastInsertId();
             }
-        } catch (\Throwable $e) {
-            error_log('Notification::create error: ' . $e->getMessage());
+        } catch (\PDOException $e) {
+            error_log('Error al crear notificación: ' . $e->getMessage());
+            error_log('SQL: ' . $sql);
+            error_log('Datos: ' . print_r($payload, true));
         }
 
         return false;
@@ -79,7 +82,7 @@ class Notification
             return (bool)$stmt->execute(['id' => $notificationId]);
         }
 
-    $sql = "DELETE FROM notifications WHERE id = :id AND (idRol = :role_id OR idRol = 0 OR idRol IS NULL)";
+        $sql = "DELETE FROM notifications WHERE id = :id AND (idRol = :role_id OR idRol = 0 OR idRol IS NULL)";
         $stmt = $this->db->prepare($sql);
         return (bool)$stmt->execute(['id' => $notificationId, 'role_id' => $userRole]);
     }
