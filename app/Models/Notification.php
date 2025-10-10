@@ -19,10 +19,27 @@ class Notification
      * @param int $roleId
      * @return array
      */
-    public function getNotificationsForUser(int $userId, int $roleId)
-    {
-     * @return bool
+    /**
+     * Get notifications for a specific user based on their role
+     * @param int $userId
+     * @param int $roleId
+     * @return array Array of notifications with read status
      */
+    public function getNotificationsForUser(int $userId, int $roleId): array
+    {
+        $sql = "SELECT n.*, 
+                       COALESCE(nu.isRead, 0) as isRead,
+                       nu.dateRead
+                FROM notifications n
+                LEFT JOIN Notification_User nu ON n.id = nu.idNotification AND nu.idUser = :userId
+                WHERE n.isActive = 1 
+                AND (n.idRol IS NULL OR n.idRol = :roleId)
+                ORDER BY n.createdAt DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['userId' => $userId, 'roleId' => $roleId]);
+        
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     public function markNotificationAsRead(int $notificationId, int $userId): bool
     {
         // Insertar solo si no existe registro de lectura para este usuario y notificación
