@@ -20,9 +20,8 @@ class Notification
                        nu.dateRead
                 FROM notifications n
                 LEFT JOIN Notification_User nu ON n.id = nu.idNotification AND nu.idUser = :userId
-                WHERE n.isActive = 1 
                 AND (n.idRol IS NULL OR n.idRol = :roleId)
-                ORDER BY n.createdAt DESC";
+                ORDER BY n.created_at DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['userId' => $userId, 'roleId' => $roleId]);
