@@ -91,5 +91,23 @@ class Notification
         $stmt = $this->db->prepare($sql);
         return (bool)$stmt->execute(['id' => $notificationId, 'role_id' => $userRole]);
     }
+
+    /**
+     * Mark all unread notifications as read for a specific user
+     * @param int $userId
+     * @return bool True on success, false on failure
+     */
+    public function markAllAsRead(int $userId): bool
+    {
+        // First, get all unread notifications for the user
+        $sql = "INSERT INTO Notification_User (isRead, dateRead, idNotification, idUser)
+                SELECT 1, NOW(), n.id, :userId
+                FROM notifications n
+                LEFT JOIN Notification_User nu ON n.id = nu.idNotification AND nu.idUser = :userId
+                WHERE nu.id IS NULL OR nu.isRead = 0";
+
+        $stmt = $this->db->prepare($sql);
+        return (bool)$stmt->execute(['userId' => $userId]);
+    }
     
 }
