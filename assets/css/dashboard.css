@@ -1118,6 +1118,16 @@ body {
 }
 
 /* Hover/focus states avoid purple tint */
+
+/* Safety: si por algun motivo la clase .show queda activa en escritorio, no bloqueará el contenido */
+@media (min-width: 1025px) {
+    .overlay {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
 .cream-theme .menu-toggle:hover { color: #ffffff; }
 .cream-theme .nav-item:hover,
 .cream-theme .nav-item.active { box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: rgba(255,255,255,0.18); }
