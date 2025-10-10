@@ -13,18 +13,6 @@ class Notification
         $this->db = Database::singleton()->getConnection();
     }
 
-    /**
-     * Devuelve columnas de notifications y datos de lectura (Notification_Us) para el usuario actual.
-     * @param int $userId
-     * @param int $roleId
-     * @return array
-     */
-    /**
-     * Get notifications for a specific user based on their role
-     * @param int $userId
-     * @param int $roleId
-     * @return array Array of notifications with read status
-     */
     public function getNotificationsForUser(int $userId, int $roleId): array
     {
         $sql = "SELECT n.*, 
@@ -40,6 +28,7 @@ class Notification
         $stmt->execute(['userId' => $userId, 'roleId' => $roleId]);
         
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
     public function markNotificationAsRead(int $notificationId, int $userId): bool
     {
         // Insertar solo si no existe registro de lectura para este usuario y notificación
@@ -103,4 +92,5 @@ class Notification
         $stmt = $this->db->prepare($sql);
         return (bool)$stmt->execute(['id' => $notificationId, 'role_id' => $userRole]);
     }
+    
 }
