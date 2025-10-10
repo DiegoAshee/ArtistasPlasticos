@@ -20,9 +20,8 @@ class Notification
                        nu.dateRead
                 FROM notifications n
                 LEFT JOIN Notification_User nu ON n.id = nu.idNotification AND nu.idUser = :userId
-                WHERE n.isActive = 1 
                 AND (n.idRol IS NULL OR n.idRol = :roleId)
-                ORDER BY n.createdAt DESC";
+                ORDER BY n.created_at DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['userId' => $userId, 'roleId' => $roleId]);
@@ -91,6 +90,24 @@ class Notification
         $sql = "DELETE FROM notifications WHERE id = :id AND (idRol = :role_id OR idRol = 0 OR idRol IS NULL)";
         $stmt = $this->db->prepare($sql);
         return (bool)$stmt->execute(['id' => $notificationId, 'role_id' => $userRole]);
+    }
+
+    /**
+     * Mark all unread notifications as read for a specific user
+     * @param int $userId
+     * @return bool True on success, false on failure
+     */
+    public function markAllAsRead(int $userId): bool
+    {
+        // First, get all unread notifications for the user
+        $sql = "INSERT INTO Notification_User (isRead, dateRead, idNotification, idUser)
+                SELECT 1, NOW(), n.id, :userId
+                FROM notifications n
+                LEFT JOIN Notification_User nu ON n.id = nu.idNotification AND nu.idUser = :userId
+                WHERE nu.id IS NULL OR nu.isRead = 0";
+
+        $stmt = $this->db->prepare($sql);
+        return (bool)$stmt->execute(['userId' => $userId]);
     }
     
 }
