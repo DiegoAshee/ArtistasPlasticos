@@ -197,6 +197,9 @@ $router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', '
 //cobros
 /* RUTAS DE COBROS (módulo nuevo, sin chocar con Payment*) */
 /* RUTAS DE COBROS */
+$router->addRoute('GET',  '/cobros/socios',            'CobroController', 'socios'); // alias
+
+
 $router->addRoute('GET',  '/cobros/list',            'CobroController', 'pagadas'); // alias
 $router->addRoute('GET',  '/cobros/pagadas',         'CobroController', 'pagadas');
 $router->addRoute('GET',  '/cobros/debidas',         'CobroController', 'debidas');
