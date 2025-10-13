@@ -42,6 +42,30 @@ ob_start();
 
 <!-- Estilos para la tabla de movimientos -->
 <style>
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 75%;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+    
+    .text-success {
+        color: #28a745 !important;
+    }
+    
+    .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    .text-center {
+        text-align: center !important;
+    }
+    
     .modern-table {
         width: 100%;
         border-collapse: separate;
@@ -223,10 +247,12 @@ ob_start();
           <tr>
             <th><i class="fas fa-calendar"></i> Fecha</th>
             <th><i class="fas fa-tag"></i> Concepto</th>
+            <th><i class="fas fa-user-tag"></i> Destinatario</th>
             <th><i class="fas fa-file-alt"></i> Descripción</th>
             <th><i class="fas fa-credit-card"></i> Tipo de Pago</th>
             <th><i class="fas fa-user"></i> Usuario</th>
-            <th><i class="fas fa-dollar-sign"></i> Importe</th>
+            <th class="text-center"><i class="fas fa-arrow-down text-success"></i> Ingreso</th>
+            <th class="text-center"><i class="fas fa-arrow-up text-danger"></i> Egreso</th>
             <th><i class="fas fa-cogs"></i> Acciones</th>
           </tr>
         </thead>
@@ -241,7 +267,10 @@ ob_start();
                   <?= !empty($movement['dateCreation']) ? date('d/m/Y H:i', strtotime($movement['dateCreation'])) : '-' ?>
                 </span>
               </td>
-              <td><?= htmlspecialchars($movement['concept_description'] ?? 'N/A') ?></td>
+              <td>
+                <div class="mt-1"><?= htmlspecialchars($movement['concept_description'] ?? 'N/A') ?></div>
+              </td>
+              <td><?= htmlspecialchars($movement['nameDestination'] ?? 'N/A') ?></td>
               <td title="<?= htmlspecialchars($movement['description'] ?? '') ?>">
                 <?php
                   $desc = (string)($movement['description'] ?? '');
@@ -258,8 +287,15 @@ ob_start();
                   <span><?= htmlspecialchars($movement['user_login'] ?? 'N/A') ?></span>
                 </div>
               </td>
-              <td class="amount-cell <?= (float)($movement['amount'] ?? 0) >= 0 ? 'amount-positive' : 'amount-negative' ?>">
-                Bs. <?= number_format((float)($movement['amount'] ?? 0), 2) ?>
+              <td class="text-center">
+                <?php if (strtolower($movement['concept_type'] ?? '') === 'ingreso'): ?>
+                  <span class="text-success">Bs. <?= number_format((float)($movement['amount'] ?? 0), 2) ?></span>
+                <?php endif; ?>
+              </td>
+              <td class="text-center">
+                <?php if (strtolower($movement['concept_type'] ?? '') === 'egreso'): ?>
+                  <span class="text-danger">Bs. <?= number_format((float)($movement['amount'] ?? 0), 2) ?></span>
+                <?php endif; ?>
               </td>
               <td class="actions">
                 <div class="action-buttons" style="display: flex; gap: 6px;">
@@ -453,291 +489,143 @@ ob_start();
   </script>
 
   <!-- Exportación PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('exportPdfBtn').addEventListener('click', async function() {
-        const button = this;
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
-        button.disabled = true;
-        
-        try {
-          const response = await fetch('export-pdf', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Asegurar compatibilidad con jsPDF
+  window.jsPDF = window.jspdf.jsPDF;
+
+  // Formato de fechas
+  function formatDateForInput(dateString) {
+    if (!dateString) return '';
+    try {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+      const datePart = dateString.split(' ')[0];
+      const [day, month, year] = datePart.split('-');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } catch {
+      return '';
+    }
+  }
+
+  // Función principal para exportar PDF
+  function exportToPdf() {
+    const button = this;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+    button.disabled = true;
+
+    try {
+      const table = document.getElementById('tablaMovimientos');
+      if (!table) throw new Error('No se encontró la tabla con id="tablaMovimientos"');
+
+      const startDate = formatDateForInput(document.getElementById('startDate')?.value);
+      const endDate = formatDateForInput(document.getElementById('endDate')?.value);
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      // Encabezado
+      doc.setFontSize(18);
+      doc.text('Libro Diario', 14, 20);
+
+      // Filtros aplicados
+      doc.setFontSize(10);
+      let filters = [];
+      if (startDate || endDate) {
+        filters.push(`Período: ${startDate || 'Inicio'} - ${endDate || 'Fin'}`);
+      }
+      if (filters.length > 0) doc.text(filters.join(' | '), 14, 28);
+
+      // Obtener encabezados y filas visibles
+      const headers = [];
+      const rows = [];
+
+      table.querySelectorAll('thead th').forEach(th => {
+        const text = th.textContent.trim();
+        if (text && !th.querySelector('.btn-group')) headers.push(text);
+      });
+
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        if (tr.style.display !== 'none') {
+          const rowData = [];
+          tr.querySelectorAll('td').forEach(td => {
+            if (!td.querySelector('.btn-group')) rowData.push(td.textContent.trim());
           });
-          
-          const result = await response.json();
-          
-          if (!result.success) {
-            throw new Error('Error al generar el PDF: ' + (result.error || 'Error desconocido'));
-          }
-          
-          const movements = result.data || [];
-          // Aplicar filtro por rango de fechas al PDF si el usuario lo configuró
-          const start = document.getElementById('startDate')?.value || '';
-          const end = document.getElementById('endDate')?.value || '';
-          const data = (start || end)
-            ? movements.filter(m => {
-                if (!m.dateCreation) return false;
-                try {
-                  const dStr = new Date(m.dateCreation).toISOString().slice(0,10); // YYYY-MM-DD
-                  if (start && dStr < start) return false;
-                  if (end && dStr > end) return false;
-                  return true;
-                } catch (_) {
-                  return false;
-                }
-              })
-            : movements;
-          
-          if (data.length === 0) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape' });
-
-            // Título y fecha
-            doc.setFontSize(20);
-            doc.text('Libro diario', 15, 15);
-            doc.setFontSize(10);
-
-            // Subtítulo con rango (si hay filtros) - más pequeño, sin negrita y cercano al título
-            let subtitle = '';
-            if (start || end) {
-              const s = start ? start.split('-').reverse().join('/') : '...';
-              const e = end ? end.split('-').reverse().join('/') : '...';
-              subtitle = `Del ${s} al ${e}`;
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(11);
-              doc.text(subtitle, 15, 22);
-            }
-
-            // Mensaje de vacío centrado en la página
-            const pageWc = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-            const pageHc = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Sin importes en el periodo seleccionado', pageWc / 2, pageHc / 2, { align: 'center' });
-            doc.setFont('helvetica', 'normal');
-
-            // Footer: fecha de generación (izquierda) y paginación (derecha)
-            const pageW1 = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-            const pageH1 = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-            const genDate1 = new Date().toLocaleDateString();
-            doc.setFontSize(8);
-            doc.text('Generado el: ' + genDate1, 15, pageH1 - 10);
-            doc.text('Página 1 de 1', pageW1 - 30, pageH1 - 10);
-
-            // Guardar PDF y salir
-            doc.save('libro_diario_' + new Date().toISOString().split('T')[0] + '.pdf');
-            return;
-          }
-          
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({ orientation: 'landscape' });
-          
-          // Título y fecha
-          doc.setFontSize(20);
-          doc.text('Libro diario', 15, 15);
-          
-          doc.setFontSize(10);
-
-          // Subtítulo con rango de fechas (más pequeño, sin negrita y cercano al título)
-          let subtitle = '';
-          if (start || end) {
-            const s = start ? start.split('-').reverse().join('/') : '...';
-            const e = end ? end.split('-').reverse().join('/') : '...';
-            subtitle = `Del ${s} al ${e}`;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
-            doc.text(subtitle, 15, 22);
-            doc.setFontSize(7);
-          } else {
-            // calcular del rango de los datos
-            let minD = null, maxD = null;
-            data.forEach(m => {
-              if (!m.dateCreation) return;
-              const t = Date.parse(m.dateCreation);
-              if (!isNaN(t)) {
-                minD = (minD === null) ? t : Math.min(minD, t);
-                maxD = (maxD === null) ? t : Math.max(maxD, t);
-              }
-            });
-            if (minD !== null && maxD !== null) {
-              const fmt = d => new Date(d).toLocaleDateString();
-              subtitle = `Del ${fmt(minD)} al ${fmt(maxD)}`;
-            }
-          }
-          if (!start && !end && subtitle) {
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
-            doc.text(subtitle, 15, 22);
-            doc.setFontSize(7);
-          }
-          
-          // Cabeceras de tabla
-          const headers = ['Fecha', 'Concepto', 'Descripción', 'Tipo Pago', 'Usuario', 'Importe'];
-          // Posiciones de columnas (x) y configuración de anchos (ajustadas al nuevo orden)
-          const columnPositions = [15, 55, 95, 205, 240, 275];
-          const descMaxWidth = 100; // Ancho máximo para ajuste de texto en descripción
-          
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          headers.forEach((header, i) => {
-            if (i === 5) {
-              // Alinear encabezado de 'Importe' a la derecha, como los datos
-              doc.text(header, columnPositions[i], 38, { align: 'right' });
-            } else {
-              doc.text(header, columnPositions[i], 38);
-            }
-          });
-          doc.line(15, 40, 280, 40);
-          
-          // Filas de datos
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7);
-          
-          let y = 48;
-          const topMargin = 20;
-          const headerY = 38;
-          const bottomMargin = 15;
-          const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-          const lineHeight = 5.5; // altura por línea
-          let totalAmount = 0;
-          data.forEach((movement, index) => {
-            // Salto de página si no hay espacio suficiente para al menos una línea
-            if (y > (pageHeight - bottomMargin)) {
-              doc.addPage();
-              y = topMargin;
-              
-              // Cabeceras en nueva página
-              doc.setFontSize(8);
-              doc.setFont('helvetica', 'bold');
-              headers.forEach((header, i) => {
-                if (i === 5) {
-                  doc.text(header, columnPositions[i], y + 15, { align: 'right' });
-                } else {
-                  doc.text(header, columnPositions[i], y + 15);
-                }
-              });
-              doc.line(15, y + 17, 280, y + 17);
-              y = y + 25;
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(7);
-            }
-            
-            const formatDate = (dateString) => {
-              if (!dateString) return 'N/A';
-              try {
-                const date = new Date(dateString);
-                return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-              } catch (e) {
-                return 'N/A';
-              }
-            };
-            
-            // Preparar valores de la fila
-            const dateText = formatDate(movement.dateCreation);
-            const conceptText = (movement.concept_description || 'N/A');
-            const fullDesc = movement.description || 'N/A';
-            const wrappedDesc = doc.splitTextToSize(fullDesc, descMaxWidth);
-            const payTypeText = (movement.payment_type_description || 'N/A');
-            const userText = (movement.user_login || 'N/A');
-            const amountText = 'Bs. ' + parseFloat(movement.amount || 0).toFixed(2);
-
-            // Si no hay espacio suficiente para todas las líneas de la descripción, saltar de página
-            const neededHeight = lineHeight * (Array.isArray(wrappedDesc) ? wrappedDesc.length : 1);
-            if (y + neededHeight > (pageHeight - bottomMargin)) {
-              doc.addPage();
-              y = topMargin;
-              doc.setFontSize(8);
-              doc.setFont('helvetica', 'bold');
-              headers.forEach((header, i) => {
-                doc.text(header, columnPositions[i], y + 15);
-              });
-              doc.line(15, y + 17, 280, y + 17);
-              y = y + 25;
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(7);
-            }
-
-            // Pintar valores según el nuevo orden: Fecha, Concepto, Descripción, Tipo Pago, Usuario, Importe
-            doc.text(dateText, columnPositions[0], y);
-            doc.text(conceptText, columnPositions[1], y);
-            doc.text(wrappedDesc, columnPositions[2], y);
-            doc.text(payTypeText, columnPositions[3], y);
-            doc.text(userText, columnPositions[4], y);
-            // Alinear Importe a la derecha de su columna
-            doc.text(amountText, columnPositions[5], y, { align: 'right' });
-            
-            // Avanzar Y según líneas ocupadas por la descripción
-            y += neededHeight + 2;
-            totalAmount += parseFloat(movement.amount || 0);
-          });
-
-          // Espacio y fila de Total
-          if (y > (pageHeight - bottomMargin - 10)) {
-            // Nueva página para que el total no quede cortado
-            doc.addPage();
-            y = topMargin;
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'bold');
-            headers.forEach((header, i) => {
-              if (i === 5) {
-                doc.text(header, columnPositions[i], y + 15, { align: 'right' });
-              } else {
-                doc.text(header, columnPositions[i], y + 15);
-              }
-            });
-            doc.line(15, y + 17, 280, y + 17);
-            y = y + 25;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
-          }
-          // Separador antes del total
-          doc.line(15, y + 2, 280, y + 2);
-          y += 8;
-          doc.setFont('helvetica', 'bold');
-          // Etiqueta 'Total' alineada a la derecha de la penúltima columna
-          doc.text('Total', columnPositions[4], y, { align: 'right' });
-          // Importe total alineado a la derecha en la última columna
-          const totalText = 'Bs. ' + totalAmount.toFixed(2);
-          doc.text(totalText, columnPositions[5], y, { align: 'right' });
-          doc.setFont('helvetica', 'normal');
-          
-          // Números de página
-          const pageCount = doc.internal.getNumberOfPages();
-          const genDate = new Date().toLocaleDateString();
-          for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            // Bottom-left: fecha de generación
-            const pageW = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-            const pageH = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-            doc.text('Generado el: ' + genDate, 15, pageH - 10);
-            doc.text(
-              `Página ${i} de ${pageCount}`,
-              pageW - 30,
-              pageH - 10
-            );
-          }
-          
-          doc.save('libro_diario_' + new Date().toISOString().split('T')[0] + '.pdf');
-          
-        } catch (error) {
-          console.error('Error al generar el PDF:', error);
-          alert('Error al generar el PDF. Por favor, intente nuevamente.');
-        } finally {
-          button.innerHTML = originalText;
-          button.disabled = false;
+          if (rowData.length > 0) rows.push(rowData);
         }
       });
-    });
-  </script>
+
+      if (rows.length === 0) {
+        alert('No hay datos para exportar.');
+        button.innerHTML = originalText;
+        button.disabled = false;
+        return;
+      }
+
+      // Generar tabla en el PDF
+      doc.autoTable({
+        head: [headers],
+        body: rows,
+        startY: 35,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [187, 174, 151], textColor: 0, halign: 'center' },
+        alternateRowStyles: { fillColor: [240, 240, 240] },
+        columnStyles: { [headers.length - 1]: { halign: 'right' } },
+        margin: { top: 35 },
+        didDrawPage: function (data) {
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageHeight = doc.internal.pageSize.height;
+          const pageWidth = doc.internal.pageSize.width;
+          doc.setFontSize(8);
+          doc.text(
+            `Página ${data.pageNumber} de ${pageCount} | Generado el ${new Date().toLocaleDateString()}`,
+            pageWidth - 14,
+            pageHeight - 10,
+            { align: 'right' }
+          );
+        }
+      });
+
+      // Calcular total
+      let total = 0;
+      rows.forEach(r => {
+        const num = parseFloat(r[r.length - 1].replace(/[^0-9.-]+/g, '') || 0);
+        if (!isNaN(num)) total += num;
+      });
+
+      // Fila de total
+      doc.autoTable({
+        body: [[
+          { content: 'TOTAL', colSpan: headers.length - 1, styles: { halign: 'right', fontStyle: 'bold', fillColor: [220, 220, 220] } },
+          { content: 'Bs. ' + total.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } }
+        ]],
+        startY: doc.lastAutoTable.finalY + 5,
+        styles: { fontSize: 9, cellPadding: 3 }
+      });
+
+      // Guardar PDF
+      const fileName = `Libro_Diario_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+    } catch (err) {
+      console.error('Error al generar el PDF:', err);
+      alert('Ocurrió un error al generar el PDF. Revisa la consola para más detalles.');
+    } finally {
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }
+  }
+
+  // Asignar evento al botón
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', exportToPdf);
+  } else {
+    console.warn('⚠️ No se encontró el botón con id="exportPdfBtn"');
+  }
+});
+</script>
+
 <?php
 $content = ob_get_clean();
 
