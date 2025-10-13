@@ -47,14 +47,24 @@ ob_start();
                     <label for="description" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563;">Descripción</label>
                     <input type="text" id="description" name="description" required 
                            value="<?= htmlspecialchars($movement['description'] ?? '') ?>"
-                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;">
+                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;"
+                           placeholder="Ingrese una descripción del movimiento">
+                </div>
+                
+                <div class="form-group">
+                    <label for="nameDestination" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563;">Destinatario</label>
+                    <input type="text" id="nameDestination" name="nameDestination" required 
+                           value="<?= htmlspecialchars($movement['nameDestination'] ?? '') ?>"
+                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;"
+                           placeholder="A nombre de quien se realiza el movimiento">
                 </div>
                 
                 <div class="form-group">
                     <label for="amount" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563;">Monto</label>
                     <input type="number" id="amount" name="amount" step="0.01" required 
                            value="<?= htmlspecialchars($movement['amount'] ?? '') ?>"
-                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;">
+                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;"
+                           placeholder="0.00">
                 </div>
             </div>
             

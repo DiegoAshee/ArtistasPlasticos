@@ -176,14 +176,16 @@ class MovementController extends BaseController
         $idPaymentType = $_POST['idPaymentType'] ?? '';
         $idConcept = $_POST['idConcept'] ?? '';
         $idUser = $_POST['idUser'] ?? $_SESSION['user_id'];
+        $nameDestination = trim($_POST['nameDestination'] ?? '');
 
-        if ($description === '') {
+        // Validaciones
+        if (empty($description)) {
             $error = 'La descripción es requerida';
-        } elseif ($amount === '' || !is_numeric($amount)) {
+        } elseif (!is_numeric($amount)) {
             $error = 'El monto debe ser un número válido';
-        } elseif ($idPaymentType === '') {
+        } elseif (empty($idPaymentType)) {
             $error = 'El tipo de pago es requerido';
-        } elseif ($idConcept === '') {
+        } elseif (empty($idConcept)) {
             $error = 'El concepto es requerido';
         }
 
@@ -192,18 +194,19 @@ class MovementController extends BaseController
             return;
         }
 
-        // Preparar datos para insertar
-        $movementData = [
-            'description' => $description,
-            'amount' => $amount,
-            'dateCreation' => $dateCreation,
-            'idPaymentType' => $idPaymentType,
-            'idConcept' => $idConcept,
-            'idUser' => $idUser
-        ];
-
         try {
-            // Insertar en la base de datos utilizando el método del modelo
+            // Preparar datos para insertar
+            $movementData = [
+                'description' => $description,
+                'amount' => $amount,
+                'dateCreation' => $dateCreation,
+                'idPaymentType' => $idPaymentType,
+                'idConcept' => $idConcept,
+                'idUser' => $idUser,
+                'nameDestination' => $nameDestination
+            ];
+
+            // Insertar en la base de datos
             $success = $this->movementModel->create($movementData);
 
             if ($success) {
@@ -294,6 +297,7 @@ class MovementController extends BaseController
         $idPaymentType = $_POST['idPaymentType'] ?? '';
         $idConcept = $_POST['idConcept'] ?? '';
         $idUser = $_POST['idUser'] ?? '';
+        $nameDestination = trim($_POST['nameDestination'] ?? '');
 
         if ($description === '') {
             $error = 'La descripción es requerida';
@@ -324,6 +328,7 @@ class MovementController extends BaseController
             'idPaymentType' => (int)$idPaymentType,
             'idConcept' => (int)$idConcept,
             'idUser' => (int)$idUser,
+            'nameDestination' => $nameDestination
         ];
 
         $ok = $this->movementModel->update($id, $data);
@@ -432,51 +437,67 @@ class MovementController extends BaseController
     }
 
     /**
-     * Export PDF (mock)
+     * Export PDF
      */
     public function exportPdf(): void
     {
         $this->startSession();
 
         if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'No autorizado']);
+            $this->redirect('login');
             return;
         }
         requireRole([1], 'login');
 
-        // Check if it's an AJAX request
-        if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Solicitud inválida']);
-            return;
-        }
-
-        // Obtener los mismos filtros que en la vista de lista
+        // Obtener los filtros
         $startDate = !empty($_GET['start_date']) ? date('Y-m-d', strtotime($_GET['start_date'])) : date('Y-m-01');
         $endDate = !empty($_GET['end_date']) ? date('Y-m-d 23:59:59', strtotime($_GET['end_date'])) : date('Y-m-d 23:59:59');
         $conceptId = $_GET['concept_id'] ?? null;
         $userId = $_GET['user_id'] ?? null;
 
-        // Obtener movimientos con los mismos filtros que la vista
+        // Obtener movimientos con los filtros aplicados
         $filters = [
             'start_date' => $startDate,
             'end_date' => $endDate,
             'concept_id' => $conceptId,
             'user_id' => $userId
         ];
-
-        // Obtener los movimientos con los filtros aplicados
+        
         $movements = $this->movementModel->getAllMovements($filters);
-
-        // Agregar información de filtros a la respuesta
-        $response = [
-            'success' => true,
-            'data' => $movements,
-            'filters' => $filters
-        ];
-
-        header('Content-Type: application/json');
-        echo json_encode($response);
+        
+        // Obtener totales
+        $totalIngresos = 0;
+        $totalEgresos = 0;
+        
+        foreach ($movements as $movement) {
+            $amount = (float)($movement['amount'] ?? 0);
+            if (strtolower($movement['concept_type'] ?? '') === 'ingreso') {
+                $totalIngresos += $amount;
+            } else {
+                $totalEgresos += $amount;
+            }
+        }
+        
+        $saldo = $totalIngresos - $totalEgresos;
+        
+        // Cargar la vista del PDF
+        ob_start();
+        include __DIR__ . '/../Views/movement/pdf_template.php';
+        $html = ob_get_clean();
+        
+        // Usar Dompdf para generar el PDF
+        require_once __DIR__ . '/../../vendor/autoload.php';
+        
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        
+        // Generar nombre de archivo
+        $filename = 'libro_diario_' . date('Y-m-d') . '.pdf';
+        
+        // Enviar el PDF al navegador
+        $dompdf->stream($filename, ["Attachment" => true]);
+        exit;
     }
 }
