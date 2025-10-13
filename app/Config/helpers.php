@@ -97,6 +97,45 @@ if (!function_exists('sendRegistrationConfirmationEmail')) {
     }
 }
 
+if (!function_exists('sendChangeInformationEmail')) {
+    /**
+     * Envía email de confirmación de registro
+     */
+    function sendChangeInformationEmail(string $email, array $data): bool
+    {
+        require_once __DIR__ . '/../Services/EmailTemplates.php';
+        
+        $template = EmailTemplates::changeInformation($data);
+        
+        return sendEmail(
+            $email, 
+            $template['subject'], 
+            $template['htmlBody'], 
+            $template['textBody'],
+            ['recipient_name' => $data['name'] ?? '']
+        );
+    }
+}
+if (!function_exists('sendChangeConfirmationEmail')) {
+    /**
+     * Envía email de confirmación de registro
+     */
+    function sendChangeConfirmationEmail(string $email, array $data): bool
+    {
+        require_once __DIR__ . '/../Services/EmailTemplates.php';
+        
+        $template = EmailTemplates::changeConfirmation($data);
+        
+        return sendEmail(
+            $email, 
+            $template['subject'], 
+            $template['htmlBody'], 
+            $template['textBody'],
+            ['recipient_name' => $data['name'] ?? '']
+        );
+    }
+}
+
 if (!function_exists('sendLoginCredentialsEmail')) {
     /**
      * Envía email de aprobación de solicitud
@@ -106,6 +145,25 @@ if (!function_exists('sendLoginCredentialsEmail')) {
         require_once __DIR__ . '/../Services/EmailTemplates.php';
         
         $template = EmailTemplates::LoginCredentialsNotification($data);
+        
+        return sendEmail(
+            $email, 
+            $template['subject'], 
+            $template['htmlBody'], 
+            $template['textBody'],
+            ['recipient_name' => $data['name'] ?? '']
+        );
+    }
+}
+if (!function_exists('approvalNotification')) {
+    /**
+     * Envía email de aprobación de solicitud
+     */
+    function approvalNotification(string $email, array $data): bool
+    {
+        require_once __DIR__ . '/../Services/EmailTemplates.php';
+        
+        $template = EmailTemplates::approvalNotification($data);
         
         return sendEmail(
             $email, 
