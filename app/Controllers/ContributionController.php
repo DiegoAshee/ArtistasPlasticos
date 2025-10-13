@@ -2,6 +2,8 @@
 // app/Controllers/ContributionController.php
 declare(strict_types=1);
 
+use App\Models\Notification;
+
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/Contribution.php';
 
@@ -161,8 +163,21 @@ class ContributionController extends BaseController
                         throw new \Exception("El monto debe ser mayor a 0");
                     }
                     $contributionId = $contributionModel->create($finalAmount, $notes, $dateCreation, $monthYear);
+                    require_once __DIR__ . '/../Models/Notification.php';
+                        $notificationModel = new Notification();
+                        $notificationModel->create(
+                            [
+                                'title'   => 'Nueva Contribucion',
+                                'message' => $defaultNotes,
+                                'type'    => 'info',
+                                'data'    => 'Información adicional',
+                                'idRol'   => 2,//rol=2 es socio
+                            ]
+                        );
                     if ($contributionId) {
                         $db->commit();
+                        
+
                         $this->redirect('contribution/list');
                         return;
                     } else {
