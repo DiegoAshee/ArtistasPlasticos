@@ -55,7 +55,19 @@ class PartnerOnlineController extends BaseController
             if ($requestId) {
                 // Mensaje de éxito en la sesión
                 $_SESSION['success'] = "Solicitud enviada correctamente. Espera la aprobación del administrador.";
-                
+                // 6. Enviar correo de confirmación
+                $emailSent = sendChangeInformationEmail($email, [
+                    'name' => $name,
+                    'ci' => $ci,
+                    'email' => $email,
+                    'address' => $address,
+                    'birthday' => $birthday
+                ]);
+
+                $successMessage = "Solicitud de cambios exitoso";
+                if (!$emailSent) {
+                    $successMessage .= " (Nota: No se pudo enviar el correo de confirmación)";
+                }
                 // Redirigir al perfil usando la URL correcta generada por la función u()
                 $this->redirect(('users/profile'));  // Debería funcionar con BASE_URL correctamente
             } else {
@@ -238,15 +250,16 @@ public function approve(): void
             throw new \Exception('No se pudo actualizar la solicitud.');
         }
 
+    
+
+        // Confirmar transacción
+        $db->commit();
         // 6. Enviar correo de confirmación
-        $emailSent = sendLoginCredentialsEmail($solicitud['email'], [
+        $emailSent = approvalNotification($solicitud['email'], [
             'name' => $solicitud['name'],
             'login' => $loginFinal,
             'password' => $password
         ]);
-
-        // Confirmar transacción
-        $db->commit();
 
         $successMessage = "Solicitud aprobada exitosamente. Usuario: $loginFinal, Contraseña temporal: {$password}";
         if (!$emailSent) {
@@ -398,6 +411,20 @@ public function accept(): void
  
         $pdo->commit();
         $_SESSION['success'] = 'Socio y usuario creados correctamente (con imágenes).';
+        // 6. Enviar correo de confirmación
+                $emailSent = sendChangeInformationEmail($po['email'], [
+                    'name' => $po['name'],
+                    'ci' => $po['ci'],
+                    'cellphoneNumber' => $po['cellPhoneNumber'],
+                    'email' => $po['email'],
+                    'address' => $po['address'],
+                    'birthday' => $po['birthday']
+                ]);
+
+                $successMessage = "Solicitud de cambios exitoso";
+                if (!$emailSent) {
+                    $successMessage .= " (Nota: No se pudo enviar el correo de confirmación)";
+                }
     } catch (\Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         $_SESSION['error'] = 'Error al aceptar: ' . $e->getMessage();
