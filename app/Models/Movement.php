@@ -27,7 +27,9 @@ class Movement {
                         m.idConcept,
                         m.idUser,
                         m.idPaymentType,
+                        m.nameDestination,
                         c.description AS concept_description,
+                        c.type AS concept_type,
                         u.login AS user_login,
                         pt.description AS payment_type_description
                       FROM " . self::TBL . " m
@@ -128,6 +130,10 @@ class Movement {
                 $updates[] = 'dateCreation = :dateCreation';
                 $params[':dateCreation'] = $data['dateCreation'];
             }
+            if (isset($data['nameDestination'])) {
+                $updates[] = 'nameDestination = :nameDestination';
+                $params[':nameDestination'] = $data['nameDestination'];
+            }
             
             if (empty($updates)) {
                 return false; // No hay nada que actualizar
@@ -170,9 +176,9 @@ class Movement {
     public function create($data) {
         try {
             $query = "INSERT INTO " . self::TBL . " 
-                     (description, amount, dateCreation, idPaymentType, idConcept, idUser) 
+                     (description, amount, dateCreation, idPaymentType, idConcept, idUser, nameDestination) 
                      VALUES 
-                     (:description, :amount, :dateCreation, :idPaymentType, :idConcept, :idUser)";
+                     (:description, :amount, :dateCreation, :idPaymentType, :idConcept, :idUser, :nameDestination)";
             
             $stmt = $this->db->prepare($query);
             $success = $stmt->execute([
@@ -181,7 +187,8 @@ class Movement {
                 ':dateCreation' => $data['dateCreation'],
                 ':idPaymentType' => $data['idPaymentType'],
                 ':idConcept' => $data['idConcept'],
-                ':idUser' => $data['idUser']
+                ':idUser' => $data['idUser'],
+                ':nameDestination' => $data['nameDestination'] ?? ''
             ]);
             
             if ($success) {
