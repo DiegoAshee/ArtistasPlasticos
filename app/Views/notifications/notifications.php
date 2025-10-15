@@ -16,6 +16,9 @@ if (!isset($notifications) || !is_array($notifications)) {
 }
 
 // Contar notificaciones no leídas
+$roleNameMap = [1=>'Administrador',2=>'Socio',3=>'Consulta',6=>'Seguridad'];
+$roleName = isset($roleId) ? ($roleNameMap[(int)$roleId] ?? ('Rol '.$roleId)) : 'Rol desconocido';
+
 $unreadCount = 0;
 foreach ($notifications as $n) {
     if (empty($n['user_is_read'])) {
@@ -26,6 +29,31 @@ foreach ($notifications as $n) {
 // Iniciar el buffer de salida
 ob_start();
 ?>
+<script>
+  (function(){
+    const notifications = <?php echo json_encode($notifications ?? []); ?>;
+    const roleId = <?php echo json_encode($roleId ?? null); ?>;
+    const sessionRole = <?php echo json_encode($sessionRole ?? null); ?>;
+    const dbRole = <?php echo json_encode($dbRole ?? null); ?>;
+    const roleNameMap = <?php echo json_encode($roleNameMap); ?>;
+    const roleName = v => (v==null? 'Pública' : (roleNameMap[Number(v)]||String(v)));
+    console.group('[Debug] Notifications');
+    console.log('roleId (effective used):', roleId);
+    console.log('sessionRole:', sessionRole);
+    console.log('dbRole:', dbRole);
+    console.log('notifications (raw):', notifications);
+    const roleKeys = ['idRol','role_id','id_Rol'];
+    const summary = notifications.map(n => {
+      const roleKey = roleKeys.find(k => Object.prototype.hasOwnProperty.call(n, k));
+      const notifRole = roleKey ? n[roleKey] : null;
+      const matchRoleId = (notifRole == null) ? 'PUBLIC' : (String(notifRole).trim() === String(roleId));
+      const matchDbRole = (notifRole == null) ? 'PUBLIC' : (String(notifRole).trim() === String(dbRole));
+      return { id: n.id, title: n.title, roleKey: roleKey || null, notifRole, notifRoleName: roleName(notifRole), matchRoleId, matchDbRole };
+    });
+    console.table(summary);
+    console.groupEnd();
+  })();
+  </script>
 
 <!-- Contenido de la página -->
 <div class="container-fluid py-4">
@@ -34,6 +62,7 @@ ob_start();
             <h1 class="h3 mb-1" style="color:rgba(190, 179, 127, 0.86);">
                 <i class="fas fa-bell text-primary me-2"></i>
                 <?= htmlspecialchars($title) ?>
+                <span class="badge bg-info text-dark ms-2">Rol: <?= htmlspecialchars($roleName) ?></span>
                 <?php if ($unreadCount > 0): ?>
                     <span class="badge bg-primary ms-2"><?= $unreadCount ?> sin leer</span>
                 <?php endif; ?>
@@ -343,13 +372,13 @@ function showToast(message, type = 'success') {
 
 // Marcar notificación como leída
 function markAsRead(id, element) {
-    fetch('<?= u('notifications/markRead') ?>', {
+    fetch('<?= u('notifications/mark-read') ?>', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ id: id })
+        body: 'id=' + encodeURIComponent(id)
     })
     .then(response => response.json())
     .then(data => {
@@ -458,10 +487,10 @@ function markAsRead(id, element) {
             if (markAllReadBtn) {
                 markAllReadBtn.addEventListener('click', function() {
                     if (confirm('¿Marcar todas las notificaciones como leídas?')) {
-                        fetch('<?= u('notifications/markAllRead') ?>', {
+                        fetch('<?= u('notifications/mark-all-read') ?>', {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                 'X-Requested-With': 'XMLHttpRequest'
                             }
                         })
@@ -544,12 +573,13 @@ include __DIR__ . '/../layouts/app.php';
 <script>
 // Función para marcar notificación como leída
 function markAsRead(notificationId, button) {
-    fetch('<?= u('notifications/markAsRead') ?>', {
+    fetch('<?= u('notifications/mark-read') ?>', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ id: notificationId })
+        body: 'id=' + encodeURIComponent(notificationId)
     })
     .then(response => response.json())
     .then(data => {
@@ -645,8 +675,12 @@ function deleteNotification(notificationId, button) {
 
 // Función para marcar todas como leídas
 document.getElementById('markAllReadBtn')?.addEventListener('click', function() {
-    fetch('<?= u('notifications/markAllRead') ?>', {
-        method: 'POST'
+    fetch('<?= u('notifications/mark-all-read') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -720,14 +754,17 @@ function showToast(message, type = 'success') {
     // Agregar el toast al contenedor
     toastContainer.appendChild(toast);
     
-    // Inicializar el toast de Bootstrap
-    const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 5000 });
-    bsToast.show();
-    
-    // Eliminar el toast después de que se oculte
-    toast.addEventListener('hidden.bs.toast', function() {
-        toast.remove();
-    });
+    // Inicializar el toast de Bootstrap si está disponible, si no, fallback
+    if (window.bootstrap && bootstrap.Toast) {
+        const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 5000 });
+        bsToast.show();
+        toast.addEventListener('hidden.bs.toast', function() { toast.remove(); });
+    } else {
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
 }
 
 // Filtrar notificaciones por búsqueda

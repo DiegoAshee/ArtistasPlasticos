@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Config/helpers.php';
+require_once __DIR__ . '/../Config/database.php';
 require_once __DIR__ . '/../Models/Notification.php';
 require_once __DIR__ . '/../Models/Competence.php';
 require_once __DIR__ . '/BaseController.php';
@@ -86,6 +87,18 @@ class NotificationController extends BaseController
                 unset($menuItem); // Romper la referencia
             }
 
+        // Obtener rol desde BD para depurar diferencias
+        try {
+            $db = \Database::singleton()->getConnection();
+            $stmt = $db->prepare('SELECT idRol FROM users WHERE id = :id LIMIT 1');
+            $stmt->bindValue(':id', (int)$currentUserId, \PDO::PARAM_INT);
+            $stmt->execute();
+            $dbRole = $stmt->fetchColumn();
+            $dbRole = $dbRole !== false ? (int)$dbRole : null;
+        } catch (\Throwable $e) {
+            $dbRole = null;
+        }
+
         // Pasar las variables a la vista usando el método view() del BaseController
         $this->view('notifications/notifications', [
             'title' => $title,
@@ -93,7 +106,10 @@ class NotificationController extends BaseController
             'breadcrumbs' => $breadcrumbs,
             'notifications' => $notifications,
             'unreadCount' => $unreadCount,
-            'menuOptions' => $menuOptions
+            'menuOptions' => $menuOptions,
+            'roleId' => $roleId,
+            'sessionRole' => (int)($_SESSION['role'] ?? 0),
+            'dbRole' => $dbRole,
         ]);
     }
     // Marca todas como leídas (AJAX)
@@ -125,9 +141,12 @@ class NotificationController extends BaseController
             echo json_encode(['success' => false, 'message' => 'Método no permitido']);
             return;
         }
-        $currentUserId = $_SESSION['user_id'] ?? 0;
-        $roleId = $_SESSION['role'] ?? 0;
-        $ok = $this->model->markAllNotificationsAsRead($currentUserId, $roleId);
+        $currentUserId = (int)($_SESSION['user_id'] ?? 0);
+        if ($currentUserId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            return;
+        }
+        $ok = $this->model->markAllAsRead($currentUserId);
         echo json_encode(['success' => (bool)$ok]);
     }
 
@@ -154,4 +173,22 @@ class NotificationController extends BaseController
         $ok = $this->model->delete($id, $isAdmin ? null : $roleId);
         echo json_encode(['success' => (bool)$ok]);
     }
+
+    public function markRead()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $currentUserId = (int)($_SESSION['user_id'] ?? 0);
+        $notificationId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        if ($currentUserId <= 0 || $notificationId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Parámetros inválidos']);
+            return;
+        }
+        $ok = $this->model->markNotificationAsRead($notificationId, $currentUserId);
+        echo json_encode(['success' => (bool)$ok]);
+    }
+
 }

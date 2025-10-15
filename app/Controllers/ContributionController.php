@@ -157,36 +157,39 @@ class ContributionController extends BaseController
                 $db->beginTransaction();
 
                 try {
+                    error_log('=== INICIO DE CREACIÓN DE CONTRIBUCIÓN ===');
+                    error_log('Monto: ' . $amount);
+                    error_log('Notas: ' . $notes);
+                    error_log('Mes/Año: ' . $monthYear);
+                    
+                    // Primero creamos la contribución
                     $dateCreation = date('Y-m-d H:i:s');
                     $finalAmount = floatval($amount);
+                    
                     if ($finalAmount <= 0) {
                         throw new \Exception("El monto debe ser mayor a 0");
                     }
+                    
+                    error_log('Llamando a $contributionModel->create()...');
                     $contributionId = $contributionModel->create($finalAmount, $notes, $dateCreation, $monthYear);
-                    require_once __DIR__ . '/../Models/Notification.php';
-                        $notificationModel = new Notification();
-                        $notificationModel->create(
-                            [
-                                'title'   => 'Nueva Contribucion',
-                                'message' => $defaultNotes,
-                                'type'    => 'info',
-                                'data'    => 'Información adicional',
-                                'idRol'   => 2,//rol=2 es socio
-                            ]
-                        );
-                    if ($contributionId) {
-                        $db->commit();
-                        
-
-                        $this->redirect('contribution/list');
-                        return;
-                    } else {
-                        throw new \Exception("Failed to create contribution");
+                    error_log('Resultado de create(): ' . ($contributionId ? 'Éxito, ID: ' . $contributionId : 'Fallo'));
+                    
+                    if (!$contributionId) {
+                        $errorInfo = $contributionModel->getLastError();
+                        error_log('Error al crear contribución: ' . print_r($errorInfo, true));
+                        throw new \Exception("No se pudo crear la contribución");
                     }
+                    
+                    // Si todo salió bien, hacemos commit de la transacción
+                    $db->commit();
+                    $this->redirect('contribution/list');
+                    return;
+                    
                 } catch (\Throwable $e) {
+                    // Si algo falla, hacemos rollback
                     $db->rollBack();
-                    error_log("Transaction failed: " . $e->getMessage());
-                    $error = "Error al crear contribución: " . $e->getMessage();
+                    error_log("Error en creación de contribución: " . $e->getMessage());
+                    $error = "Error al procesar la solicitud: " . $e->getMessage();
                 }
             }
         }
