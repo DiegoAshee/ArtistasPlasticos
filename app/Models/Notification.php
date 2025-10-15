@@ -7,6 +7,7 @@ use Database;
 class Notification
 {
     protected $db;
+    protected $lastError = [];
 
     public function __construct()
     {
@@ -146,43 +147,129 @@ class Notification
         return $rows;
     }
 
-
-
-
-    public function markNotificationAsRead(int $notificationId, int $userId): bool
+    /**
+     * Obtiene información detallada del último error ocurrido
+     */
+    public function getErrorInfo(): array
     {
-        // Detect table and columns
-        $table = 'Notification_User';
-        $cols = [];
-        $readCol = 'is_read';
-        $readAtCol = 'read_at';
-        $userCol = 'user_id';
-        $notifCol = 'notification_id';
-        $idCol = 'id';
-        try {
-            $desc = $this->db->query("DESCRIBE `{$table}`");
-            $cols = $desc->fetchAll(\PDO::FETCH_COLUMN);
-            if (in_array('isRead', $cols, true)) { $readCol = 'isRead'; }
-            if (in_array('readAt', $cols, true)) { $readAtCol = 'readAt'; }
-            if (in_array('idUser', $cols, true)) { $userCol = 'idUser'; }
-            if (in_array('idNotification', $cols, true)) { $notifCol = 'idNotification'; }
-            if (in_array('id', $cols, true)) { $idCol = 'id'; }
-        } catch (\Throwable $e) {
-            return false;
-        }
-
-        $sql = "INSERT INTO `{$table}` ({$readCol}, {$readAtCol}, {$notifCol}, {$userCol})
-                SELECT 1, NOW(), :nid, :uid
-                FROM DUAL
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM `{$table}` nu 
-                    WHERE nu.{$notifCol} = :nid AND nu.{$userCol} = :uid
-                )";
-        $stmt = $this->db->prepare($sql);
-        return (bool)$stmt->execute(['nid' => $notificationId, 'uid' => $userId]);
+        return $this->lastError ?: [
+            'message' => 'No error information available',
+            'context' => [],
+            'time' => date('Y-m-d H:i:s'),
+            'trace' => []
+        ];
     }
 
-    
+    /**
+     * Establece la información del último error
+     */
+    private function setError(string $message, array $context = []): void
+    {
+        $this->lastError = [
+            'message' => $message,
+            'context' => $context,
+            'time' => date('Y-m-d H:i:s'),
+            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
+        ];
+        
+        error_log('Notification Error: ' . $message . ' - ' . json_encode($context));
+    }
+
+    public function markNotificationAsRead(int $notificationId, int $userId): bool
+{
+    try {
+        if (!$this->db) {
+            throw new \RuntimeException('No hay conexión a la base de datos');
+        }
+
+        // Verificar si la notificación existe
+        $stmt = $this->db->prepare("SELECT id FROM notifications WHERE id = :id");
+        $stmt->execute([':id' => $notificationId]);
+        if (!$stmt->fetch()) {
+            throw new \RuntimeException('La notificación especificada no existe');
+        }
+
+        // Verificar si ya existe un registro en Notification_User
+        $stmt = $this->db->prepare("
+            SELECT IdNotification_User 
+            FROM Notification_User 
+            WHERE idNotification = :notification_id 
+            AND idUser = :user_id
+        ");
+        $stmt->execute([
+            ':notification_id' => $notificationId,
+            ':user_id' => $userId
+        ]);
+        
+        $exists = $stmt->fetchColumn() !== false;
+
+        // Iniciar transacción
+        $this->db->beginTransaction();
+
+        try {
+            if ($exists) {
+                // Actualizar registro existente
+                $stmt = $this->db->prepare("
+                    UPDATE Notification_User 
+                    SET isRead = 1, 
+                        dateRead = NOW() 
+                    WHERE idNotification = :notification_id 
+                    AND idUser = :user_id
+                ");
+            } else {
+                // Insertar nuevo registro
+                $stmt = $this->db->prepare("
+                    INSERT INTO Notification_User (
+                        idNotification, 
+                        idUser, 
+                        isRead, 
+                        dateRead
+                    ) VALUES (
+                        :notification_id, 
+                        :user_id, 
+                        1, 
+                        NOW()
+                    )
+                ");
+            }
+
+            // Ejecutar la consulta
+            $result = $stmt->execute([
+                ':notification_id' => $notificationId,
+                ':user_id' => $userId
+            ]);
+
+            if (!$result) {
+                throw new \RuntimeException('No se pudo actualizar el estado de lectura de la notificación');
+            }
+
+            // Actualizar el contador de no leídas si la columna existe
+            $columnsStmt = $this->db->query("SHOW COLUMNS FROM notifications LIKE 'unread_count'");
+            if ($columnsStmt->rowCount() > 0) {
+                $updateStmt = $this->db->prepare("
+                    UPDATE notifications 
+                    SET unread_count = GREATEST(0, unread_count - 1) 
+                    WHERE id = :notification_id
+                ");
+                $updateStmt->execute([':notification_id' => $notificationId]);
+            }
+
+            // Confirmar transacción
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    } catch (\Exception $e) {
+        $this->setError('Error al marcar la notificación como leída: ' . $e->getMessage(), [
+            'notification_id' => $notificationId,
+            'user_id' => $userId
+        ]);
+        return false;
+    }
+}
+
     public function create(array $data)
     {
         try {
@@ -327,5 +414,7 @@ class Notification
         $stmt = $this->db->prepare($sql);
         return (bool)$stmt->execute(['uid' => $userId]);
     }
+    
+
     
 }
