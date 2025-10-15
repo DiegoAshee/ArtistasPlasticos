@@ -572,45 +572,105 @@ include __DIR__ . '/../layouts/app.php';
 <!-- Scripts adicionales -->
 <script>
 // Función para marcar notificación como leída
-function markAsRead(notificationId, button) {
+function markAsRead(id, element) {
+    // Show loading state
+    const originalHTML = element.innerHTML;
+    element.disabled = true;
+    element.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
     fetch('<?= u('notifications/mark-read') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: 'id=' + encodeURIComponent(notificationId)
+        body: 'id=' + encodeURIComponent(id)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const notificationItem = button.closest('.notification-item');
-            notificationItem.classList.remove('bg-light');
-            notificationItem.classList.add('fade-in');
-            
-            // Actualizar el contador de no leídas
-            const unreadCount = document.querySelector('.badge.bg-primary');
-            if (unreadCount) {
-                const count = parseInt(unreadCount.textContent) - 1;
-                if (count > 0) {
-                    unreadCount.textContent = count;
-                } else {
-                    unreadCount.remove();
+            // Find the notification card
+            const notificationCard = element.closest('.notification-card');
+            if (notificationCard) {
+                // Update card appearance
+                notificationCard.classList.remove('unread');
+                notificationCard.classList.add('read');
+                
+                // Update the time/status section
+                const timeElement = notificationCard.querySelector('.notification-time');
+                if (timeElement) {
+                    timeElement.innerHTML = `
+                        ${timeElement.textContent.trim()}
+                        <span class="read-status ms-2" title="Leída">
+                            <i class="fas fa-check-double text-primary"></i>
+                        </span>
+                    `;
                 }
+                
+                // Remove the mark as read button
+                const markReadBtn = notificationCard.querySelector('.btn-mark-read');
+                if (markReadBtn) {
+                    markReadBtn.remove();
+                }
+                
+                // Update unread count
+                const unreadBadge = document.querySelector('.unread-count');
+                if (unreadBadge) {
+                    const currentCount = parseInt(unreadBadge.textContent) || 0;
+                    const newCount = Math.max(0, currentCount - 1);
+                    if (newCount > 0) {
+                        unreadBadge.textContent = newCount;
+                    } else {
+                        unreadBadge.remove();
+                    }
+                }
+                
+                showToast('Notificación marcada como leída', 'success');
             }
-            
-            // Cambiar el botón
-            button.outerHTML = '<span class="badge bg-light text-dark">Leída</span>';
-            
-            showToast('Notificación marcada como leída', 'success');
         } else {
-            showToast('Error al actualizar la notificación', 'error');
+            throw new Error(data.message || 'Error al marcar como leída');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Error de conexión', 'error');
+        showToast(error.message || 'Error al procesar la solicitud', 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        if (element) {
+            element.innerHTML = originalHTML;
+            element.disabled = false;
+        }
     });
+}
+
+
+// Función para actualizar el contador de notificaciones no leídas
+function updateUnreadCount(change) {
+    const unreadBadge = document.querySelector('.unread-count');
+    if (unreadBadge) {
+        let count = parseInt(unreadBadge.textContent) || 0;
+        count = Math.max(0, count + change);
+        unreadBadge.textContent = count;
+        unreadBadge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+    
+    // Actualizar también el botón de marcar todas como leídas
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    if (markAllBtn) {
+        markAllBtn.disabled = (parseInt(unreadBadge?.textContent || '0') === 0);
+    }
+}
+
+// Función para actualizar el badge de notificaciones en el menú
+function updateNotificationBadge(change) {
+    const menuBadge = document.querySelector('.notification-badge');
+    if (menuBadge) {
+        let count = parseInt(menuBadge.textContent) || 0;
+        count = Math.max(0, count + change);
+        menuBadge.textContent = count;
+        menuBadge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
 }
 
 // Función para eliminar notificación

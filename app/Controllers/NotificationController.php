@@ -175,20 +175,83 @@ class NotificationController extends BaseController
     }
 
     public function markRead()
-    {
-        header('Content-Type: application/json; charset=utf-8');
+{
+    // Inicializar la respuesta
+    $response = [
+        'success' => false,
+        'message' => 'Error desconocido',
+        'code' => 500
+    ];
+
+    // Configurar el tipo de contenido como JSON
+    header('Content-Type: application/json; charset=utf-8');
+    
+    try {
+        // Verificar método HTTP
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
-            return;
+            $response['message'] = 'Método no permitido';
+            $response['code'] = 405;
+            throw new Exception($response['message'], $response['code']);
         }
+        
+        // Obtener y validar parámetros
         $currentUserId = (int)($_SESSION['user_id'] ?? 0);
         $notificationId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-        if ($currentUserId <= 0 || $notificationId <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Parámetros inválidos']);
-            return;
+        
+        if ($currentUserId <= 0) {
+            $response['message'] = 'Usuario no autenticado';
+            $response['code'] = 401;
+            throw new Exception($response['message'], $response['code']);
         }
-        $ok = $this->model->markNotificationAsRead($notificationId, $currentUserId);
-        echo json_encode(['success' => (bool)$ok]);
+        
+        if ($notificationId <= 0) {
+            $response['message'] = 'ID de notificación inválido';
+            $response['code'] = 400;
+            throw new Exception($response['message'], $response['code']);
+        }
+        
+        // Marcar como leída
+        $result = $this->model->markNotificationAsRead($notificationId, $currentUserId);
+        
+        if ($result === false) {
+            $errorInfo = $this->model->getErrorInfo();
+            $response['message'] = 'No se pudo marcar la notificación como leída';
+            if (isset($errorInfo['message'])) {
+                $response['message'] .= ': ' . $errorInfo['message'];
+            }
+            $response['error'] = $errorInfo;
+            throw new Exception($response['message'], 500);
+        }
+        
+        // Respuesta exitosa
+        $response = [
+            'success' => true,
+            'message' => 'Notificación marcada como leída',
+            'notificationId' => $notificationId,
+            'code' => 200
+        ];
+        
+    } catch (Exception $e) {
+        // Si no se ha establecido el código de estado, usar 500 por defecto
+        $response['code'] = $e->getCode() ?: 500;
+        $response['message'] = $e->getMessage();
+        http_response_code($response['code']);
+    } finally {
+        // Asegurarse de que la respuesta sea siempre JSON válido
+        if (!headers_sent()) {
+            header_remove('X-Powered-By');
+            header('Content-Type: application/json');
+        }
+        
+        // Limpiar cualquier salida previa
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        
+        // Enviar respuesta JSON
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
+}
+
 
 }
