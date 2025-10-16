@@ -35,6 +35,28 @@ class Concept
     }
 
     /**
+     * Obtiene los conceptos filtrados por tipo (ingreso/egreso)
+     * @param string $type Tipo de concepto ('ingreso' o 'egreso')
+     * @return array Lista de conceptos filtrados
+     */
+    public function getByType(string $type): array
+    {
+        if (!in_array(strtolower($type), ['ingreso', 'egreso'])) {
+            return [];
+        }
+        
+        $db = Database::singleton()->getConnection();
+        try {
+            $stmt = $db->prepare("SELECT * FROM concept WHERE type = :type ORDER BY description ASC");
+            $stmt->execute([':type' => strtolower($type)]);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\PDOException $e) {
+            $this->setError('DB error: ' . $e->getMessage(), $e->getCode());
+            return [];
+        }
+    }
+
+    /**
      * Listar todos los conceptos con filtros y paginación
      */
     public function listAll(array $filters = [], int $page = 1, int $pageSize = 20): array

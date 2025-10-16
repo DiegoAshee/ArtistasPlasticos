@@ -228,10 +228,19 @@ ob_start();
             onchange="document.getElementById('filterForm').submit()"
           />
         </div>
-        <!--   -->
-        <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;cursor:pointer;">
-          <i class="fas fa-plus"></i> Nuevo Movimiento
-        </a>
+        <div class="movement-type-selector" style="display: flex; gap: 8px;">
+          <div class="btn-group" role="group" aria-label="Tipo de movimiento">
+            <a href="<?= u('movement/create?type=ingreso') ?>" class="btn-income" style="display:inline-flex;align-items:center;gap:8px;background:#28a745;color:#fff;border:none;border-radius:8px 0 0 8px;padding:10px 16px;text-decoration:none;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+              <i class="fas fa-plus-circle"></i> Ingreso
+            </a>
+            <a href="<?= u('movement/create?type=egreso') ?>" class="btn-expense" style="display:inline-flex;align-items:center;gap:8px;background:#dc3545;color:#fff;border:none;border-radius:0 8px 8px 0;padding:10px 16px;text-decoration:none;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+              <i class="fas fa-minus-circle"></i> Egreso
+            </a>
+          </div>
+          <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:8px;padding:10px 14px;text-decoration:none;font-weight:600;cursor:pointer;">
+            <i class="fas fa-list"></i> Ver todos
+          </a>
+        </div>
         
         <!-- <button id="exportPdfBtn" type="button" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
           <i class="fas fa-file-pdf"></i> Exportar PDF

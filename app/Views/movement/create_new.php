@@ -25,8 +25,32 @@ ob_start();
 <div class="content-wrapper">
     <div class="form-container">
         <div class="form-header">
-            <h1>Nuevo Movimiento</h1>
+            <h1>
+                <?php 
+                $movementType = $_GET['type'] ?? '';
+                $typeText = '';
+                $typeClass = '';
+                
+                if ($movementType === 'ingreso') {
+                    $typeText = 'Nuevo Ingreso';
+                    $typeClass = 'text-success';
+                } elseif ($movementType === 'egreso') {
+                    $typeText = 'Nuevo Egreso';
+                    $typeClass = 'text-danger';
+                } else {
+                    $typeText = 'Nuevo Movimiento';
+                }
+                ?>
+                <span class="<?= $typeClass ?>"><?= $typeText ?></span>
+            </h1>
             <p>Complete los datos del movimiento</p>
+            <?php if ($movementType): ?>
+            <div class="alert alert-info" style="background: #a49884; color: black; padding: 0.75rem 1rem; border-radius: 8px; margin: 1rem 0; border: 1px solidrgb(164, 152, 132);">
+                <i class="fas fa-info-circle"></i> 
+                Mostrando solo conceptos de tipo <strong><?= ucfirst($movementType) ?></strong>.
+                <a href="<?= u('movement/create') ?>" style="color: black; text-decoration: underline; margin-left: 5px;">Ver todos los conceptos</a>
+            </div>
+            <?php endif; ?>
         </div>
         
         <?php if (isset($error)): ?>
