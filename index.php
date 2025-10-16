@@ -303,9 +303,16 @@ $router->addRoute('POST', '/movement/delete/([0-9]+)', 'MovementController', 'de
 // Exportar PDF (para AJAX)
 $router->addRoute('GET', '/movement/export-pdf', 'MovementController', 'exportPdf');
 
+// Ruta para el recibo con el prefijo de la carpeta
+$router->addRoute('GET', '/pasantes/vrojas/movement/receipt/([0-9]+)', 'MovementController', 'receipt');
+$router->addRoute('GET', '/pasantes/vrojas/movement/receipt', 'MovementController', 'list');
 
+// Ruta original para compatibilidad
+$router->addRoute('GET', '/movement/receipt/([0-9]+)', 'MovementController', 'receipt');
+$router->addRoute('GET', '/movement/receipt', 'MovementController', 'list');
 
-
+// Redireccionar a la lista de movimientos si se accede sin ID
+$router->addRoute('GET', '/movement/receipt/', 'MovementController', 'list');
 
 
 

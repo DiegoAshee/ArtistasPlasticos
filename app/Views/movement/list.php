@@ -232,9 +232,10 @@ ob_start();
         <a href="<?= u('movement/create') ?>" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-600);color:#fff;border:none;border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:600;cursor:pointer;">
           <i class="fas fa-plus"></i> Nuevo Movimiento
         </a>
-        <button id="exportPdfBtn" type="button" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
+        
+        <!-- <button id="exportPdfBtn" type="button" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#6c757d;color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;">
           <i class="fas fa-file-pdf"></i> Exportar PDF
-        </button>
+        </button> -->
       </div>
     </div>
   </form>
@@ -312,6 +313,13 @@ ob_start();
                     style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e74c3c;color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;">
                     <i class="fas fa-trash"></i>
                   </button>
+                   <!-- Botón Recibo -->
+                  <a href="<?= u('movement/receipt/' . (int)($movement['idMovement'] ?? 0)) ?>" 
+                    class="btn btn-sm btn-info" 
+                    title="Ver recibo"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#17a2b8;color:#fff;text-decoration:none;">
+                      <i class="fas fa-receipt"></i>
+                  </a>
                 </div>
               </td>
             </tr>
