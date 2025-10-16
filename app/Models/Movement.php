@@ -202,4 +202,67 @@ class Movement {
             return false;
         }
     }
+    /**
+     * Obtiene los datos para generar un recibo de movimiento
+     * @param int $idMovement ID del movimiento
+     * @return array|false Datos para el recibo o false si hay error
+     */
+    public function getReceiptData($idMovement) {
+        error_log("=== INICIO DE getReceiptData ===");
+        error_log("Buscando movimiento con ID: " . $idMovement);
+        
+        try {
+            $query = "SELECT 
+                    m.idMovement,
+                    m.amount,
+                    m.dateCreation,
+                    m.description,
+                    m.nameDestination,
+                    c.description AS concept_description,
+                    c.type AS concept_type,
+                    u.login AS user_login,
+                    pt.description AS payment_type_description,
+                    m.idUser
+                FROM " . self::TBL . " m
+                LEFT JOIN `concept` c ON m.idConcept = c.idConcept
+                LEFT JOIN `user` u ON m.idUser = u.idUser
+                LEFT JOIN `paymenttype` pt ON m.idPaymentType = pt.idPaymentType
+                WHERE m.idMovement = :idMovement";
+            
+            error_log("Consulta SQL: " . $query);
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':idMovement', $idMovement, PDO::PARAM_INT);
+            
+            $executed = $stmt->execute();
+            error_log("Ejecución de consulta: " . ($executed ? "éxito" : "falló"));
+            
+            $movement = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Datos del movimiento: " . print_r($movement, true));
+            
+            if (!$movement) {
+                error_log("No se encontró el movimiento con ID: " . $idMovement);
+                return false;
+            }
+            
+            // Formatear los datos para el recibo
+            $receiptData = [
+                'receiptNumber' => 'M-' . str_pad($movement['idMovement'], 6, '0', STR_PAD_LEFT),
+                'issueDate' => date('Y-m-d', strtotime($movement['dateCreation'])),
+                'movement' => $movement,
+                'user' => [
+                    'name' => $movement['user_login'],
+                    'login' => $movement['user_login']
+                ]
+            ];
+            
+            error_log("Datos del recibo preparados: " . print_r($receiptData, true));
+            return $receiptData;
+            
+        } catch (PDOException $e) {
+            $error = "Error en getReceiptData: " . $e->getMessage() . "\n" . $e->getTraceAsString();
+            error_log($error);
+            return false;
+        }
+    }
 }

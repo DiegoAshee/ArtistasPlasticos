@@ -500,4 +500,105 @@ class MovementController extends BaseController
         $dompdf->stream($filename, ["Attachment" => true]);
         exit;
     }
+
+    // En app/Controllers/MovementController.php, dentro de la clase MovementController
+
+    /**
+     * Muestra el recibo de un movimiento
+     */
+    public function receipt(int $idMovement): void
+    {
+        // Habilitar visualización de errores
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+        
+        $this->startSession();
+        error_log("=== INICIO DE RECEIPT ===");
+        error_log("ID de movimiento solicitado: " . $idMovement);
+        error_log("Sesión: " . print_r($_SESSION, true));
+
+        if (!isset($_SESSION['user_id'])) {
+            error_log("Error: Usuario no autenticado");
+            $this->redirect('login');
+            return;
+        }
+        
+        // Verificar permisos (1 = admin, 2 = usuario normal, etc.)
+        requireRole([1, 2], 'login');
+
+        $roleId = (int)($_SESSION['role'] ?? 2);
+        $userId = (int)$_SESSION['user_id'];
+        
+        error_log("Datos de sesión - Usuario ID: $userId, Rol: $roleId");
+        error_log("Intentando cargar recibo ID: $idMovement");
+
+        try {
+            $competenceModel = new \Competence();
+            $menuOptions = $competenceModel->getByRole($roleId);
+            
+            error_log("Buscando datos del movimiento con ID: $idMovement");
+            
+            // Obtener datos del recibo
+            $receiptData = $this->movementModel->getReceiptData($idMovement);
+            
+            if (!$receiptData) {
+                $error = "No se encontró el movimiento con ID: $idMovement";
+                error_log($error);
+                $_SESSION['error'] = $error;
+                $this->redirect('movement/list');
+                return;
+            }
+            
+            error_log("Datos del recibo obtenidos: " . print_r($receiptData, true));
+
+            // Verificar que el usuario tiene permiso para ver este recibo
+            if ($roleId !== 1 && $receiptData['movement']['idUser'] != $userId) {
+                $error = "Intento de acceso no autorizado al recibo $idMovement por el usuario $userId";
+                error_log($error);
+                $_SESSION['error'] = "No tienes permiso para ver este recibo.";
+                $this->redirect('movement/list');
+                return;
+            }
+
+            // Asegurarse de que todos los campos necesarios estén presentes
+            $receiptData['movement']['amount'] = $receiptData['movement']['amount'] ?? 0;
+            $receiptData['movement']['dateCreation'] = $receiptData['movement']['dateCreation'] ?? date('Y-m-d H:i:s');
+            $receiptData['movement']['description'] = $receiptData['movement']['description'] ?? '';
+            $receiptData['movement']['nameDestination'] = $receiptData['movement']['nameDestination'] ?? '';
+            $receiptData['movement']['concept_description'] = $receiptData['movement']['concept_description'] ?? 'No especificado';
+            $receiptData['movement']['concept_type'] = $receiptData['movement']['concept_type'] ?? 'No especificado';
+            $receiptData['movement']['payment_type_description'] = $receiptData['movement']['payment_type_description'] ?? 'No especificado';
+            
+            // Asegurar que el usuario tenga los datos necesarios
+            $receiptData['user'] = $receiptData['user'] ?? [
+                'name' => $_SESSION['username'] ?? 'Usuario',
+                'login' => $_SESSION['username'] ?? 'usuario'
+            ];
+
+            // Datos para la vista
+            $viewData = [
+                'receiptData' => $receiptData,
+                'menuOptions' => $menuOptions,
+                'roleId' => $roleId,
+                'title' => 'Recibo de Movimiento - ' . $receiptData['receiptNumber'],
+                'currentPath' => 'movement/receipt',
+                'breadcrumbs' => [
+                    ['label' => 'Inicio', 'url' => u('dashboard')],
+                    ['label' => 'Movimientos', 'url' => u('movement/list')],
+                    ['label' => 'Recibo ' . $receiptData['receiptNumber'], 'url' => null],
+                ]
+            ];
+            
+            error_log("Cargando vista con datos: " . print_r(array_keys($viewData), true));
+            
+            // Cargar la vista
+            $this->view('movement/receipt', $viewData);
+            
+        } catch (\Exception $e) {
+            $error = "Error al cargar el recibo: " . $e->getMessage() . "\n" . $e->getTraceAsString();
+            error_log($error);
+            $_SESSION['error'] = "Ocurrió un error al cargar el recibo. Por favor, intente nuevamente.";
+            $this->redirect('movement/list');
+        }
+    }
 }
