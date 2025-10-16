@@ -112,6 +112,9 @@ class MovementController extends BaseController
         }
         requireRole([1], 'login');
 
+        // Obtener el tipo de movimiento (ingreso o egreso) si se proporciona
+        $movementType = $_GET['type'] ?? null;
+        
         // Sidebar menu options
         $roleId = (int)($_SESSION['role'] ?? 2);
         $competenceModel = new \Competence();
@@ -119,7 +122,14 @@ class MovementController extends BaseController
 
         // Obtener datos para el formulario
         $paymentTypes = $this->paymentTypeModel->getAll();
-        $concepts = $this->conceptModel->getAll();
+        
+        // Filtrar conceptos por tipo si se especificó
+        if ($movementType === 'ingreso' || $movementType === 'egreso') {
+            $concepts = $this->conceptModel->getByType($movementType);
+        } else {
+            $concepts = $this->conceptModel->getAll();
+        }
+        
         $users = $this->userModel->getAll();
         
         // Depuración - Ver los tipos de pago obtenidos
