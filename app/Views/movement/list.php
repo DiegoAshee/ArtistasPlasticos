@@ -488,143 +488,131 @@ ob_start();
   });
   </script>
 
-  <!-- Exportación PDF -->
+<!-- Librerías jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<!-- Exportación PDF (versión corregida y funcional) -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Asegurar compatibilidad con jsPDF
-  window.jsPDF = window.jspdf.jsPDF;
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.jspdf) {
+    console.error('jsPDF no está cargado.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
 
-  // Formato de fechas
-  function formatDateForInput(dateString) {
-    if (!dateString) return '';
-    try {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
-      const datePart = dateString.split(' ')[0];
-      const [day, month, year] = datePart.split('-');
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    } catch {
-      return '';
+  // --- FUNCIÓN FIJA PARA PARSEAR NÚMEROS ---
+  function parseNumberFromString(s) {
+    if (!s) return 0;
+    s = s.toString().trim();
+
+    // Eliminar símbolo Bs., espacios, letras y separadores de miles
+    s = s.replace(/[^\d.,-]/g, '');
+    if (!s) return 0;
+
+    // Quitar separadores de miles (comas)
+    s = s.replace(/,/g, '');
+
+    // Si usa coma como decimal, convertir a punto
+    const parts = s.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      s = parts[0] + '.' + parts[1];
     }
+
+    const num = parseFloat(s);
+    return isNaN(num) ? 0 : num;
   }
 
-  // Función principal para exportar PDF
+  // --- FUNCIÓN PRINCIPAL PARA EXPORTAR ---
   function exportToPdf() {
-    const button = this;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
-    button.disabled = true;
+    const btn = document.getElementById('exportPdfBtn');
+    const originalHtml = btn ? btn.innerHTML : '';
 
     try {
-      const table = document.getElementById('tablaMovimientos');
-      if (!table) throw new Error('No se encontró la tabla con id="tablaMovimientos"');
-
-      const startDate = formatDateForInput(document.getElementById('startDate')?.value);
-      const endDate = formatDateForInput(document.getElementById('endDate')?.value);
-
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-      // Encabezado
-      doc.setFontSize(18);
-      doc.text('Libro Diario', 14, 20);
-
-      // Filtros aplicados
-      doc.setFontSize(10);
-      let filters = [];
-      if (startDate || endDate) {
-        filters.push(`Período: ${startDate || 'Inicio'} - ${endDate || 'Fin'}`);
+      if (btn) {
+        btn.innerHTML = 'Generando...';
+        btn.disabled = true;
       }
-      if (filters.length > 0) doc.text(filters.join(' | '), 14, 28);
 
-      // Obtener encabezados y filas visibles
-      const headers = [];
-      const rows = [];
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+      const table = document.querySelector('table');
 
-      table.querySelectorAll('thead th').forEach(th => {
-        const text = th.textContent.trim();
-        if (text && !th.querySelector('.btn-group')) headers.push(text);
-      });
-
-      table.querySelectorAll('tbody tr').forEach(tr => {
-        if (tr.style.display !== 'none') {
-          const rowData = [];
-          tr.querySelectorAll('td').forEach(td => {
-            if (!td.querySelector('.btn-group')) rowData.push(td.textContent.trim());
-          });
-          if (rowData.length > 0) rows.push(rowData);
-        }
-      });
-
-      if (rows.length === 0) {
-        alert('No hay datos para exportar.');
-        button.innerHTML = originalText;
-        button.disabled = false;
+      if (!table) {
+        alert('No se encontró la tabla para exportar.');
         return;
       }
 
-      // Generar tabla en el PDF
+      // Obtener encabezados
+      const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
+
+      // Buscar índices de columnas
+      const ingresoColIndex = headers.findIndex(h => h.toLowerCase().includes('ingreso'));
+      const egresoColIndex = headers.findIndex(h => h.toLowerCase().includes('egreso'));
+
+      let totalIngresos = 0;
+      let totalEgresos = 0;
+
+      // Obtener filas del cuerpo
+      const rows = Array.from(table.querySelectorAll('tbody tr')).map(tr => {
+        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+
+        // Sumar si hay columnas de ingreso y egreso
+        if (ingresoColIndex >= 0 && cells[ingresoColIndex]) {
+          totalIngresos += parseNumberFromString(cells[ingresoColIndex]);
+        }
+        if (egresoColIndex >= 0 && cells[egresoColIndex]) {
+          totalEgresos += parseNumberFromString(cells[egresoColIndex]);
+        }
+        return cells;
+      });
+
+      // Fila total
+      const totalRow = headers.map((_, idx) => {
+        if (idx === 0) return 'TOTAL';
+        if (idx === ingresoColIndex) return `Bs. ${totalIngresos.toFixed(2)}`;
+        if (idx === egresoColIndex) return `Bs. ${totalEgresos.toFixed(2)}`;
+        return '';
+      });
+      rows.push(totalRow);
+
+      // Fecha y pie de página
+      const fecha = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const hora = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+      const footerText = `Página 1 de 1 | Generado el ${fecha} ${hora}`;
+
+      // Generar tabla PDF
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Reporte de Movimientos', 105, 15, { align: 'center' });
+      doc.setFontSize(10);
+
       doc.autoTable({
         head: [headers],
         body: rows,
-        startY: 35,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [187, 174, 151], textColor: 0, halign: 'center' },
-        alternateRowStyles: { fillColor: [240, 240, 240] },
-        columnStyles: { [headers.length - 1]: { halign: 'right' } },
-        margin: { top: 35 },
-        didDrawPage: function (data) {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageHeight = doc.internal.pageSize.height;
-          const pageWidth = doc.internal.pageSize.width;
-          doc.setFontSize(8);
-          doc.text(
-            `Página ${data.pageNumber} de ${pageCount} | Generado el ${new Date().toLocaleDateString()}`,
-            pageWidth - 14,
-            pageHeight - 10,
-            { align: 'right' }
-          );
-        }
+        startY: 25,
+        styles: { fontSize: 8, halign: 'center' },
+        headStyles: { fillColor: [0, 102, 204], textColor: 255 },
       });
 
-      // Calcular total
-      let total = 0;
-      rows.forEach(r => {
-        const num = parseFloat(r[r.length - 1].replace(/[^0-9.-]+/g, '') || 0);
-        if (!isNaN(num)) total += num;
-      });
-
-      // Fila de total
-      doc.autoTable({
-        body: [[
-          { content: 'TOTAL', colSpan: headers.length - 1, styles: { halign: 'right', fontStyle: 'bold', fillColor: [220, 220, 220] } },
-          { content: 'Bs. ' + total.toFixed(2), styles: { halign: 'right', fontStyle: 'bold' } }
-        ]],
-        startY: doc.lastAutoTable.finalY + 5,
-        styles: { fontSize: 9, cellPadding: 3 }
-      });
-
-      // Guardar PDF
-      const fileName = `Libro_Diario_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
+      doc.setFontSize(8);
+      doc.text(footerText, 105, 280, { align: 'center' });
+      doc.save('Reporte_Movimientos.pdf');
     } catch (err) {
       console.error('Error al generar el PDF:', err);
       alert('Ocurrió un error al generar el PDF. Revisa la consola para más detalles.');
     } finally {
-      button.innerHTML = originalText;
-      button.disabled = false;
+      if (btn) {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
     }
   }
 
   // Asignar evento al botón
-  const exportPdfBtn = document.getElementById('exportPdfBtn');
-  if (exportPdfBtn) {
-    exportPdfBtn.addEventListener('click', exportToPdf);
-  } else {
-    console.warn('⚠️ No se encontró el botón con id="exportPdfBtn"');
-  }
+  const exportBtn = document.getElementById('exportPdfBtn');
+  if (exportBtn) exportBtn.addEventListener('click', exportToPdf);
 });
 </script>
+
 
 <?php
 $content = ob_get_clean();
