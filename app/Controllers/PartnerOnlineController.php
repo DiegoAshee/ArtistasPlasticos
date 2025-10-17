@@ -131,6 +131,167 @@ public function pending(): void
 
 
 
+// Añadir este método al PartnerOnlineController.php
+
+/**
+ * Aprueba solicitudes de MODIFICACIÓN de datos de socios existentes
+ * A diferencia de approve() que crea nuevos socios, este actualiza los existentes
+ */
+public function approveChanges(): void
+{
+    $this->startSession();
+    
+    if (!isset($_SESSION['user_id'])) { 
+        $this->redirect('login'); 
+        return; 
+    }
+    requireRole([1,6], 'login');
+    
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+    
+    if (!isset($_POST['id'])) { 
+        $_SESSION['error'] = 'ID de solicitud no proporcionado.';
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+
+    $id = (int)$_POST['id'];
+    if ($id <= 0) { 
+        $_SESSION['error'] = 'ID de solicitud inválido.';
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+
+    // Cargar modelos necesarios
+    require_once __DIR__ . '/../Models/PartnerOnline.php';
+    require_once __DIR__ . '/../Models/Partner.php';
+    require_once __DIR__ . '/../Models/Usuario.php';
+
+    $partnerOnlineModel = new \PartnerOnline();
+    $partnerModel = new \Partner();
+    $userModel = new \Usuario();
+
+    // Usar transacción
+    $db = \Database::singleton()->getConnection();
+    $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+    try {
+        $db->beginTransaction();
+
+        // 1. Obtener la solicitud de modificación
+        $solicitud = $partnerOnlineModel->findById($id);
+        
+        if (!$solicitud) {
+            throw new \Exception('La solicitud no existe.');
+        }
+
+        // Verificar que sea una solicitud de MODIFICACIÓN (tiene idUser)
+        if (empty($solicitud['idUser'])) {
+            throw new \Exception('Esta no es una solicitud de modificación. Use el método approve() para registros nuevos.');
+        }
+
+        // Verificar que no esté ya confirmada
+        if (!empty($solicitud['dateConfirmation']) && 
+            $solicitud['dateConfirmation'] !== '0000-00-00' && 
+            $solicitud['dateConfirmation'] !== '0000-00-00 00:00:00') {
+            throw new \Exception('La solicitud ya fue confirmada previamente.');
+        }
+
+        $idUser = (int)$solicitud['idUser'];
+
+        // 2. Obtener el usuario existente para saber qué partner actualizar
+        $stmt = $db->prepare("SELECT idPartner, email, login FROM user WHERE idUser = ? LIMIT 1");
+        $stmt->execute([$idUser]);
+        $usuario = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$usuario || empty($usuario['idPartner'])) {
+            throw new \Exception('No se encontró el socio asociado a este usuario.');
+        }
+
+        $idPartner = (int)$usuario['idPartner'];
+
+        // 3. Actualizar los datos del Partner existente
+        $updatePartner = $db->prepare("
+            UPDATE partner 
+            SET name = ?, 
+                ci = ?, 
+                cellPhoneNumber = ?, 
+                address = ?, 
+                birthday = ?
+            WHERE idPartner = ?
+        ");
+        
+        $updatePartner->execute([
+            $solicitud['name'],
+            $solicitud['ci'],
+            $solicitud['cellPhoneNumber'],
+            $solicitud['address'],
+            $solicitud['birthday'],
+            $idPartner
+        ]);
+
+        // 4. Actualizar el email del Usuario si cambió
+        if (!empty($solicitud['email']) && $solicitud['email'] !== $usuario['email']) {
+            // Verificar que el nuevo email no esté en uso por otro usuario
+            $checkEmail = $db->prepare("SELECT COUNT(*) FROM user WHERE email = ? AND idUser != ?");
+            $checkEmail->execute([$solicitud['email'], $idUser]);
+            
+            if ((int)$checkEmail->fetchColumn() > 0) {
+                throw new \Exception('El email ' . $solicitud['email'] . ' ya está en uso por otro usuario.');
+            }
+
+            $updateUser = $db->prepare("UPDATE user SET email = ? WHERE idUser = ?");
+            $updateUser->execute([$solicitud['email'], $idUser]);
+        }
+
+        // 5. Marcar la solicitud como confirmada
+        $updated = $partnerOnlineModel->updateConfirmation($id, $idUser, $idPartner);
+        
+        if (!$updated) {
+            throw new \Exception('No se pudo actualizar la solicitud.');
+        }
+
+        // Confirmar transacción
+        $db->commit();
+
+        // 6. Enviar correo de notificación
+        $emailSent = sendChangeInformationEmail($solicitud['email'], [
+            'name' => $solicitud['name'],
+            'ci' => $solicitud['ci'],
+            'cellPhoneNumber' => $solicitud['cellPhoneNumber'],
+            'email' => $solicitud['email'],
+            'address' => $solicitud['address'],
+            'birthday' => $solicitud['birthday']
+        ]);
+
+        $successMessage = "Cambios aprobados exitosamente para el socio: " . htmlspecialchars($solicitud['name']);
+        if (!$emailSent) {
+            $successMessage .= " (Nota: No se pudo enviar el correo de notificación)";
+        }
+
+        $_SESSION['success'] = $successMessage;
+        error_log("Solicitud de modificación $id aprobada - Partner: $idPartner actualizado");
+
+    } catch (\Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        
+        $_SESSION['error'] = 'Error al aprobar los cambios: ' . $e->getMessage();
+        error_log('approveChanges error: ' . $e->getMessage());
+        error_log('approveChanges trace: ' . $e->getTraceAsString());
+    }
+
+    $this->redirect('partnerOnline/pending');
+}
+
+
+
+
+
 
 //Aceptar o rechazar solicitudes de nuevos socios
 public function approve(): void

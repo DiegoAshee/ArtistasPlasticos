@@ -233,6 +233,7 @@ ob_start();
         </tbody>
     </table>
   </div>
+  
   <!-- MODIFICACIONES -->
   <div class="section-title">
     <i class="fas fa-user-edit"></i><h2 style="margin:0;">Solicitudes de modificación</h2>
@@ -271,14 +272,12 @@ ob_start();
                 <td>Modificación</td>
                 <td class="action-cell">
                 <div class="action-buttons">
-                      <form method="POST" action="<?= u('/partnerOnline/accept'); ?>" style="display:inline"
-                            onsubmit="return confirm('¿Crear socio y usuario para este registro?');">
-                        <input type="hidden" name="idPartnerOnline" value="<?= (int)$r['idPartnerOnline']; ?>">
-                        <button type="submit" class="btn btn-success btn-sm">
-                          <i class="fa fa-check"></i> Aceptar
+                    <form action="<?= u('partnerOnline/approveChanges') ?>" method="post" class="approve-form">
+                        <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
+                        <button type="submit" class="btn-action btn-approve" title="Aprobar modificación de datos">
+                            <i class="fas fa-check"></i> Aceptar Cambios
                         </button>
-                      </form>
- 
+                    </form>
                     <form action="<?= u('partnerOnline/reject') ?>" method="post" class="reject-form">
                         <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
                         <button type="submit" class="btn-action btn-reject" title="Rechazar modificación">
