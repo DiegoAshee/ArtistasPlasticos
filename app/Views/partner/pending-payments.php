@@ -25,6 +25,30 @@ $formatDate = function($date) {
     return date('d/m/Y', strtotime($date));
 };
 
+// Función para formatear monthYear (YYYY-MM) a formato legible (Mes Año)
+$formatMonthYear = function($monthYear) {
+    if (empty($monthYear)) {
+        return 'N/A';
+    }
+    
+    // Array de nombres de meses en español
+    $meses = [
+        '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
+        '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
+        '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+    ];
+    
+    // Separar año y mes (formato YYYY-MM)
+    $parts = explode('-', $monthYear);
+    if (count($parts) === 2) {
+        $year = $parts[0];
+        $month = $parts[1];
+        return ($meses[$month] ?? $month) . ' ' . $year;
+    }
+    
+    return $monthYear;
+};
+
 // Función segura para obtener valores del array
 $getSafe = function($array, $key, $default = '') {
     return isset($array[$key]) ? $array[$key] : $default;
@@ -51,6 +75,11 @@ ob_start();
         --danger: rgb(239, 216, 68);
         --border-color: #cbd5e0;
         --grid-bg: #a49884;
+        --error-color: #dc3545;
+        --cream-50: #f9f8f6;
+        --cream-300: #d9d0c1;
+        --cream-400: #cfc4b0;
+        --cream-600: #9c8f7a;
     }
 
     /* Tarjetas de resumen */
@@ -311,7 +340,8 @@ ob_start();
     }
 
     .contribution-period {
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 16px;
         margin-bottom: 4px;
         color: var(--text-dark);
     }
@@ -462,14 +492,14 @@ ob_start();
 
     .modal-content {
         background: white;
-        margin: 10% auto;
+        margin: 5% auto;
         padding: 28px;
         width: 90%;
-        max-width: 480px;
+        max-width: 550px;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         position: relative;
-        max-height: 80vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
 
@@ -494,7 +524,7 @@ ob_start();
     .form-group label {
         display: block;
         margin-bottom: 8px;
-        font-weight: 500;
+        font-weight: 600;
         color: var(--text-dark);
     }
 
@@ -513,6 +543,113 @@ ob_start();
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+
+    /* ===== ESTILOS PARA UPLOAD DE ARCHIVOS (COMO EN REGISTRO) ===== */
+    .image-upload-box {
+        border: 2px dashed var(--cream-400);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: var(--cream-50);
+        position: relative;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image-upload-box:hover {
+        border-color: var(--cream-600);
+        background-color: #f5f2ed;
+    }
+
+    .form-group.has-error .image-upload-box {
+        border-color: var(--error-color);
+        background-color: #fef2f2;
+    }
+
+    .image-upload-box i {
+        font-size: 2.5rem;
+        color: var(--cream-600);
+        margin-bottom: 0.75rem;
+    }
+
+    .form-group.has-error .image-upload-box i {
+        color: var(--error-color);
+    }
+
+    .image-upload-box p {
+        margin: 0;
+        color: var(--cream-700);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .image-upload-box small {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--cream-600);
+        font-size: 0.8rem;
+    }
+
+    .image-preview {
+        margin-top: 1rem;
+        max-width: 100%;
+        max-height: 180px;
+        object-fit: contain;
+        display: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .file-name {
+        display: block;
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--cream-600);
+        word-break: break-all;
+        text-align: center;
+        font-style: italic;
+    }
+
+    .file-status {
+        display: none;
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .file-status.success {
+        background: #d1fae5;
+        color: #065f46;
+        display: block;
+    }
+
+    .file-status.error {
+        background: #fee2e2;
+        color: #991b1b;
+        display: block;
+    }
+
+    .field-error {
+        color: var(--error-color);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+
+    .field-error i {
+        font-size: 0.875rem;
     }
 
     .success-message,
@@ -549,6 +686,12 @@ ob_start();
             flex-direction: column;
             align-items: stretch;
         }
+
+        .modal-content {
+            width: 95%;
+            padding: 20px;
+            margin: 10% auto;
+        }
     }
 </style>
 
@@ -566,47 +709,6 @@ ob_start();
             <?= htmlspecialchars($error) ?>
         </div>
     <?php endif; ?>
-
-    <!-- Tarjetas de resumen -->
-    <!-- <div class="summary-cards">
-        <div class="summary-card pending">
-            <h3 style="margin: 0 0 10px 0; color: var(--warning);">
-                <i class="fas fa-exclamation-circle"></i> Total Pendiente
-            </h3>
-            <p style="font-size: 24px; font-weight: bold; margin: 0; color: var(--text-dark);">
-                <?= number_format($totals['pending'] ?? 0, 2) ?> Bs
-            </p>
-        </div>
-        <div class="summary-card paid">
-            <h3 style="margin: 0 0 10px 0; color: var(--success);">
-                <i class="fas fa-check-circle"></i> Total Pagado
-            </h3>
-            <p style="font-size: 24px; font-weight: bold; margin: 0; color: var(--text-dark);">
-                <?= number_format($totals['paid'] ?? 0, 2) ?> Bs
-            </p>
-        </div>
-    </div> -->
-
-    <!-- Filtros -->
-    <!-- <div class="filters-section">
-        <form method="get" action="<?= htmlspecialchars($currentUrl) ?>">
-            <label for="year">Filtrar por Año:</label>
-            <select id="year" name="year">
-                <option value="">Todos los años</option>
-                <?php foreach ($availableYears as $year): ?>
-                    <option value="<?= $year ?>" <?= $yearFilter == $year ? 'selected' : '' ?>>
-                        <?= $year ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit">
-                <i class="fas fa-filter"></i> Aplicar Filtro
-            </button>
-            <a href="<?= u($currentUrl) ?>" style="margin-left: 10px; color: var(--text-light);">
-                <i class="fas fa-times"></i> Limpiar
-            </a>
-        </form>
-    </div> -->
 
     <!-- Formulario para pagos múltiples -->
     <form id="paymentForm" action="<?= u('partner/pending-payments') ?>" method="post" enctype="multipart/form-data">
@@ -628,18 +730,14 @@ ob_start();
                             <input type="checkbox" id="selectAll" title="Seleccionar todos">
                         </th>
                         <th>Período</th>
-                        <th>Fecha</th>
                         <th>Monto Total</th>
-                        <!-- <th>Pagado</th> -->
-                        <!-- <th>Saldo Pendiente</th> -->
-                        <!-- <th>Estado</th> -->
                         <th>Acción Individual</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($pendingPayments)): ?>
                         <tr>
-                            <td colspan="8">
+                            <td colspan="5">
                                 <div class="no-results">
                                     <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; color: var(--success);"></i>
                                     ¡Excelente! No hay pagos pendientes<br>
@@ -657,13 +755,13 @@ ob_start();
                                            name="selected_contributions[]" 
                                            value="<?= (int)($payment['idContribution'] ?? 0) ?>"
                                            data-amount="<?= $payment['balance'] ?? 0 ?>"
-                                           data-period="<?= htmlspecialchars($payment['monthYear'] ?? '') ?>"
+                                           data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>"
                                            class="contribution-checkbox">
                                 </td>
                                 <td>
                                     <div class="contribution-info">
                                         <div class="contribution-period">
-                                            <?= htmlspecialchars($payment['monthYear'] ?? '') ?>
+                                            <?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>
                                         </div>
                                         <?php if (!empty($payment['notes'])): ?>
                                             <div class="contribution-notes">
@@ -673,41 +771,15 @@ ob_start();
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="contribution-date">
-                                        <?= isset($payment['contrib_date']) && $payment['contrib_date'] 
-                                            ? $formatDate($payment['contrib_date'])
-                                            : 'N/A' ?>
-                                    </div>
-                                </td>
-                                <td>
                                     <div class="contribution-amount">
                                         Bs. <?= number_format($payment['amount'] ?? 0, 2) ?>
                                     </div>
                                 </td>
-                                <!-- <td>
-                                    <div class="balance-info">
-                                        <?php if (($payment['paidAmount'] ?? 0) > 0): ?>
-                                            <div class="paid-amount">
-                                                Bs. <?= number_format($payment['paidAmount'], 2) ?>
-                                            </div>
-                                        <?php else: ?>
-                                            <span style="color: #6c757d; font-size: 12px;">Sin pagos</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </td> -->
-                                <!-- <td>
-                                    <div class="pending-balance">
-                                        <strong>Bs. <?= number_format($payment['balance'] ?? 0, 2) ?></strong>
-                                    </div>
-                                </td> -->
-                                <!-- <td>
-                                    <span class="status-pending">Pendiente</span>
-                                </td> -->
                                 <td>
                                     <button type="button" class="btn btn-primary open-pay-modal" 
                                             data-id="<?= (int)($payment['idContribution'] ?? 0) ?>" 
                                             data-amount="<?= $payment['balance'] ?? 0 ?>"
-                                            data-period="<?= htmlspecialchars($payment['monthYear'] ?? '') ?>">
+                                            data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>">
                                         <i class="fas fa-credit-card"></i> Pagar Solo Este
                                     </button>
                                 </td>
@@ -732,28 +804,42 @@ ob_start();
             </div>
         </div>
 
-        <!-- Campo para comprobante múltiple (se mostrará cuando se seleccionen items) -->
-        <div id="multipleProofSection" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+        <!-- Campo para comprobante múltiple CON PREVIEW -->
+        <div id="multipleProofSection" style="display: none; margin-top: 20px; padding: 24px; background: #f8f9fa; border-radius: 12px;">
             <div class="form-group">
-                <label>Escanea el QR para realizar el pago:</label>
+                <label style="font-size: 1rem; margin-bottom: 12px;">
+                    <i class="fas fa-qrcode"></i> Escanea el QR para realizar el pago:
+                </label>
                 <?php if ($qrImageUrl): ?>
-                    <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" style="width: 200px; height: 200px; display: block; margin: 0 auto;">
-                    <small style="color: #6c757d; display: block; text-align: center; margin-top: 5px;">
-                        Usa este QR para completar el pago por transferencia.
-                    </small>
+                    <div style="text-align: center; margin: 15px 0;">
+                        <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" 
+                             style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <small style="color: #6c757d; display: block; margin-top: 8px;">
+                            Usa este QR para completar el pago por transferencia.
+                        </small>
+                    </div>
                 <?php else: ?>
-                    <p style="color: #6c757d; text-align: center;">No se encontró un QR asociado.</p>
+                    <p style="color: #6c757d; text-align: center; padding: 20px;">No se encontró un QR asociado.</p>
                 <?php endif; ?>
             </div>
-        <div class="form-group">
-                <label for="proofMultiple">
+            
+            <div class="form-group" id="multipleProofGroup">
+                <label for="proofMultiple" style="font-size: 1rem; margin-bottom: 8px;">
                     <i class="fas fa-upload"></i> Comprobante de Transferencia (Para pagos múltiples) *
                 </label>
-                <input type="file" name="proof" id="proofMultiple" 
-                       accept="image/jpeg,image/png,application/pdf">
-                <small style="color: #6c757d; display: block; margin-top: 5px;">
-                    Formatos permitidos: JPG, PNG, PDF. Máximo 2MB.
-                </small>
+                <div class="image-upload-box" onclick="document.getElementById('proofMultiple').click()">
+                    <i class="fas fa-file-upload"></i>
+                    <p>Subir Comprobante</p>
+                    <small>Haga clic para seleccionar el archivo</small>
+                    <small style="margin-top: 4px;">JPG, PNG, PDF - Máx. 2MB</small>
+                    <input type="file" name="proof" id="proofMultiple" 
+                           accept="image/jpeg,image/png,application/pdf" 
+                           style="display: none"
+                           onchange="handleFileSelect(this, 'multiplePreview', 'multipleFileName', 'multipleStatus', 'multipleProofGroup')">
+                    <img id="multiplePreview" class="image-preview" alt="Vista previa del comprobante">
+                    <span id="multipleFileName" class="file-name"></span>
+                    <div id="multipleStatus" class="file-status"></div>
+                </div>
             </div>
         </div>
     </form>
@@ -818,14 +904,19 @@ ob_start();
             <input type="hidden" name="idContribution" id="payId">
             
             <div class="form-group">
-                <label>Escanea el QR para realizar el pago:</label>
+                <label style="font-size: 1rem;">
+                    <i class="fas fa-qrcode"></i> Escanea el QR para realizar el pago:
+                </label>
                 <?php if ($qrImageUrl): ?>
-                    <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" style="width: 200px; height: 200px; display: block; margin: 0 auto;">
-                    <small style="color: #6c757d; display: block; text-align: center; margin-top: 5px;">
-                        Usa este QR para completar el pago por transferencia.
-                    </small>
+                    <div style="text-align: center; margin: 15px 0;">
+                        <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" 
+                             style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <small style="color: #6c757d; display: block; margin-top: 8px;">
+                            Usa este QR para completar el pago por transferencia.
+                        </small>
+                    </div>
                 <?php else: ?>
-                    <p style="color: #6c757d; text-align: center;">No se encontró un QR asociado.</p>
+                    <p style="color: #6c757d; text-align: center; padding: 15px;">No se encontró un QR asociado.</p>
                 <?php endif; ?>
             </div>
             
@@ -842,15 +933,24 @@ ob_start();
                        style="background-color: var(--bg-light); color: #6c757d;">
             </div>
 
-            <div class="form-group">
-                <label for="proof">
+            <div class="form-group" id="singleProofGroup">
+                <label for="proof" style="font-size: 1rem;">
                     <i class="fas fa-upload"></i> Comprobante de Transferencia *
                 </label>
-                <input type="file" name="proof" id="proof" 
-                       accept="image/jpeg,image/png,application/pdf" required>
-                <small style="color: #6c757d; display: block; margin-top: 5px;">
-                    Formatos permitidos: JPG, PNG, PDF. Máximo 2MB.
-                </small>
+                <div class="image-upload-box" onclick="document.getElementById('proof').click()">
+                    <i class="fas fa-file-upload"></i>
+                    <p>Subir Comprobante</p>
+                    <small>Haga clic para seleccionar el archivo</small>
+                    <small style="margin-top: 4px;">JPG, PNG, PDF - Máx. 2MB</small>
+                    <input type="file" name="proof" id="proof" 
+                           accept="image/jpeg,image/png,application/pdf" 
+                           required 
+                           style="display: none"
+                           onchange="handleFileSelect(this, 'singlePreview', 'singleFileName', 'singleStatus', 'singleProofGroup')">
+                    <img id="singlePreview" class="image-preview" alt="Vista previa del comprobante">
+                    <span id="singleFileName" class="file-name"></span>
+                    <div id="singleStatus" class="file-status"></div>
+                </div>
             </div>
 
             <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid var(--warning);">
@@ -869,6 +969,114 @@ ob_start();
 </div>
 
 <script>
+// Función mejorada para manejo de archivos con previsualización (igual que en registro)
+function handleFileSelect(input, previewId, fileNameId, statusId, groupId) {
+    const preview = document.getElementById(previewId);
+    const fileNameElement = document.getElementById(fileNameId);
+    const statusElement = document.getElementById(statusId);
+    const file = input.files[0];
+    const group = document.getElementById(groupId);
+
+    // Limpiar estados previos
+    if (group) {
+        group.classList.remove('has-error');
+    }
+    statusElement.className = 'file-status';
+    statusElement.style.display = 'none';
+    
+    // Limpiar error previo si existe
+    const existingError = group ? group.querySelector('.field-error') : null;
+    if (existingError) {
+        existingError.remove();
+    }
+
+    if (file) {
+        // Validar tamaño (2MB = 2,097,152 bytes exactos)
+        if (file.size > 2 * 1024 * 1024) {
+            showError(group, statusElement, `Archivo muy grande: ${formatFileSize(file.size)}. Máximo: 2MB`);
+            clearFile(input, preview, fileNameElement);
+            return;
+        }
+
+        // Validar que no esté vacío
+        if (file.size === 0) {
+            showError(group, statusElement, 'El archivo está vacío');
+            clearFile(input, preview, fileNameElement);
+            return;
+        }
+
+        // Validar tipo de archivo
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+            showError(group, statusElement, 'Formato no válido. Use JPG, PNG o PDF');
+            clearFile(input, preview, fileNameElement);
+            return;
+        }
+
+        // Archivo válido - mostrar confirmación
+        fileNameElement.textContent = file.name;
+        statusElement.textContent = `✓ Archivo válido (${formatFileSize(file.size)})`;
+        statusElement.className = 'file-status success';
+
+        // Mostrar preview para imágenes
+        if (file.type.startsWith('image/') || ['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                preview.onload = function() {
+                    console.log('Preview cargado correctamente');
+                }
+            }
+            reader.readAsDataURL(file);
+        } else if (fileExtension === '.pdf') {
+            // Para PDFs, mostrar ícono en lugar de preview
+            preview.style.display = 'none';
+        }
+    } else {
+        clearFile(input, preview, fileNameElement, statusElement);
+    }
+}
+
+function showError(group, statusElement, message) {
+    if (group) {
+        group.classList.add('has-error');
+        
+        // Agregar mensaje de error debajo del upload box
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        group.appendChild(errorDiv);
+    }
+    
+    statusElement.textContent = `⚠ ${message}`;
+    statusElement.className = 'file-status error';
+    statusElement.style.display = 'block';
+}
+
+function clearFile(input, preview, fileNameElement, statusElement) {
+    input.value = '';
+    preview.style.display = 'none';
+    preview.src = '';
+    fileNameElement.textContent = '';
+    if (statusElement) {
+        statusElement.style.display = 'none';
+        statusElement.textContent = '';
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Referencias a elementos
     const modal = document.getElementById('payModal');
@@ -954,6 +1162,13 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('payId').value = id;
             document.getElementById('amount').value = parseFloat(amount).toFixed(2);
             document.getElementById('period').value = period;
+            
+            // Limpiar el campo de archivo al abrir modal
+            const proofInput = document.getElementById('proof');
+            const preview = document.getElementById('singlePreview');
+            const fileName = document.getElementById('singleFileName');
+            const status = document.getElementById('singleStatus');
+            clearFile(proofInput, preview, fileName, status);
             
             modal.style.display = 'block';
         });
