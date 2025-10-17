@@ -593,6 +593,91 @@ public function accept(): void
  
     $this->redirect('partnerOnline/pending');
 }
+//Aceptar o rechazar solicitudes de nuevos socios
+public function disapprove(): void
+{
+    $this->startSession();
+    
+    if (!isset($_SESSION['user_id'])) { 
+        $this->redirect('login'); 
+        return; 
+    }
+    requireRole([1,6], 'login');
+    
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+    
+    if (!isset($_POST['id'])) { 
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+
+    $id = (int)$_POST['id'];
+    if ($id <= 0) { 
+        $_SESSION['error'] = 'ID de solicitud inválido.';
+        $this->redirect('partnerOnline/pending'); 
+        return; 
+    }
+
+    // Cargar modelos necesarios
+    require_once __DIR__ . '/../Models/PartnerOnline.php';
+
+    $partnerOnlineModel = new \PartnerOnline();
+
+    // Usar transacción para garantizar consistencia
+    $db = \Database::singleton()->getConnection();
+    $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+    try {
+        $db->beginTransaction();
+
+        // 1. Obtener los datos de la solicitud online
+        $solicitud = $partnerOnlineModel->findById($id);
+        
+        if (!$solicitud) {
+            throw new \Exception('La solicitud no existe.');
+        }
+
+        if (!$solicitud['isverified'] || $solicitud['isverified'] == 0) {
+            throw new \Exception('La solicitud aún no ha sido verificada por email.');
+        }
+
+        // 5. Actualizar la solicitud online con los IDs creados
+        $deleted = $partnerOnlineModel->delete($id);
+        
+        if (!$deleted) {
+            throw new \Exception('No se pudo eliminar la solicitud.');
+        }
+
+        // Confirmar transacción
+        $db->commit();
+        // 6. Enviar correo de confirmación
+        $emailSent = disapprovalNotification($solicitud['email'], [
+            'name' => $solicitud['name']
+        ]);
+
+        $successMessage = "Solicitud rechazada exitosamente.";
+        if (!$emailSent) {
+            $successMessage .= " (Nota: No se pudo enviar el correo de rechazo)";
+        }
+
+        $_SESSION['success'] = $successMessage;
+        error_log("Solicitud rechazada");
+
+    } catch (\Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        
+        $_SESSION['error'] = 'Error al rechazar la solicitud: ' . $e->getMessage();
+        error_log('approve error: ' . $e->getMessage());
+        error_log('approve trace: ' . $e->getTraceAsString());
+    }
+
+    $this->redirect('partnerOnline/pending');
+}
 
 }
 ?>
