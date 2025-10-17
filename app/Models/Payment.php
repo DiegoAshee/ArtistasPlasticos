@@ -13,10 +13,11 @@ class Payment {
         $this->db = Database::singleton()->getConnection();
     }
 
-    /**
-     * Obtener contribuciones pendientes con filtros y paginación
-     */
-    public function getPendingByPartner(int $idPartner, ?string $year = null, int $page = 1, int $pageSize = 10): array {
+ /**
+ * Obtener contribuciones pendientes con filtros y paginación
+ * Ordenadas desde la más antigua a la más reciente
+ */
+public function getPendingByPartner(int $idPartner, ?string $year = null, int $page = 1, int $pageSize = 10): array {
     try {
         $offset = ($page - 1) * $pageSize;
 
@@ -38,12 +39,11 @@ class Payment {
                 GROUP BY idContribution
             ) p ON p.idContribution = c.idContribution
             WHERE (p.sum_paid IS NULL OR p.sum_paid < c.amount)
-              AND c.dateCreation > (
-                  SELECT pa.dateRegistration 
-                  FROM " . self::TBL_PARTNER . " pa 
-                  WHERE pa.idPartner = :idPartner
-                  LIMIT 1
-              )
+              AND STR_TO_DATE(c.monthYear, '%Y-%m') >= DATE_FORMAT((
+                SELECT pa.dateRegistration 
+                FROM " . self::TBL_PARTNER . " pa 
+                WHERE pa.idPartner = :idPartner
+              ), '%Y-%m-01')
         ";
 
         // Filtro por año si se proporciona
@@ -51,8 +51,9 @@ class Payment {
             $query .= " AND YEAR(STR_TO_DATE(c.monthYear, '%Y-%m')) = :year";
         }
 
+        // Ordenar desde el más antiguo al más reciente (ASC en lugar de DESC)
         $query .= "
-            ORDER BY c.dateCreation DESC
+            ORDER BY STR_TO_DATE(c.monthYear, '%Y-%m') ASC
             LIMIT :offset, :limit
         ";
 
@@ -74,8 +75,6 @@ class Payment {
         return ['data' => [], 'total' => 0];
     }
 }
-
-
     /**
      * Obtener años disponibles para filtros
      */
@@ -97,63 +96,66 @@ class Payment {
         }
     }
 
-    /**
-     * Historial paginado por socio (SIN array_slice adicional)
-     */
-    public function getHistoryByPartner(int $idPartner, ?string $monthYear = null, int $page = 1, int $pageSize = 20): array {
-        try {
-            $offset = ($page - 1) * $pageSize;
+  /**
+ * Historial paginado por socio
+ * Filtro por año del período de aporte
+ */
+public function getHistoryByPartner(int $idPartner, ?string $year = null, int $page = 1, int $pageSize = 20): array {
+    try {
+        $offset = ($page - 1) * $pageSize;
 
-            $query = "
-                SELECT SQL_CALC_FOUND_ROWS
-                    c.idContribution,
-                    c.amount,
-                    c.notes,
-                    c.dateCreation AS contrib_date,
-                    c.monthYear,
-                    c.dateUpdate,
-                    p.idPayment,
-                    p.paidAmount,
-                    p.dateCreation AS payment_date,
-                    pt.description AS payment_type,
-                    p.voucherImageURL,
-                    CASE 
-                        WHEN p.paymentStatus = 1 THEN 'Pendiente'
-                        WHEN p.paymentStatus = 0 THEN 'Pagado'
-                        WHEN p.paymentStatus = 2 THEN 'Rechazado'
-                        ELSE 'Desconocido'
-                    END as status_text,
-                    p.paymentStatus
-                FROM " . self::TBL_CONTRIBUTION . " c
-                INNER JOIN " . self::TBL_PAYMENT . " p ON c.idContribution = p.idContribution
-                LEFT JOIN " . self::TBL_PAYMENTTYPE . " pt ON p.idPaymentType = pt.idPaymentType
-                WHERE p.idPartner = :idPartner
-            ";
+        $query = "
+            SELECT SQL_CALC_FOUND_ROWS
+                c.idContribution,
+                c.amount,
+                c.notes,
+                c.dateCreation AS contrib_date,
+                c.monthYear,
+                c.dateUpdate,
+                p.idPayment,
+                p.paidAmount,
+                p.dateCreation AS payment_date,
+                pt.description AS payment_type,
+                p.voucherImageURL,
+                CASE 
+                    WHEN p.paymentStatus = 0 THEN 'Pagado'
+                    WHEN p.paymentStatus = 1 THEN 'Pendiente'
+                    WHEN p.paymentStatus = 2 THEN 'Rechazado'
+                    ELSE 'Desconocido'
+                END as status_text,
+                p.paymentStatus
+            FROM " . self::TBL_CONTRIBUTION . " c
+            INNER JOIN " . self::TBL_PAYMENT . " p ON c.idContribution = p.idContribution
+            LEFT JOIN " . self::TBL_PAYMENTTYPE . " pt ON p.idPaymentType = pt.idPaymentType
+            WHERE p.idPartner = :idPartner
+        ";
 
-            if ($monthYear) {
-                $query .= " AND c.monthYear = :monthYear";
-            }
-
-            $query .= " ORDER BY p.dateCreation DESC LIMIT :offset, :limit";
-
-            $stmt = $this->db->prepare($query);
-            $stmt->bindValue(':idPartner', $idPartner, PDO::PARAM_INT);
-            if ($monthYear) $stmt->bindValue(':monthYear', $monthYear, PDO::PARAM_STR);
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
-            $stmt->execute();
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Total real
-            $total = (int)$this->db->query("SELECT FOUND_ROWS()")->fetchColumn();
-
-            return ['data' => $data, 'total' => $total];
-        } catch (PDOException $e) {
-            error_log("Error al obtener historial: " . $e->getMessage());
-            return ['data' => [], 'total' => 0];
+        // Filtrar por año del período de aporte (monthYear tiene formato YYYY-MM)
+        if ($year) {
+            $query .= " AND YEAR(STR_TO_DATE(c.monthYear, '%Y-%m')) = :year";
         }
-    }
 
+        $query .= " ORDER BY p.dateCreation DESC LIMIT :offset, :limit";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':idPartner', $idPartner, PDO::PARAM_INT);
+        if ($year) {
+            $stmt->bindValue(':year', (int)$year, PDO::PARAM_INT);
+        }
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Total real
+        $total = (int)$this->db->query("SELECT FOUND_ROWS()")->fetchColumn();
+
+        return ['data' => $data, 'total' => $total];
+    } catch (PDOException $e) {
+        error_log("Error al obtener historial: " . $e->getMessage());
+        return ['data' => [], 'total' => 0];
+    }
+}
     /**
      * Procesar pago con status pendiente (1)
      */
@@ -303,12 +305,12 @@ class Payment {
     }
     public function getQrImageUrl(): ?string {
         try {
-            $query = "SELECT imageURL FROM `option` WHERE status = 1 ORDER BY idOption DESC LIMIT 1";
+            $query = "SELECT imageURLQR FROM `option` WHERE status = 1 ORDER BY idOption DESC LIMIT 1";
             $stmt = $this->db->prepare($query);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($result && !empty($result['imageURL'])) {
-                return BASE_URL . $result['imageURL']; // Concatena BASE_URL con la ruta
+            if ($result && !empty($result['imageURLQR'])) {
+                return BASE_URL . $result['imageURLQR']; // Concatena BASE_URL con la ruta
             }
             return null; // Retorna null si no hay QR
         } catch (PDOException $e) {

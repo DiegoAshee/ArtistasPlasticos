@@ -220,7 +220,7 @@ ob_start();
                         <i class="fas fa-check"></i> Aceptar
                     </button>
                 </form>
-                <form action="<?= u('partnerOnline/reject') ?>" method="post" class="reject-form">
+                <form action="<?= u('partnerOnline/disapprove') ?>" method="post" class="reject-form">
                     <input type="hidden" name="id" value="<?= (int)($r['idPartnerOnline'] ?? 0) ?>">
                     <button type="submit" class="btn-action btn-reject" title="Rechazar solicitud">
                         <i class="fas fa-times"></i> Rechazar

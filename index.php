@@ -195,6 +195,7 @@ $router->addRoute('POST', '/partnerOnline/approveChanges', 'PartnerOnlineControl
 //aprobar o rechazar solicitudes 
 // Acciones sobre solicitudes (POST)
 $router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
+$router->addRoute('POST', '/partnerOnline/disapprove',  'PartnerOnlineController', 'disapprove');
 $router->addRoute('POST', '/partnerOnline/reject',  'PartnerOnlineController', 'reject');
 
 

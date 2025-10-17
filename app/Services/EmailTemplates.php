@@ -129,6 +129,7 @@ class EmailTemplates
         $name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');
         $ci = htmlspecialchars($data['ci'] ?? '', ENT_QUOTES, 'UTF-8');
         $email = htmlspecialchars($data['email'] ?? '', ENT_QUOTES, 'UTF-8');
+        $address = htmlspecialchars($data['address'] ?? '', ENT_QUOTES, 'UTF-8');
         $cellphone = htmlspecialchars($data['cellphoneNumber'] ?? '', ENT_QUOTES, 'UTF-8');
         $birthday = self::formatDate($data['birthday'] ?? '');
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
@@ -155,6 +156,7 @@ class EmailTemplates
                     <p><strong>CI:</strong> {$ci}</p>
                     <p><strong>Correo:</strong> {$email}</p>
                     <p><strong>Celular:</strong> {$cellphone}</p>
+                    <p><strong>Dirección:</strong> {$address}</p>
                     <p><strong>Fecha de nacimiento:</strong> {$birthday}</p>
                 </div>
                 
@@ -171,6 +173,7 @@ class EmailTemplates
                     "CI: {$ci}\n" .
                     "Correo: {$email}\n" .
                     "Celular: {$cellphone}\n" .
+                    "Dirección: {$address}\n" .
                     "Fecha de nacimiento: {$birthday}\n\n" .
                     "Nos pondremos en contacto contigo muy pronto.\n\n" .
                     $contactInfoText .
@@ -439,7 +442,63 @@ class EmailTemplates
 
         return compact('subject', 'htmlBody', 'textBody');
     }
+    /**
+ * Template para email de desaprobación de solicitud
+ */
+public static function disapprovalNotification(array $data): array
+{
+    $name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');
+    $registerUrl = $data['register_url'] ?? (defined('BASE_URL') ? BASE_URL . 'partner/register' : '#');
+    $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
+    $contactPhone = self::getContactPhone();
 
+    $subject = "Solicitud de Asociación Rechazada - {$title}";
+
+    // Construir mensaje de contacto
+    $contactInfo = '';
+    $contactInfoText = '';
+    if (!empty($contactPhone)) {
+        $contactInfo = "<p>Para más información o aclaraciones, comunícate con nosotros al <strong>{$contactPhone}</strong>.</p>";
+        $contactInfoText = "Para más información o aclaraciones, comunícate con nosotros al {$contactPhone}.\n\n";
+    }
+
+    $htmlBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #dc3545;'>Estimado/a {$name}</h2>
+            <p>Lamentamos informarte que tu solicitud para ser miembro de <strong>{$title}</strong> 
+               ha sido <strong style='color: #dc3545;'>rechazada</strong>.</p>
+            
+            <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                <p style='margin: 0; color: #856404;'>
+                    Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, 
+                    no dudes en contactarnos.
+                </p>
+            </div>
+            
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href=\"{$registerUrl}\" 
+                   style=\"display:inline-block; padding:15px 30px; background:#007bff; color:#fff; 
+                          text-decoration:none; border-radius:8px; font-weight:bold; font-size: 16px;\">
+                    Realizar Nueva Solicitud
+                </a>
+            </div>
+            
+            {$contactInfo}
+            <hr style='margin: 30px 0; border: 1px solid #eee;'>
+            <p><strong>Atentamente,<br>Equipo Administrativo de {$title}</strong></p>
+        </div>
+    ";
+
+    $textBody = "Estimado/a {$name},\n\n" .
+                "Lamentamos informarte que tu solicitud para ser miembro de {$title} ha sido RECHAZADA.\n\n" .
+                "Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, no dudes en contactarnos.\n\n" .
+                "Puedes realizar una nueva solicitud en: {$registerUrl}\n\n" .
+                $contactInfoText .
+                "Atentamente,\n" .
+                "Equipo Administrativo de {$title}";
+
+    return compact('subject', 'htmlBody', 'textBody');
+}
     /**
      * Template para email de recuperación de contraseña (legacy)
      */

@@ -174,6 +174,25 @@ if (!function_exists('approvalNotification')) {
         );
     }
 }
+if (!function_exists('disapprovalNotification')) {
+    /**
+     * Envía email de aprobación de solicitud
+     */
+    function disapprovalNotification(string $email, array $data): bool
+    {
+        require_once __DIR__ . '/../Services/EmailTemplates.php';
+        
+        $template = EmailTemplates::disapprovalNotification($data);
+        
+        return sendEmail(
+            $email, 
+            $template['subject'], 
+            $template['htmlBody'], 
+            $template['textBody'],
+            ['recipient_name' => $data['name'] ?? '']
+        );
+    }
+}
 
 if (!function_exists('sendPasswordResetEmail')) {
     /**

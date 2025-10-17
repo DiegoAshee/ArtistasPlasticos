@@ -129,17 +129,6 @@ class PartnerOnline {
         }
     }
 
-    public function delete(int $id): bool {
-        try {
-            $stmt = $this->db->prepare("DELETE FROM " . self::TBL . " WHERE idPartnerOnline = :id");
-            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (\PDOException $e) {
-            error_log("PartnerOnline::delete error: " . $e->getMessage());
-            return false;
-        }
-    }
-
     // Validaciones simples
     public function emailExists(string $email): bool {
         try {
@@ -248,4 +237,20 @@ class PartnerOnline {
             return false;
         }
     }
+
+    /**
+     * Elimina la solicitud online
+     */
+    
+    public function delete(int $id): bool {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM " . self::TBL . " WHERE idPartnerOnline = :id");
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log("PartnerOnline::delete error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }

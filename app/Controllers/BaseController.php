@@ -112,12 +112,15 @@ class BaseController
         $viewPath = p('app/Views/' . $view . '.php');
         
         if (is_file($viewPath)) {
-            ob_start();
+            // SOLUCIÓN: No usar ob_start/ob_end aquí
+            // Dejar que la vista maneje su propio buffering si es necesario
             try {
                 include $viewPath;
-                ob_end_flush();
             } catch (\Throwable $e) {
-                ob_end_clean();
+                // Limpiar cualquier output previo en caso de error
+                if (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
                 echo "<h1>Error en la vista</h1>";
                 echo "<p>Error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</p>";
             }

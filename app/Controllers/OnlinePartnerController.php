@@ -243,6 +243,7 @@ class OnlinePartnerController extends BaseController
             'name'             => $record['name'],
             'ci'               => $record['ci'],
             'email'            => $record['email'],
+            'address'            => $record['address'],
             'cellphoneNumber'  => $record['cellPhoneNumber'],
             'birthday'         => $record['birthday']
         ]);
