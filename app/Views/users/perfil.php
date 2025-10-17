@@ -18,41 +18,394 @@ $breadcrumbs = [
     ['label' => 'Mi Perfil', 'url' => null],
 ];
 
-// Obtener datos del usuario
+// Obtener datos del usuario desde la BD
 $user = !empty($users) ? $users[0] : [];
 $isAdmin = ($_SESSION['role'] ?? 1) == 1;
 
-// Verificar si hay solicitudes pendientes
-/*
-$pendingChanges = [];
-if (!$isAdmin && isset($user['idPartner'])) {
-    require_once __DIR__ . '/../Models/UserChangeRequest.php';
-    $changeRequestModel = new UserChangeRequest();
-    $pendingChanges = $changeRequestModel->getPendingByPartner($user['idPartner']);
+// Extraer valores de la base de datos usando los campos correctos de la tabla partner
+$userName = $user['name'] ?? '';
+$userCI = $user['ci'] ?? '';
+$userPhone = $user['cellPhoneNumber'] ?? '';
+$userAddress = $user['address'] ?? '';
+$userBirthday = $user['birthday'] ?? '';
+$userDateRegistration = $user['dateRegistration'] ?? '';
+$userLogin = $user['login'] ?? $_SESSION['username'] ?? '';
+$userEmail = $user['email'] ?? $_SESSION['email'] ?? '';
+
+// Formatear fechas a dd-mm-aaaa
+function formatDate($date) {
+    if (empty($date) || $date == '0000-00-00') {
+        return null;
+    }
+    return date('d-m-Y', strtotime($date));
 }
-*/
-// Verificar si hay un mensaje de éxito en la sesión (para la notificación de solicitud enviada)
+
+$formattedBirthday = formatDate($userBirthday);
+$formattedDateRegistration = formatDate($userDateRegistration);
+
+// Verificar si hay un mensaje de éxito en la sesión
 $showSuccessNotification = false;
 $successMessageText = '';
 if (isset($_SESSION['success'])) {
     $showSuccessNotification = true;
     $successMessageText = $_SESSION['success'];
-    unset($_SESSION['success']); // Limpiar el mensaje después de mostrarlo
+    unset($_SESSION['success']);
 }
 
 // Start output buffering for the content
 ob_start();
 ?>
 
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --primary-light: #e0e7ff;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --success: #10b981;
+        --border: #e5e7eb;
+        --secondary: #6b7280;
+        --secondary-light: #f8fafc;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+
+    .profile-avatar-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .profile-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: white;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .profile-actions .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.875rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow);
+    }
+
+    .profile-actions .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+    }
+
+    .profile-actions .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-dark), #3730a3);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .profile-header-info {
+        text-align: left;
+    }
+
+    .profile-name {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+
+    .profile-role {
+        font-size: 1.1rem;
+        color: var(--primary);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        background: var(--primary-light);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    .profile-email {
+        font-size: 1.1rem;
+        color: var(--secondary);
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .profile-email::before {
+        content: '📧';
+        font-size: 1.2rem;
+    }
+
+    .profile-content {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .profile-section {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+
+    .profile-section:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .section-header {
+        border-bottom: 2px solid var(--primary-light);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        color: #1f2937;
+        font-weight: 700;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-title i {
+        color: var(--primary);
+        font-size: 1.75rem;
+        background: var(--primary-light);
+        padding: 0.75rem;
+        border-radius: 12px;
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .profile-field {
+        position: relative;
+    }
+
+    .field-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        transition: color 0.3s ease;
+    }
+
+    .field-value {
+        padding: 0.875rem 1rem;
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 1rem;
+        color: #1f2937;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .text-muted {
+        color: #9ca3af !important;
+        font-style: italic;
+    }
+
+    .security-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .security-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .security-item:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+    }
+
+    .security-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--primary-light);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.5rem;
+    }
+
+    .security-details {
+        flex: 1;
+    }
+
+    .security-details h4 {
+        margin: 0 0 0.5rem 0;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .security-details p {
+        margin: 0 0 1rem 0;
+        color: var(--secondary);
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--primary);
+        border: 2px solid var(--primary);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-outline:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border-left: 4px solid;
+        animation: slideIn 0.3s ease;
+    }
+
+    .alert-success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+        border-left-color: var(--success);
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .profile-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .profile-avatar-section {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .profile-name {
+            font-size: 1.5rem;
+        }
+        
+        .profile-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .profile-section {
+            padding: 1.5rem;
+        }
+        
+        .security-item {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+
 <?php if ($showSuccessNotification): ?>
     <div class="alert alert-success">
-        <strong>Éxito!</strong> <?= htmlspecialchars($successMessageText) ?>
+        <strong>¡Éxito!</strong> <?= htmlspecialchars($successMessageText) ?>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($successMessage) && !$showSuccessNotification): ?>
     <div class="alert alert-success">
-        <strong>Éxito!</strong> <?= htmlspecialchars($successMessage) ?>
+        <strong>¡Éxito!</strong> <?= htmlspecialchars($successMessage) ?>
     </div>
 <?php endif; ?>
 
@@ -60,7 +413,11 @@ ob_start();
 <div class="profile-header">
     <div class="profile-avatar-section">
         <div class="profile-avatar-large">
-            <?= strtoupper(substr($_SESSION['username'] ?? 'AU', 0, 2)) ?>
+            <?php 
+            // Usar el nombre si existe, sino el username
+            $displayName = !empty($userName) ? $userName : $userLogin;
+            echo strtoupper(substr($displayName, 0, 2)); 
+            ?>
         </div>
         <div class="profile-actions">
             <?php if (!$isAdmin): ?>
@@ -72,20 +429,16 @@ ob_start();
         </div>
     </div>
     <div class="profile-header-info">
-        <h2 class="profile-name"><?= htmlspecialchars($user['name'] ?? $_SESSION['username'] ?? 'Admin Usuario') ?></h2>
+        <h2 class="profile-name">
+            <?php 
+            // Mostrar el nombre completo si existe, sino el login
+            echo htmlspecialchars(!empty($userName) ? $userName : $userLogin);
+            ?>
+        </h2>
         <p class="profile-role"><?= $isAdmin ? 'Administrador del Sistema' : 'Socio de la Asociación' ?></p>
-        <p class="profile-email"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></p>
+        <p class="profile-email"><?= !empty($userEmail) ? htmlspecialchars($userEmail) : 'No disponible' ?></p>
     </div>
 </div>
-
-
-<!-- Pending Changes Notification -->
-<?php if (!empty($pendingChanges) && !$isAdmin): ?>
-<div class="alert alert-info">
-    <i class="fas fa-info-circle"></i>
-    Tienes <strong><?= count($pendingChanges) ?></strong> solicitud(es) de cambio pendientes de aprobación por el administrador.
-</div>
-<?php endif; ?>
 
 <!-- Profile Content -->
 <div class="profile-content">
@@ -98,85 +451,70 @@ ob_start();
             </h3>
         </div>
         <div class="profile-grid">
-            <?php if ($isAdmin): ?>
-                <!-- Vista para administradores (sin cambios) -->
-                <div class="profile-field">
-                    <label class="field-label">Nombre de Usuario</label>
-                    <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
+            <!-- Nombre Completo -->
+            <div class="profile-field">
+                <label class="field-label">Nombre Completo</label>
+                <div class="field-value">
+                    <?= !empty($userName) ? htmlspecialchars($userName) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-                <div class="profile-field">
-                    <label class="field-label">Correo Electrónico</label>
-                    <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></div>
+            </div>
+            
+            <!-- Cédula de Identidad -->
+            <div class="profile-field">
+                <label class="field-label">Cédula de Identidad</label>
+                <div class="field-value">
+                    <?= !empty($userCI) ? htmlspecialchars($userCI) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-                <div class="profile-field">
-                    <label class="field-label">ID de Usuario</label>
-                    <div class="field-value"><?= htmlspecialchars($user['idUser'] ?? $_SESSION['user_id'] ?? 'N/A') ?></div>
+            </div>
+            
+            <!-- Teléfono -->
+            <div class="profile-field">
+                <label class="field-label">Teléfono</label>
+                <div class="field-value">
+                    <?= !empty($userPhone) ? htmlspecialchars($userPhone) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-            <?php else: ?>
-                <!-- Vista para socios (con capacidad de edición) -->
-                <div class="profile-field">
-                    <label class="field-label">Nombre Completo</label>
-                    <div class="field-value" id="field-name"><?= htmlspecialchars($user['name'] ?? 'No disponible') ?></div>
-                    <div class="field-edit" style="display: none;">
-                        <input type="text" id="edit-name" class="form-control" value="<?= htmlspecialchars($user['name'] ?? '') ?>">
-                    </div>
+            </div>
+            
+            <!-- Dirección -->
+            <div class="profile-field">
+                <label class="field-label">Dirección</label>
+                <div class="field-value">
+                    <?= !empty($userAddress) ? htmlspecialchars($userAddress) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-                <div class="profile-field">
-                    <label class="field-label">Cédula de Identidad</label>
-                    <div class="field-value" id="field-ci"><?= htmlspecialchars($user['CI'] ?? 'No disponible') ?></div>
-                    <div class="field-edit" style="display: none;">
-                        <input type="text" id="edit-ci" class="form-control" value="<?= htmlspecialchars($user['CI'] ?? '') ?>">
-                    </div>
+            </div>
+            
+            <!-- Fecha de Nacimiento -->
+            <div class="profile-field">
+                <label class="field-label">Fecha de Nacimiento</label>
+                <div class="field-value">
+                    <?= !empty($formattedBirthday) ? htmlspecialchars($formattedBirthday) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-                <div class="profile-field">
-                    <label class="field-label">Teléfono</label>
-                    <div class="field-value" id="field-phone"><?= htmlspecialchars($user['cellPhoneNumber'] ?? 'No disponible') ?></div>
-                    <div class="field-edit" style="display: none;">
-                        <input type="text" id="edit-phone" class="form-control" value="<?= htmlspecialchars($user['cellPhoneNumber'] ?? '') ?>">
-                    </div>
+            </div>
+            
+            <!-- Fecha de Registro -->
+            <div class="profile-field">
+                <label class="field-label">Fecha de Registro</label>
+                <div class="field-value">
+                    <?= !empty($formattedDateRegistration) ? htmlspecialchars($formattedDateRegistration) : '<span class="text-muted">No disponible</span>' ?>
                 </div>
-                <div class="profile-field">
-                    <label class="field-label">Dirección</label>
-                    <div class="field-value" id="field-address"><?= htmlspecialchars($user['address'] ?? 'No disponible') ?></div>
-                    <div class="field-edit" style="display: none;">
-                        <textarea id="edit-address" class="form-control"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
-                    </div>
-                </div>
-                <div class="profile-field">
-                    <label class="field-label">Fecha de Nacimiento</label>
-                    <div class="field-value" id="field-birthday"><?= htmlspecialchars($user['birthday'] ?? 'No disponible') ?></div>
-                    <div class="field-edit" style="display: none;">
-                        <input type="date" id="edit-birthday" class="form-control" value="<?= htmlspecialchars($user['birthday'] ?? '') ?>">
-                    </div>
-                </div>
-                <div class="profile-field">
-                    <label class="field-label">Fecha de Registro</label>
-                    <div class="field-value"><?= htmlspecialchars($user['dateRegistration'] ?? 'No disponible') ?></div>
-                </div>
-            <?php endif; ?>
+            </div>
+            
+            <!-- Nombre de Usuario -->
             <div class="profile-field">
                 <label class="field-label">Nombre de Usuario</label>
-                <div class="field-value"><?= htmlspecialchars($user['login'] ?? $_SESSION['username'] ?? 'admin') ?></div>
+                <div class="field-value">
+                    <?= !empty($userLogin) ? htmlspecialchars($userLogin) : '<span class="text-muted">No disponible</span>' ?>
+                </div>
             </div>
+            
+            <!-- Correo Electrónico -->
             <div class="profile-field">
                 <label class="field-label">Correo Electrónico</label>
-                <div class="field-value"><?= htmlspecialchars($user['email'] ?? $_SESSION['email'] ?? 'admin@asociacion.com') ?></div>
+                <div class="field-value">
+                    <?= !empty($userEmail) ? htmlspecialchars($userEmail) : '<span class="text-muted">No disponible</span>' ?>
+                </div>
             </div>
         </div>
-        
-        <!-- Edit Actions (solo para socios) -->
-        <?php if (!$isAdmin): ?>
-        <div class="edit-actions" style="display: none; margin-top: 20px;">
-            <button class="btn btn-success" onclick="saveChanges()">
-                <i class="fas fa-paper-plane"></i>
-                Enviar solicitud de cambios
-            </button>
-            <button class="btn btn-secondary" onclick="cancelEdit()">
-                <i class="fas fa-times"></i>
-                Cancelar
-            </button>
-        </div>
-        <?php endif; ?>
     </div>
 
     <!-- Security Information -->
@@ -196,9 +534,9 @@ ob_start();
                     <h4>Contraseña</h4>
                     <p>Última actualización: <?= date('d/m/Y') ?></p>
                     <a href="<?= u('users/change-password') ?>" class="btn btn-outline">
-  <i class="fas fa-edit"></i>
-  Cambiar Contraseña
-</a>
+                        <i class="fas fa-edit"></i>
+                        Cambiar Contraseña
+                    </a>
                 </div>
             </div>
         </div>
@@ -216,218 +554,6 @@ ob_start();
     </div>
     <?php endif; ?>
 </div>
-
-<!-- Modal para cambio de contraseña
-<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="changePasswordModalLabel">Cambiar contraseña</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div id="pw-error" class="alert alert-danger d-none"></div>
-        <div id="pw-success" class="alert alert-success d-none"></div>
-
-        <div class="form-group">
-          <label>Contraseña actual</label>
-          <input type="password" id="pw_current" class="form-control" autocomplete="current-password" />
-        </div>
-
-        <div class="form-group">
-          <label>Nueva contraseña</label>
-          <input type="password" id="pw_new" class="form-control" autocomplete="new-password" />
-          <small class="form-text text-muted">8-12 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.</small>
-        </div>
-
-        <div class="form-group">
-          <label>Confirmar nueva contraseña</label>
-          <input type="password" id="pw_confirm" class="form-control" autocomplete="new-password" />
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="submitPasswordChange()">Guardar</button>
-      </div>
-    </div>
-  </div>
-</div> -->
-
-<script>
-// Variables para almacenar los cambios
-let changes = {};
-
-function editProfile() {
-    // Mostrar campos de edición
-    document.querySelectorAll('.field-value').forEach(el => {
-        el.style.display = 'none';
-    });
-    document.querySelectorAll('.field-edit').forEach(el => {
-        el.style.display = 'block';
-    });
-    document.querySelector('.edit-actions').style.display = 'block';
-}
-
-function cancelEdit() {
-    // Ocultar campos de edición
-    document.querySelectorAll('.field-value').forEach(el => {
-        el.style.display = 'block';
-    });
-    document.querySelectorAll('.field-edit').forEach(el => {
-        el.style.display = 'none';
-    });
-    document.querySelector('.edit-actions').style.display = 'none';
-    changes = {};
-}
-
-function collectChanges() {
-    changes = {};
-    
-    // Verificar cada campo editable
-    const fields = [
-        {id: 'name', field: 'name', value: document.getElementById('edit-name').value},
-        {id: 'ci', field: 'CI', value: document.getElementById('edit-ci').value},
-        {id: 'phone', field: 'cellPhoneNumber', value: document.getElementById('edit-phone').value},
-        {id: 'address', field: 'address', value: document.getElementById('edit-address').value},
-        {id: 'birthday', field: 'birthday', value: document.getElementById('edit-birthday').value}
-    ];
-    
-    fields.forEach(item => {
-        const currentValue = document.getElementById(`field-${item.id}`).textContent.trim();
-        if (item.value !== currentValue) {
-            changes[item.field] = {
-                old: currentValue,
-                new: item.value
-            };
-        }
-    });
-    
-    return changes;
-}
-
-function saveChanges() {
-    const changes = collectChanges();
-    
-    if (Object.keys(changes).length === 0) {
-        alert('No has realizado ningún cambio.');
-        return;
-    }
-    
-    // Mostrar resumen de cambios en el modal
-    let summaryHtml = '<ul>';
-    for (const field in changes) {
-        const fieldName = getFieldDisplayName(field);
-        summaryHtml += `<li><strong>${fieldName}:</strong> "${changes[field].old}" → "${changes[field].new}"</li>`;
-    }
-    summaryHtml += '</ul>';
-    
-    document.getElementById('changes-summary').innerHTML = summaryHtml;
-    $('#confirmChangesModal').modal('show');
-}
-
-function getFieldDisplayName(field) {
-    const fieldNames = {
-        'name': 'Nombre completo',
-        'CI': 'Cédula de identidad',
-        'cellPhoneNumber': 'Teléfono',
-        'address': 'Dirección',
-        'birthday': 'Fecha de nacimiento'
-    };
-    
-    return fieldNames[field] || field;
-}
-
-function submitChanges() {
-    $('#confirmChangesModal').modal('hide');
-    
-    // Enviar cambios al servidor
-    fetch('<?= u('users/request-changes') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            changes: changes
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Solicitud de cambios enviada correctamente. Espera la aprobación del administrador.');
-            location.reload();
-        } else {
-            alert('Error al enviar la solicitud: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al enviar la solicitud.');
-    });
-}
-
-function changePassword() {
-  // Abrir modal de cambio de contraseña
-  $('#changePasswordModal').modal('show');
-}
-
-function showPwAlert(id, message) {
-  const el = document.getElementById(id);
-  el.textContent = message;
-  el.classList.remove('d-none');
-}
-
-function hidePwAlerts() {
-  ['pw-error', 'pw-success'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.add('d-none');
-    el.textContent = '';
-  });
-}
-
-function submitPasswordChange() {
-  hidePwAlerts();
-
-  const current = document.getElementById('pw_current').value.trim();
-  const pw = document.getElementById('pw_new').value.trim();
-  const cf = document.getElementById('pw_confirm').value.trim();
-
-  // Validación rápida en cliente
-  const reLen = /^.{8,12}$/; const reUp=/[A-Z]/; const reLo=/[a-z]/; const reNum=/[0-9]/; const reSym=/[^A-Za-z0-9]/;
-  if (!current) { showPwAlert('pw-error', 'La contraseña actual es obligatoria'); return; }
-  if (!reLen.test(pw) || !reUp.test(pw) || !reLo.test(pw) || !reNum.test(pw) || !reSym.test(pw)) {
-    showPwAlert('pw-error', 'La nueva contraseña no cumple con los requisitos');
-    return;
-  }
-  if (pw !== cf) { showPwAlert('pw-error', 'Las contraseñas no coinciden'); return; }
-
-  fetch('<?= u('users/change-password-profile') ?>', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ current_password: current, new_password: pw, confirm_password: cf })
-  })
-  .then(async (res) => {
-    const data = await res.json().catch(() => ({ success: false, message: 'Error inesperado' }));
-    if (!res.ok || !data.success) {
-      showPwAlert('pw-error', data.message || 'No se pudo actualizar la contraseña');
-      return;
-    }
-    showPwAlert('pw-success', data.message || 'Contraseña actualizada correctamente');
-    setTimeout(() => {
-      $('#changePasswordModal').modal('hide');
-      document.getElementById('pw_current').value = '';
-      document.getElementById('pw_new').value = '';
-      document.getElementById('pw_confirm').value = '';
-      hidePwAlerts();
-    }, 1500);
-  })
-  .catch(() => {
-    showPwAlert('pw-error', 'Error de red al intentar actualizar la contraseña');
-  });
-}
-</script>
 
 <?php
 // Get the buffered content

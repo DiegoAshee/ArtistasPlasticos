@@ -331,26 +331,68 @@ public function getUsersAdmin(): array {
 // El resto de funciones (create, update, delete) permanecen iguales, ya que ya manejan idRol dinámicamente
 
     /** Compatibilidad con el controlador */
-    public function getUserProfile(int $role, int $id): array {
-        try {
-            if ((int)$role === 1) {
-                $sql = "SELECT idUser, login, email
-                        FROM " . self::TABLE . " WHERE idUser = :id";
-            } else {
-                $sql = "SELECT p.*, u.login, u.email
-                        FROM " . self::TABLE2 . " p
-                        JOIN " . self::TABLE  . " u ON p.idPartner = u.idPartner
-                        WHERE u.idUser = :id";
-            }
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            error_log("Error al obtener perfil: " . $e->getMessage());
-            return [];
+    /**
+     * Obtener perfil de usuario según su rol
+     * Compatible con las tablas user y partner
+     */
+    /**
+ * Obtener perfil de usuario según su rol
+ * Compatible con las tablas user y partner
+ */
+public function getUserProfile(int $role, int $id): array {
+    try {
+        if ((int)$role === 1) {
+            // Para admin: devolver datos de la tabla user
+            // Intentar JOIN con partner por si tiene datos
+            $sql = "SELECT u.idUser, u.login, u.email, 
+                           COALESCE(p.ci, '') as ci, 
+                           COALESCE(p.name, '') as name,
+                           COALESCE(p.cellPhoneNumber, '') as cellPhoneNumber,
+                           COALESCE(p.address, '') as address, 
+                           COALESCE(p.birthday, '') as birthday,
+                           p.idPartner
+                    FROM " . self::TABLE . " u 
+                    LEFT JOIN " . self::TABLE2 . " p ON u.idPartner = p.idPartner
+                    WHERE u.idUser = :id";
+        } else {
+            // Para socio: devolver datos completos de partner y user
+            // Usar los campos exactos de la tabla partner
+            $sql = "SELECT p.idPartner, 
+                           COALESCE(p.name, '') as name, 
+                           COALESCE(p.ci, '') as ci, 
+                           COALESCE(p.cellPhoneNumber, '') as cellPhoneNumber, 
+                           COALESCE(p.address, '') as address, 
+                           COALESCE(p.birthday, '') as birthday, 
+                           p.dateCreation, 
+                           p.dateRegistration,
+                           p.frontImageURL, 
+                           p.backImageURL, 
+                           p.status,
+                           u.login, 
+                           u.email, 
+                           u.idUser
+                    FROM " . self::TABLE2 . " p
+                    JOIN " . self::TABLE . " u ON p.idPartner = u.idPartner
+                    WHERE u.idUser = :id";
         }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Debug logging
+        error_log("DEBUG getUserProfile - Role: $role, UserID: $id");
+        error_log("DEBUG getUserProfile - SQL: " . $sql);
+        error_log("DEBUG getUserProfile - Result: " . print_r($result, true));
+        
+        return $result;
+    } catch (\PDOException $e) {
+        error_log("Error al obtener perfil: " . $e->getMessage());
+        return [];
     }
+}
 
     // =========================================================
     // ===============      CREAR / ACTUALIZAR     =============

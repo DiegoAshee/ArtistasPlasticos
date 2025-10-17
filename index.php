@@ -188,6 +188,10 @@ $router->addRoute('POST', '/partnerOnline/createRequest', 'PartnerOnlineControll
 $router->addRoute('GET', '/partnerOnline/pending', 'PartnerOnlineController', 'pending');
 
 
+
+// Aprobar MODIFICACIÓN de socio existente (actualiza Partner y User)
+$router->addRoute('POST', '/partnerOnline/approveChanges', 'PartnerOnlineController', 'approveChanges');
+
 //aprobar o rechazar solicitudes 
 // Acciones sobre solicitudes (POST)
 $router->addRoute('POST', '/partnerOnline/approve', 'PartnerOnlineController', 'approve');
