@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/Payment.php';
 require_once __DIR__ . '/../Models/Usuario.php';
+require_once __DIR__ . '/../Models/Notification.php';
 require_once __DIR__ . '/../Config/helpers.php';
 
 class PartnerPaymentController extends BaseController
@@ -87,6 +88,29 @@ class PartnerPaymentController extends BaseController
 
                 if ($paymentModel->processPayment($idContribution, $amount, $methodId, $idPartner, $proofUrl)) {
                     $_SESSION['payment_success'] = "Pago enviado para revisión. Será procesado en 24-48 horas.";
+                    
+                    // Create a notification for the new contribution
+                    $notificationData = [
+                        'title' => 'Nueva Pago de '. $user[''],
+                        'message' => "Se ha pagado una contribución por un monto de $amount para el mes $monthYear",
+                        'type' => 'info',
+                        'data' => json_encode([
+                            'contribution_id' => $contributionId,
+                            'amount' => $amount,
+                            'monthYear' => $monthYear
+                        ]),
+                        'idRol' => 1
+                    ];
+
+                    $notification = new \App\Models\Notification();
+                    $notificationId = $notification->create($notificationData);
+                    
+                    if ($notificationId === false) {
+                        error_log("Error: No se pudo crear la notificación para la contribución $contributionId");
+                        throw new \Exception("Fallo al crear la notificación de contribución");
+                    } else {
+                        error_log("Notificación creada con ID: " . $notificationId);
+                    }
                     $this->redirect('partner/pending-payments');
                     return;
                 } else {

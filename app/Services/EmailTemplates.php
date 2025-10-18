@@ -135,7 +135,7 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "Confirmación desolicitud de Registro como socio de {$title}";
+        $subject = "Confirmación de solicitud de Registro como socio de {$title}";
 
         // Construir mensaje de contacto si hay teléfono
         $contactInfo = '';
