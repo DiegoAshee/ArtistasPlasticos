@@ -28,14 +28,31 @@ $fechaFin = strtotime($filters['end_date'] ?? $hoy);
 // Formatear fechas para mostrar en el subtítulo
 $subtitleText = 'Del ' . date('d/m/Y', $fechaInicio) . ' al ' . date('d/m/Y', $fechaFin);
 
+// Inicializar variables para los totales
+$totalIngresos = 0;
+$totalEgresos = 0;
+$saldoAnterior = 0;
+
 // Calcular totales
 foreach ($movements as $m) {
-    $montoTotal += (float)($m['amount'] ?? 0);
+    $monto = (float)($m['amount'] ?? 0);
+    $tipoMovimiento = $m['concept_type'] ?? '';
+    
+    if (strtolower($tipoMovimiento) === 'ingreso') {
+        $totalIngresos += $monto;
+    } else {
+        $totalEgresos += abs($monto); // Usamos valor absoluto para asegurar que sea positivo
+    }
+    
     $fechaMovimiento = $m['dateMovement'] ?? '';
     if ($fechaMovimiento && date('Y-m-d', strtotime($fechaMovimiento)) === $hoy) {
         $movimientosHoy++;
     }
 }
+
+// Calcular saldos
+$saldoAnterior = $totalIngresos - $totalEgresos;
+$saldoActual = $saldoAnterior + $totalIngresos - $totalEgresos; // El saldo actual es igual al saldo anterior en este contexto
 
 ob_start();
 ?>
@@ -171,16 +188,20 @@ ob_start();
   <!-- Métricas -->
   <div class="metrics">
     <div class="metric-card">
-      <div class="metric-value"><?= $totalMovimientos ?></div>
-      <div class="metric-label">Total Movimientos</div>
+      <div class="metric-value text-success">Bs. <?= number_format($totalIngresos, 2) ?></div>
+      <div class="metric-label">Total Ingresos</div>
     </div>
     <div class="metric-card">
-      <div class="metric-value">Bs. <?= number_format($montoTotal, 2) ?></div>
-      <div class="metric-label">Importe Total</div>
+      <div class="metric-value text-danger">Bs. <?= number_format($totalEgresos, 2) ?></div>
+      <div class="metric-label">Total Egresos</div>
     </div>
     <div class="metric-card">
-      <div class="metric-value"><?= $movimientosHoy ?></div>
-      <div class="metric-label">Movimientos Hoy</div>
+      <div class="metric-value">Bs. <?= number_format($saldoAnterior, 2) ?></div>
+      <div class="metric-label">Saldo Anterior</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" style="font-weight: bold;">Bs. <?= number_format($saldoActual, 2) ?></div>
+      <div class="metric-label">Saldo Actual</div>
     </div>
   </div>
 
