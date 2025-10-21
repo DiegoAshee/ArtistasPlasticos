@@ -156,6 +156,91 @@ ob_start();
       color: #6c757d;
       font-style: italic;
     }
+
+    /* Comparison Section */
+    .comparison-row {
+      background: #f8f9fa !important;
+      border-top: 2px solid #bbae97;
+    }
+    
+    .comparison-container {
+      padding: 20px;
+    }
+    
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 10px;
+    }
+    
+    .comparison-card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .comparison-card h4 {
+      margin: 0 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+    }
+    
+    .comparison-card.original h4 {
+      color: #6c757d;
+    }
+    
+    .comparison-card.modified h4 {
+      color: #28a745;
+    }
+    
+    .comparison-field {
+      margin-bottom: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      background: #f8f9fa;
+    }
+    
+    .comparison-field.changed {
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+    }
+    
+    .comparison-field-label {
+      font-weight: 600;
+      color: #495057;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .comparison-field-value {
+      color: #212529;
+      font-size: 0.95rem;
+    }
+    
+    .comparison-field.changed .comparison-field-value {
+      font-weight: 600;
+      color: #d63384;
+    }
+    
+    .change-indicator {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      background: #ffc107;
+      color: #000;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
     
     /* Responsive Table */
     @media (max-width: 1200px) {
@@ -164,6 +249,9 @@ ob_start();
       }
       .modern-table {
         min-width: 1000px;
+      }
+      .comparison-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -245,32 +333,42 @@ ob_start();
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Nombre</th>
-                <th>CI</th>
-                <th>Celular</th>
-                <th>Dirección</th>
-                <th>Nacimiento</th>
-                <th>Email</th>
-                <th>Creado</th>
-                <th>Tipo</th>
+                <th>Usuario</th>
+                <th>Fecha Solicitud</th>
                 <th>Acciones</th>
             </tr>
-            </thead>
-            <tbody>
-            <?php if (empty($changes)): ?>
-            <tr><td colspan="10" class="empty-state">No hay modificaciones pendientes</td></tr>
-            <?php else: foreach ($changes as $c): ?>
-            <tr>
-                <td><?= (int)($c['idPartnerOnline'] ?? 0) ?></td>
-                <td><?= htmlspecialchars($c['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['ci'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['cellPhoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['address'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['birthday'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars($c['dateCreation'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                <td>Modificación</td>
-                <td class="action-cell">
+        </thead>
+        <tbody>
+        <?php if (empty($changes)): ?>
+        <tr><td colspan="4" class="empty-state">No hay modificaciones pendientes</td></tr>
+        <?php else: 
+            require_once __DIR__ . '/../../Models/Partner.php';
+            $partnerModel = new Partner();
+            
+            foreach ($changes as $c): 
+                $idUser = (int)($c['idUser'] ?? 0);
+                $originalData = null;
+                
+                // Obtener datos originales del socio
+                if ($idUser > 0) {
+                    require_once __DIR__ . '/../../Models/Usuario.php';
+                    $userModel = new Usuario();
+                    $user = $userModel->findById($idUser);
+                    
+                    if ($user && !empty($user['idPartner'])) {
+                        $originalData = $partnerModel->findById((int)$user['idPartner']);
+                    }
+                }
+        ?>
+        <!-- Fila principal con resumen -->
+        <tr>
+            <td><?= (int)($c['idPartnerOnline'] ?? 0) ?></td>
+            <td>
+                <strong><?= htmlspecialchars($c['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></strong><br>
+                <small style="color: #6c757d;">CI: <?= htmlspecialchars($c['ci'] ?? '', ENT_QUOTES, 'UTF-8') ?></small>
+            </td>
+            <td><?= htmlspecialchars($c['dateCreation'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="action-cell">
                 <div class="action-buttons">
                     <form action="<?= u('partnerOnline/approveChanges') ?>" method="post" class="approve-form">
                         <input type="hidden" name="id" value="<?= (int)($c['idPartnerOnline'] ?? 0) ?>">
@@ -285,10 +383,146 @@ ob_start();
                         </button>
                     </form>
                 </div>
-                </td>
-            </tr>
-            <?php endforeach; endif; ?>
-            </tbody>
+            </td>
+        </tr>
+        
+        <!-- Fila de comparación -->
+        <tr class="comparison-row">
+            <td colspan="4">
+                <div class="comparison-container">
+                    <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 1.1rem;">
+                        <i class="fas fa-exchange-alt"></i> Comparación de Cambios Solicitados
+                    </h3>
+                    
+                    <?php if ($originalData): ?>
+                    <div class="comparison-grid">
+                        <!-- DATOS ORIGINALES -->
+                        <div class="comparison-card original">
+                            <h4>
+                                <i class="fas fa-database"></i>
+                                Datos Actuales
+                            </h4>
+                            
+                            <div class="comparison-field <?= ($originalData['name'] !== $c['name']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Nombre Completo
+                                    <?= ($originalData['name'] !== $c['name']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($originalData['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['ci'] !== $c['ci']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Cédula de Identidad
+                                    <?= ($originalData['ci'] !== $c['ci']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($originalData['ci'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['cellPhoneNumber'] !== $c['cellPhoneNumber']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Número de Celular
+                                    <?= ($originalData['cellPhoneNumber'] !== $c['cellPhoneNumber']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($originalData['cellPhoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['address'] !== $c['address']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Dirección
+                                    <?= ($originalData['address'] !== $c['address']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($originalData['address'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['birthday'] !== $c['birthday']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Fecha de Nacimiento
+                                    <?= ($originalData['birthday'] !== $c['birthday']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($originalData['birthday'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- DATOS NUEVOS -->
+                        <div class="comparison-card modified">
+                            <h4>
+                                <i class="fas fa-edit"></i>
+                                Cambios Solicitados
+                            </h4>
+                            
+                            <div class="comparison-field <?= ($originalData['name'] !== $c['name']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Nombre Completo
+                                    <?= ($originalData['name'] !== $c['name']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($c['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['ci'] !== $c['ci']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Cédula de Identidad
+                                    <?= ($originalData['ci'] !== $c['ci']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($c['ci'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['cellPhoneNumber'] !== $c['cellPhoneNumber']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Número de Celular
+                                    <?= ($originalData['cellPhoneNumber'] !== $c['cellPhoneNumber']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($c['cellPhoneNumber'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['address'] !== $c['address']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Dirección
+                                    <?= ($originalData['address'] !== $c['address']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($c['address'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-field <?= ($originalData['birthday'] !== $c['birthday']) ? 'changed' : '' ?>">
+                                <div class="comparison-field-label">
+                                    Fecha de Nacimiento
+                                    <?= ($originalData['birthday'] !== $c['birthday']) ? '<span class="change-indicator">Modificado</span>' : '' ?>
+                                </div>
+                                <div class="comparison-field-value">
+                                    <?= htmlspecialchars($c['birthday'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div style="padding: 20px; text-align: center; color: #dc3545; background: #f8d7da; border-radius: 8px; border: 1px solid #f5c6cb;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        No se pudieron cargar los datos originales del socio
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </td>
+        </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
     </table>
   </div>
 
