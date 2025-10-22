@@ -195,24 +195,25 @@ require_once __DIR__ . '/../Models/Competence.php';
                         $updated = $paymentModel->updateMultiplePaymentStatus($ids, 0); // 0 = Aprobado
                         if ($updated > 0) {
                             // Generar el recibo y redirigir
-                    $_SESSION['success'] = "Se procesaron {$updated} pagos correctamente.";
-                    
-                    $_SESSION['receipt_payment_ids'] = $ids;
-                    
-                    if (!empty($errors)) {
-                        $_SESSION['success'] .= " Errores: " . implode(', ', $errors);
-                    }
-                    
-                    $this->redirect('cobros/recibo');
-                    return;
+                            $_SESSION['success'] = "Se procesaron {$updated} pagos correctamente.";
+                            
+                            $_SESSION['receipt_payment_ids'] = $ids;
+                            
+                            if (!empty($errors)) {
+                                $_SESSION['success'] .= " Errores: " . implode(', ', $errors);
+                            }
+                            
+                            $this->redirect('cobros/recibo');
+                            return;
                         } else {
                             // Concatenar los IDs en el mensaje de error
-        $idsString = implode(', ', $ids);
-        throw new \Exception("No se pudieron aprobar los pagos con IDs: $idsString. Verifica los estados o los datos enviados.");}
+                            $idsString = implode(', ', $ids);
+                            throw new \Exception("No se pudieron aprobar los pagos con IDs: $idsString. Verifica los estados o los datos enviados.");}
                     } else {
-                        $updated = $paymentModel->updateMultiplePaymentStatus($ids, 2); // 2 = Rechazado
-                        if ($updated > 0) {
-                            $_SESSION['payment_success'] = "$updated pagos rechazados exitosamente.";
+                        // CAMBIO: Eliminar en lugar de cambiar estado
+                        $deleted = $paymentModel->deleteMultiplePayments($ids);
+                        if ($deleted > 0) {
+                            $_SESSION['payment_success'] = "$deleted pagos rechazados y eliminados. Los socios podrán volver a intentar los pagos.";
                         } else {
                             throw new \Exception("No se pudieron rechazar los pagos.");
                         }
