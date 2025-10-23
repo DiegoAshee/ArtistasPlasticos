@@ -35,15 +35,12 @@ public function getPendingByPartner(int $idPartner, ?string $year = null, int $p
             LEFT JOIN (
                 SELECT idContribution, SUM(paidAmount) AS sum_paid
                 FROM " . self::TBL_PAYMENT . "
-                WHERE idPartner = :idPartner
+                WHERE idPartner = :idPartner1
                 GROUP BY idContribution
             ) p ON p.idContribution = c.idContribution
+            JOIN " . self::TBL_PARTNER . " pa ON pa.idPartner = :idPartner2
             WHERE (p.sum_paid IS NULL OR p.sum_paid < c.amount)
-              AND STR_TO_DATE(c.monthYear, '%Y-%m') >= DATE_FORMAT((
-                SELECT pa.dateRegistration 
-                FROM " . self::TBL_PARTNER . " pa 
-                WHERE pa.idPartner = :idPartner
-              ), '%Y-%m-01')
+              AND c.monthYear >= DATE_FORMAT(pa.dateRegistration, '%Y-%m')
         ";
 
         // Filtro por año si se proporciona
@@ -51,27 +48,36 @@ public function getPendingByPartner(int $idPartner, ?string $year = null, int $p
             $query .= " AND YEAR(STR_TO_DATE(c.monthYear, '%Y-%m')) = :year";
         }
 
-        // Ordenar desde el más antiguo al más reciente (ASC en lugar de DESC)
+        // Ordenar desde el más antiguo al más reciente
         $query .= "
             ORDER BY STR_TO_DATE(c.monthYear, '%Y-%m') ASC
-            LIMIT :offset, :limit
+            LIMIT :limit OFFSET :offset
         ";
 
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':idPartner', $idPartner, PDO::PARAM_INT);
+        
+        // Usar bindValue en lugar de bindParam para valores repetidos
+        $stmt->bindValue(':idPartner1', $idPartner, PDO::PARAM_INT);
+        $stmt->bindValue(':idPartner2', $idPartner, PDO::PARAM_INT);
+        
         if ($year) {
-            $stmt->bindParam(':year', $year, PDO::PARAM_STR);
+            $stmt->bindValue(':year', $year, PDO::PARAM_STR);
         }
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        
         $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $total = (int)$this->db->query("SELECT FOUND_ROWS()")->fetchColumn();
 
         return ['data' => $data, 'total' => $total];
+        
     } catch (PDOException $e) {
         error_log("Error al obtener pagos pendientes: " . $e->getMessage());
+        error_log("Query: " . ($query ?? 'N/A'));
+        error_log("Params: idPartner=$idPartner, year=" . ($year ?? 'NULL') . ", page=$page, pageSize=$pageSize");
         return ['data' => [], 'total' => 0];
     }
 }
@@ -83,7 +89,12 @@ public function getPendingByPartner(int $idPartner, ?string $year = null, int $p
             $query = "
                 SELECT DISTINCT YEAR(STR_TO_DATE(monthYear, '%Y-%m')) as year
                 FROM " . self::TBL_CONTRIBUTION . "
-                WHERE idPartner = :idPartner
+                WHERE STR_TO_DATE(monthYear, '%Y-%m') >= (
+                SELECT DATE_FORMAT(pa.dateRegistration, '%Y-%m-01')
+                FROM partner pa
+                WHERE pa.idPartner = :idPartner
+                LIMIT 1
+            )
                 ORDER BY year DESC
             ";
             $stmt = $this->db->prepare($query);
@@ -748,4 +759,75 @@ public function getPaymentStats(): array {
         return 0;
     }
 }
+    /**
+     * ELIMINAR un pago rechazado
+     * Se usa en lugar de actualizar el estado a rechazado
+     */
+    public function deletePayment(int $idPayment): bool {
+        try {
+            $query = "DELETE FROM " . self::TBL_PAYMENT . " WHERE idPayment = :idPayment";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':idPayment', $idPayment, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error al eliminar pago: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ELIMINAR múltiples pagos rechazados
+     */
+    public function deleteMultiplePayments(array $paymentIds): int {
+        error_log("Deleting payments: " . print_r($paymentIds, true));
+        if (empty($paymentIds)) {
+            return 0;
+        }
+        try {
+            $this->db->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($paymentIds), '?'));
+            $query = "DELETE FROM " . self::TBL_PAYMENT . " WHERE idPayment IN ($placeholders)";
+            error_log("Query: $query");
+            $stmt = $this->db->prepare($query);
+            error_log("Params: " . print_r($paymentIds, true));
+            $stmt->execute($paymentIds);
+            $deleted = $stmt->rowCount();
+            $this->db->commit();
+            return $deleted;
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            error_log("Error al eliminar múltiples pagos: " . $e->getMessage());
+            return 0;
+        }
+    }
+    /**
+     * Obtener total pagado para mostrar en historial
+     */
+    public function getTotalPaidInHistory(int $idPartner, ?string $year = null): float {
+        try {
+            $query = "
+                SELECT COALESCE(SUM(p.paidAmount), 0) as total_paid
+                FROM " . self::TBL_PAYMENT . " p
+                INNER JOIN " . self::TBL_CONTRIBUTION . " c ON p.idContribution = c.idContribution
+                WHERE p.idPartner = :idPartner AND p.paymentStatus = 0
+            ";
+
+            if ($year) {
+                $query .= " AND YEAR(STR_TO_DATE(c.monthYear, '%Y-%m')) = :year";
+            }
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':idPartner', $idPartner, PDO::PARAM_INT);
+            if ($year) {
+                $stmt->bindValue(':year', (int)$year, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (float)($result['total_paid'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error al obtener total pagado: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
 }

@@ -107,6 +107,29 @@ public function getUserByIdPartner(int $idPartner): ?array
         return null;
     }
 }
+/**
+ * Obtener usuario por idPartner - CORREGIDO
+ */
+public function getPartnerByIdUser(int $idUser): ?array
+{
+    try {
+        // CORREGIDO: usar u.idPartner en lugar de u.idUser
+        $sql = "SELECT u.*, r.rol as rolName, p.*
+                FROM user u
+                LEFT JOIN partner p ON p.idPartner = u.idPartner
+                LEFT JOIN rol r ON u.idRol = r.idRol
+                WHERE u.idUser = :idUser AND u.status != 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':idUser', $idUser, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ?: null;
+    } catch (\PDOException $e) {
+        error_log('Partner::getUserByIdPartner error: ' . $e->getMessage());
+        return null;
+    }
+}
 
 /**
  * Desbloquear usuario (para administradores) - MEJORADO

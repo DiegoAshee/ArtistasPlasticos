@@ -467,15 +467,17 @@ ob_start();
                 <select id="year" name="year">
                     <option value="">Todos los años</option>
                     <?php
-                    // Obtener años disponibles desde 2000 hasta el año actual
-                    $currentYear = date('Y');
-                    $startYear = 2000;
-                    for ($y = $currentYear; $y >= $startYear; $y--): ?>
-                        <option value="<?= $y ?>" <?= (isset($filters['year']) && $filters['year'] == $y) ? 'selected' : '' ?>>
-                            <?= $y ?>
-                        </option>
-                    <?php endfor; ?>
+                    if (!empty($availableYears)) {
+                        foreach ($availableYears as $y): ?>
+                            <option value="<?= $y ?>" <?= (isset($filters['year']) && $filters['year'] == $y) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($y) ?>
+                            </option>
+                        <?php endforeach;
+                    } else { ?>
+                        <option disabled>No hay años disponibles</option>
+                    <?php } ?>
                 </select>
+
             </div>
             
             <div class="form-group">

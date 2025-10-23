@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/Payment.php';
 require_once __DIR__ . '/../Models/Usuario.php';
+require_once __DIR__ . '/../Models/Notification.php';
 require_once __DIR__ . '/../Config/helpers.php';
 
 class PartnerPaymentController extends BaseController
@@ -225,6 +226,12 @@ class PartnerPaymentController extends BaseController
 
     $totals = $paymentModel->getTotalsByPartner($idPartner);
 
+    // NUEVO: Obtener total pagado en el historial filtrado
+     $totalPaidInHistory = $paymentModel->getTotalPaidInHistory($idPartner, $yearFilter);
+
+    // Obtener años disponibles
+    $availableYears = $paymentModel->getAvailableYears($idPartner);
+
     $success = $_SESSION['payment_success'] ?? null;
     $error = $_SESSION['payment_error'] ?? null;
     unset($_SESSION['payment_success'], $_SESSION['payment_error']);
@@ -242,6 +249,8 @@ class PartnerPaymentController extends BaseController
     $this->view('partner/payment-history', [
         'historyPayments' => $historyPayments,
         'totals' => $totals,
+        'totalPaidInHistory' => $totalPaidInHistory, // NUEVO
+        'availableYears' => $availableYears, // NUEVO
         'yearFilter' => $yearFilter, // Cambio: pasamos yearFilter
         'filters' => $filters,
         'menuOptions' => $menuOptions,
