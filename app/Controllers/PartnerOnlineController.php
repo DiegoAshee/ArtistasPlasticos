@@ -89,7 +89,7 @@ public function pending(): void
 {
     $this->startSession();
     if (!isset($_SESSION['user_id'])) { $this->redirect('login'); return; }
-    requireRole([1,6], 'login');
+    requireRole([1,6], '../homepage');
     // Menú dinámico desde BD
     require_once __DIR__ . '/../Models/Competence.php';
     $roleId      = (int)($_SESSION['role'] ?? 2);
@@ -145,7 +145,7 @@ public function approveChanges(): void
         $this->redirect('login'); 
         return; 
     }
-    requireRole([1,6], 'login');
+    requireRole([1,6], '../homepage');
     
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
         $this->redirect('partnerOnline/pending'); 
@@ -302,7 +302,7 @@ public function approve(): void
         $this->redirect('login'); 
         return; 
     }
-    requireRole([1,6], 'login');
+    requireRole([1,6], '../homepage');
     
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
         $this->redirect('partnerOnline/pending'); 
@@ -602,7 +602,7 @@ public function disapprove(): void
         $this->redirect('login'); 
         return; 
     }
-    requireRole([1,6], 'login');
+    requireRole([1,6], '../homepage');
     
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
         $this->redirect('partnerOnline/pending'); 

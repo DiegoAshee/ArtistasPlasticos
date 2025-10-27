@@ -16,16 +16,26 @@ $route = $_GET['url'] ?? 'login';
 
 // 👇 Definimos qué roles pueden acceder a cada ruta
 $protectedRoutes = [
-    'dashboard' => [1, 2, 3], // todos los roles logueados
+    'dashboard' => [1, 2, 3],
+    'homepage' => [1, 2, 3], // todos los roles logueados
+    'home' => [1, 2, 3],     // alias de homepage
+    'index' => [1, 2, 3],    // alias de homepage
     'role/list' => [1],       // solo admin
     'users/list' => [1],       // solo admin
     'partner'   => [3,6],       // solo socios conceptos/list
     'conceptos/list/create'   => [1],
+    // Las rutas about y contact pueden ser públicas o según necesites
 ];
+
 
 // Validar permisos automáticamente
 checkRoutePermissions($route, $protectedRoutes);
-
+/*
+|--------------------------------------------------------------------------
+| RUTAS DE HOMEPAGE
+|--------------------------------------------------------------------------
+*/
+$router->addRoute('GET', '/homepage', 'HomeController', 'homepage');
 /*
 |--------------------------------------------------------------------------
 | RUTAS DE AUTENTICACIÓN

@@ -20,7 +20,7 @@ class AuthController extends BaseController
                 $this->redirect('change-password');
                 return;
             }
-            $this->redirect('dashboard');
+            $this->redirect('homepage');
             return;
         }
 

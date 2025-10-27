@@ -37,7 +37,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         $roleId = (int)($_SESSION['role'] ?? 2);
         $competenceModel = new \Competence();
@@ -110,7 +110,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         // Obtener el tipo de movimiento (ingreso o egreso) si se proporciona
         $movementType = $_GET['type'] ?? null;
@@ -171,7 +171,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('movement/create');
@@ -244,7 +244,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         // Sidebar menu options
         require_once __DIR__ . '/../Models/Competence.php';
@@ -292,7 +292,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect("movement/edit/{$id}");
@@ -361,7 +361,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         // Obtener opciones del menú para la barra lateral
         require_once __DIR__ . '/../Models/Competence.php';
@@ -429,7 +429,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect("movement/delete/{$id}");
@@ -457,7 +457,7 @@ class MovementController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         // Obtener los filtros
         $startDate = !empty($_GET['start_date']) ? date('Y-m-d', strtotime($_GET['start_date'])) : date('Y-m-01');
@@ -534,7 +534,7 @@ class MovementController extends BaseController
         }
         
         // Verificar permisos (1 = admin, 2 = usuario normal, etc.)
-        requireRole([1, 2], 'login');
+        requireRole([1, 2], '../homepage');
 
         $roleId = (int)($_SESSION['role'] ?? 2);
         $userId = (int)$_SESSION['user_id'];

@@ -16,7 +16,7 @@ class ConceptController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new \Competence())->getByRole($roleId);
 
@@ -49,7 +49,7 @@ class ConceptController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new \Competence())->getByRole($roleId);
 
@@ -70,7 +70,7 @@ class ConceptController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('conceptos/create');
             return;
@@ -103,7 +103,7 @@ class ConceptController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         $roleId = (int)($_SESSION['role'] ?? 2);
         $menuOptions = (new \Competence())->getByRole($roleId);
 
@@ -163,7 +163,7 @@ class ConceptController extends BaseController
         $this->redirect('login');
         return;
     }
-    requireRole([1], 'login');
+    requireRole([1], '../homepage');
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         $this->redirect("conceptos/edit/{$id}");
         return;
@@ -194,7 +194,7 @@ class ConceptController extends BaseController
         $this->redirect('login');
         return;
     }
-    requireRole([1], 'login');
+    requireRole([1], '../homepage');
 
     $model = new \Concept();
     $model->delete($id);

@@ -15,7 +15,7 @@ class PaymentController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         // Obtener idPartner del usuario logueado
         $userModel = new Usuario();

@@ -16,7 +16,7 @@ class RoleController extends BaseController
             return;
         }
 
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
