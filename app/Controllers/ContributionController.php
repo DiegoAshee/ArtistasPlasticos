@@ -16,7 +16,7 @@ class ContributionController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
@@ -115,7 +115,7 @@ class ContributionController extends BaseController
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
@@ -210,7 +210,7 @@ public function update(int $id): void
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         require_once __DIR__ . '/../Models/Competence.php';
         $roleId = (int)($_SESSION['role'] ?? 2);
@@ -269,7 +269,7 @@ public function update(int $id): void
             $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         require_once __DIR__ . '/../Models/Contribution.php';
         $contributionModel = new Contribution();

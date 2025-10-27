@@ -22,10 +22,10 @@ class CompetenceController extends BaseController
     public function listAll()
     {
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1) {
-            $this->redirect('dashboard');
+            $this->redirect('login');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         try {
             $competences = $this->competenceModel->listAll();  // Obtiene las competencias a través del modelo
@@ -79,7 +79,7 @@ class CompetenceController extends BaseController
             $this->redirect('dashboard');
             return;
         }
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
 
         $menuOptions = $this->competenceModel->getByRole($_SESSION['role'] ?? 2);
         
@@ -155,7 +155,7 @@ class CompetenceController extends BaseController
     public function update(int $idCompetence, string $name = null)
     {
         $db = Database::singleton()->getConnection();
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         // Si es una petición GET, mostrar el formulario de edición
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             try {
@@ -258,7 +258,7 @@ class CompetenceController extends BaseController
      */
     public function delete(int $idCompetence)
     {
-        requireRole([1], 'login');
+        requireRole([1], '../homepage');
         // Clear any previous output
         if (ob_get_level()) {
             ob_clean();
