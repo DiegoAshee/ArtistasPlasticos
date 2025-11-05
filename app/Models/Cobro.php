@@ -14,7 +14,7 @@ class Cobro {
         return '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
     }
 
-public function searchPagadas(array $f = [], int $page = 1, int $pageSize = 20, ?int &$total = null): array {
+/*public function searchPagadas(array $f = [], int $page = 1, int $pageSize = 20, ?int &$total = null): array {
     $where = [];
     $par   = [];
 
@@ -88,7 +88,7 @@ public function searchPagadas(array $f = [], int $page = 1, int $pageSize = 20, 
     $st->execute();
     return $st->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 }
-
+*/
 public function searchDebidas(array $f = [], int $page = 1, int $pageSize = 20, ?int &$total = null): array {
     $params = [];
     
@@ -238,6 +238,89 @@ public function getDebtDetails(int $idPartner, int $idContribution): ?array
         error_log('Cobro::getDebtDetails '.$e->getMessage());
         return null;
     }
+}
+
+public function searchPagadas(array $f = [], int $page = 1, int $pageSize = 20, ?int &$total = null): array {
+    $where = [];
+    $par   = [];
+
+    if (!empty($f['q'])) {
+        // Busca por nombre socio, CI, tipo (pt.description) y aporte (c.notes)
+        $where[] = "(pr.name LIKE :q OR pr.CI LIKE :q OR pt.description LIKE :q OR c.notes LIKE :q)";
+        $par[':q'] = $this->like($f['q']);
+    }
+    if (!empty($f['idPaymentType'])) {
+        $where[] = "p.idPaymentType = :t";
+        $par[':t'] = (int)$f['idPaymentType'];
+    }
+    if (!empty($f['idContribution'])) {
+        $where[] = "p.idContribution = :c";
+        $par[':c'] = (int)$f['idContribution'];
+    }
+    if (!empty($f['from'])) { $where[] = "p.dateCreation >= :from"; $par[':from'] = $f['from'].' 00:00:00'; }
+    if (!empty($f['to']))   { $where[] = "p.dateCreation <= :to";   $par[':to']   = $f['to'].' 23:59:59'; }
+    
+    if (!empty($f['idPartner'])) {
+        $where[] = "p.idPartner = :pid";
+        $par[':pid'] = (int)$f['idPartner'];
+    }
+
+    $whereSql = $where ? ('WHERE '.implode(' AND ', $where)) : '';
+
+    // Determinar el ordenamiento
+    $sortDir = strtoupper($f['sortDir'] ?? 'DESC');
+    if (!in_array($sortDir, ['ASC', 'DESC'])) {
+        $sortDir = 'DESC';
+    }
+    
+    $orderBy = "p.idPayment {$sortDir}"; // Por defecto: fecha
+    if (!empty($f['orderBy']) && $f['orderBy'] === 'contribution') {
+        $orderBy = "c.idContribution {$sortDir}, p.dateCreation DESC";
+    }
+
+    // 1) Total (para mostrar # de páginas)
+    $sqlCount = "
+      SELECT COUNT(*)
+      FROM payment p
+      LEFT JOIN partner pr     ON pr.idPartner     = p.idPartner
+      LEFT JOIN paymenttype pt ON pt.idPaymentType = p.idPaymentType
+      LEFT JOIN contribution c ON c.idContribution = p.idContribution
+      $whereSql
+    ";
+    $st = $this->db->prepare($sqlCount);
+    foreach ($par as $k=>$v) $st->bindValue($k,$v);
+    $st->execute();
+    $total = (int)$st->fetchColumn();
+
+    // 2) Datos paginados
+    $offset = max(0, ($page-1) * $pageSize);
+    $sql = "
+      SELECT
+        p.idPayment, p.paidAmount, p.dateCreation, p.paymentStatus,
+        p.idPartner, pr.name AS partnerName, pr.CI AS partnerCI,
+        p.idPaymentType, pt.description AS paymentTypeName,
+        p.idContribution, c.notes AS contributionName,
+        CASE 
+            WHEN p.paymentStatus = 1 THEN 'Pendiente'
+            WHEN p.paymentStatus = 0 THEN 'Pagado'
+            WHEN p.paymentStatus = 2 THEN 'Rechazado'
+            ELSE 'Desconocido'
+        END as status_text,
+        1 AS isPaid
+      FROM payment p
+      LEFT JOIN partner pr     ON pr.idPartner     = p.idPartner
+      LEFT JOIN paymenttype pt ON pt.idPaymentType = p.idPaymentType
+      LEFT JOIN contribution c ON c.idContribution = p.idContribution
+      $whereSql
+      ORDER BY $orderBy
+      LIMIT :lim OFFSET :off
+    ";
+    $st = $this->db->prepare($sql);
+    foreach ($par as $k=>$v) $st->bindValue($k,$v);
+    $st->bindValue(':lim', $pageSize, \PDO::PARAM_INT);
+    $st->bindValue(':off', $offset,   \PDO::PARAM_INT);
+    $st->execute();
+    return $st->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 }
 
 

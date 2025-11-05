@@ -10,7 +10,7 @@ $breadcrumbs = [
 $rows     = $rows ?? [];
 $types    = $types ?? [];
 $contribs = $contribs ?? [];
-$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','from'=>'','to'=>'','idPartner'=>''];
+$filters  = $filters ?? ['q'=>'','idPaymentType'=>'','idContribution'=>'','from'=>'','to'=>'','idPartner'=>'','orderBy'=>'','sortDir'=>''];
 
 $page      = (int)($page ?? 1);
 $pageSize  = (int)($pageSize ?? 20);
@@ -20,6 +20,25 @@ $totalPg   = (int)($totalPages ?? 1);
 // Obtener parámetros actuales para mantenerlos en la URL
 $currentQueryParams = $_GET;
 $currentUrl = u('cobros/list?' . http_build_query($currentQueryParams));
+
+// Función para generar URL de ordenamiento
+$mkSortUrl = function($field) use ($currentQueryParams) {
+  $qs = $currentQueryParams;
+  $currentOrder = $qs['orderBy'] ?? 'date';
+  $currentDir = $qs['sortDir'] ?? 'desc';
+  
+  // Si es el mismo campo, alternar dirección
+  if ($currentOrder === $field) {
+    $qs['sortDir'] = $currentDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    // Si es un campo nuevo, establecer descendente por defecto
+    $qs['orderBy'] = $field;
+    $qs['sortDir'] = 'desc';
+  }
+  
+  $qs['page'] = 1; // Resetear a la primera página
+  return u('cobros/list?' . http_build_query($qs));
+};
 
 // helper URL para paginación
 $mkUrl = function(int $p) use ($currentPath, $currentQueryParams) {
@@ -34,6 +53,10 @@ $deudasUrl = 'cobros/debidas';
 if (!empty($filters['idPartner'])) {
   $deudasUrl .= '?idPartner=' . urlencode($filters['idPartner']);
 }
+
+// Obtener orden actual
+$currentOrder = $filters['orderBy'] ?? 'date';
+$currentDir = $filters['sortDir'] ?? 'desc';
 
 ob_start();
 ?>
@@ -99,6 +122,17 @@ ob_start();
   #cobros-root .btn-pay:hover {
     background: #218838 !important;
     border-color: #218838 !important;
+  }
+
+  #cobros-root .btn-info {
+    background: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: #fff !important;
+  }
+  
+  #cobros-root .btn-info:hover {
+    background: #138496 !important;
+    border-color: #138496 !important;
   }
   
   /* Badge mejorado */
@@ -173,6 +207,65 @@ ob_start();
     font-size: 14px;
     text-align: left;
     border: none;
+  }
+
+  /* Encabezados ordenables */
+  #cobros-root .modern-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+
+  #cobros-root .modern-table th.sortable:hover {
+    background: #a89d87;
+  }
+
+  #cobros-root .modern-table th.sortable a {
+    color: #2a2a2a;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #cobros-root .sort-icon {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+  }
+
+  #cobros-root .modern-table th.sortable:hover .sort-icon {
+    opacity: 0.7;
+  }
+
+  #cobros-root .sort-icon.active {
+    opacity: 1 !important;
+  }
+
+  #cobros-root .sort-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+  }
+
+  #cobros-root .sort-arrow.up {
+    border-bottom: 5px solid currentColor;
+  }
+
+  #cobros-root .sort-arrow.down {
+    border-top: 5px solid currentColor;
+  }
+
+  #cobros-root .sort-arrow.active {
+    color: #2a2a2a;
+    opacity: 1;
+  }
+
+  #cobros-root .sort-arrow.inactive {
+    opacity: 0.3;
   }
   
   #cobros-root .modern-table th:first-child {
@@ -274,6 +367,14 @@ ob_start();
         <input type="hidden" name="idPartner" value="<?= htmlspecialchars($filters['idPartner']) ?>">
       <?php endif; ?>
       
+      <!-- Mantener ordenamiento actual -->
+      <?php if (!empty($filters['orderBy'])): ?>
+        <input type="hidden" name="orderBy" value="<?= htmlspecialchars($filters['orderBy']) ?>">
+      <?php endif; ?>
+      <?php if (!empty($filters['sortDir'])): ?>
+        <input type="hidden" name="sortDir" value="<?= htmlspecialchars($filters['sortDir']) ?>">
+      <?php endif; ?>
+      
       <div>
         <label>Tipo de pago</label>
         <select name="idPaymentType" style="min-width:180px;">
@@ -327,9 +428,25 @@ ob_start();
           <th>Quién</th>
           <th>CI</th>
           <th>Tipo de pago</th>
-          <th>Aportación</th>
+          <th class="sortable">
+            <a href="<?= $mkSortUrl('contribution') ?>">
+              Aportación
+              <span class="sort-icon <?= $currentOrder === 'contribution' ? 'active' : '' ?>">
+                <span class="sort-arrow up <?= $currentOrder === 'contribution' && $currentDir === 'asc' ? 'active' : 'inactive' ?>"></span>
+                <span class="sort-arrow down <?= $currentOrder === 'contribution' && $currentDir === 'desc' ? 'active' : 'inactive' ?>"></span>
+              </span>
+            </a>
+          </th>
           <th>Monto</th>
-          <th>Fecha</th>
+          <th class="sortable">
+            <a href="<?= $mkSortUrl('date') ?>">
+              Fecha
+              <span class="sort-icon <?= $currentOrder === 'date' ? 'active' : '' ?>">
+                <span class="sort-arrow up <?= $currentOrder === 'date' && $currentDir === 'asc' ? 'active' : 'inactive' ?>"></span>
+                <span class="sort-arrow down <?= $currentOrder === 'date' && $currentDir === 'desc' ? 'active' : 'inactive' ?>"></span>
+              </span>
+            </a>
+          </th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
@@ -354,29 +471,31 @@ ob_start();
           <td><strong>Bs. <?= number_format((float)($r['paidAmount'] ?? 0), 2, '.', ',') ?></strong></td>
           <td><?= !empty($r['dateCreation']) ? date('d/m/Y H:i', strtotime($r['dateCreation'])) : '-' ?></td>
           <td>
-                                <?php
-                                $statusClass = '';
-                                switch ($r['paymentStatus'] ?? 1) {
-                                    case 1:
-                                        $statusClass = 'status-pending';
-                                        break;
-                                    case 2:
-                                        $statusClass = 'status-approved';
-                                        break;
-                                    case 3:
-                                        $statusClass = 'status-rejected';
-                                        break;
-                                    default:
-                                        $statusClass = 'status-pending';
-                                }
-                                ?>
-                                <span class="status-badge <?= $statusClass ?>">
-                                    <?= htmlspecialchars($r['status_text'] ?? 'Pendiente') ?>
-                                </span>
-                            </td>
+            <?php
+            $statusClass = '';
+            switch ($r['paymentStatus'] ?? 1) {
+                case 1:
+                    $statusClass = 'status-pending';
+                    break;
+                case 2:
+                    $statusClass = 'status-approved';
+                    break;
+                case 3:
+                    $statusClass = 'status-rejected';
+                    break;
+                default:
+                    $statusClass = 'status-pending';
+            }
+            ?>
+            <span class="status-badge <?= $statusClass ?>">
+                <?= htmlspecialchars($r['status_text'] ?? 'Pendiente') ?>
+            </span>
+          </td>
           <td style="white-space: nowrap;">
-            <a href="<?= u('cobros/edit/' . (int)($r['idPayment'] ?? 0) . '?return_url=' . urlencode($currentUrl)) ?>" 
-               title="Editar" class="btn"><i class="fas fa-edit"></i></a>
+            <a href="<?= u('cobros/recibo?paymentId=' . (int)($r['idPayment'] ?? 0)) ?>" 
+               title="Reimprimir Factura" class="btn btn-info">
+              <i class="fas fa-print"></i> Reimprimir
+            </a>
             <a href="#" title="Eliminar"
                class="btn btn-danger delete-btn" 
                data-id="<?= (int)($r['idPayment'] ?? 0) ?>"

@@ -21,7 +21,7 @@ class CobroController extends BaseController
         return [$menuOptions, $roleId];
     }
 
-    private function getFiltersFromGet(): array {
+    /*private function getFiltersFromGet(): array {
         return [
             'q'              => $_GET['q']              ?? '',
             'idPaymentType'  => $_GET['idPaymentType']  ?? '',
@@ -31,7 +31,23 @@ class CobroController extends BaseController
             'onlyLatest'     => isset($_GET['onlyLatest']) ? 1 : 0,
             'idPartner'      => $_GET['idPartner']      ?? '',   // <-- AÑADIR ESTO
         ];
-    }
+    }*/
+
+
+
+    private function getFiltersFromGet(): array {
+    return [
+        'q'              => $_GET['q']              ?? '',
+        'idPaymentType'  => $_GET['idPaymentType']  ?? '',
+        'idContribution' => $_GET['idContribution'] ?? '',
+        'from'           => $_GET['from']           ?? '',
+        'to'             => $_GET['to']             ?? '',
+        'onlyLatest'     => isset($_GET['onlyLatest']) ? 1 : 0,
+        'idPartner'      => $_GET['idPartner']      ?? '',
+        'orderBy'        => $_GET['orderBy']        ?? 'date',
+        'sortDir'        => $_GET['sortDir']        ?? 'desc',
+    ];
+}
 
     private function getPaging(): array {
         $page     = max(1, (int)($_GET['page'] ?? 1));
@@ -505,7 +521,7 @@ private function handleReceiptUpload(array $file, int $partnerId): array
 }
 
 //para recibo
-public function recibo(): void {
+/*public function recibo(): void {
     $this->ensureSession();
     [$menuOptions, $roleId] = $this->menu();
 
@@ -520,6 +536,51 @@ public function recibo(): void {
 
     // Limpiar la sesión después de obtener los datos
     unset($_SESSION['receipt_payment_ids']);
+
+    $m = new \Cobro();
+    $receiptData = $m->getReceiptData($paymentIds);
+    
+    if (!$receiptData) {
+        $_SESSION['error'] = 'Error al generar el recibo.';
+        $this->redirect('cobros/socios');
+        return;
+    }
+
+    $this->view('cobros/recibo', [
+        'menuOptions' => $menuOptions,
+        'currentPath' => 'cobros/recibo',
+        'roleId' => $roleId,
+        'receiptData' => $receiptData
+    ]);
+}*/
+
+//para recibo
+public function recibo(): void {
+    $this->ensureSession();
+    [$menuOptions, $roleId] = $this->menu();
+
+    // Obtener el ID desde GET (reimprimir) o desde sesión (nuevo pago)
+    $paymentId = isset($_GET['paymentId']) ? (int)$_GET['paymentId'] : null;
+    $paymentIds = [];
+    
+    if ($paymentId) {
+        // Reimprimir un pago específico
+        $paymentIds = [$paymentId];
+    } else {
+        // Pago nuevo desde sesión
+        $paymentIds = $_SESSION['receipt_payment_ids'] ?? [];
+    }
+    
+    if (empty($paymentIds)) {
+        $_SESSION['error'] = 'No se encontró información del recibo.';
+        $this->redirect('cobros/socios');
+        return;
+    }
+
+    // Limpiar la sesión después de obtener los datos (solo si era de sesión)
+    if (!$paymentId) {
+        unset($_SESSION['receipt_payment_ids']);
+    }
 
     $m = new \Cobro();
     $receiptData = $m->getReceiptData($paymentIds);
