@@ -88,6 +88,31 @@ class PartnerPaymentController extends BaseController
 
                 if ($paymentModel->processPayment($idContribution, $amount, $methodId, $idPartner, $proofUrl)) {
                     $_SESSION['payment_success'] = "Pago enviado para revisión. Será procesado en 24-48 horas.";
+                    // Include Notification class
+                    require_once __DIR__ . '/../Models/Notification.php';
+                    
+                    // Create a notification for the new contribution
+                    $notificationData = [
+                        'title' => 'Nuevo Solictud de Pago de Socio',
+                        'message' => "Se ha registrado un nueva solicitud de pago de socio",
+                        'type' => 'info',
+                        'data' => json_encode([
+                            'idContribution'             => $idContribution,
+                            'amount'               => $amount,
+                            'idPartner'            => $idPartner,
+                        ]),
+                        'idRol' => 1 // Asegurarse de que el rol esté definido
+                    ];
+
+                    $notification = new \App\Models\Notification();
+                    $notificationId = $notification->create($notificationData);
+                    
+                    if ($notificationId === false) {
+                        error_log("Error: No se pudo crear la notificación para la solicitud de pago");
+                        throw new \Exception("Fallo al crear la notificación de la solicitud de pago");
+                    } else {
+                        error_log("Notificación creada con ID: " . $notificationId);
+                    }
                     $this->redirect('partner/pending-payments');
                     return;
                 } else {
@@ -160,6 +185,31 @@ class PartnerPaymentController extends BaseController
 
                 if ($paymentModel->processMultiplePayments($validContributions, $methodId, $idPartner, $proofUrl)) {
                     $_SESSION['payment_success'] = "Pagos enviados para revisión. Serán procesados en 24-48 horas.";
+                    // Include Notification class
+                    require_once __DIR__ . '/../Models/Notification.php';
+                    
+                    // Create a notification for the new contribution
+                    $notificationData = [
+                        'title' => 'Nuevo Solictud de Pago de Socio',
+                        'message' => "Se ha registrado un nueva solicitud de pago de socio",
+                        'type' => 'info',
+                        'data' => json_encode([
+                            'idContributions'             => $validContributions,
+                            'amount'               => $totalAmount,
+                            'idPartner'            => $idPartner,
+                        ]),
+                        'idRol' => 1 // Asegurarse de que el rol esté definido
+                    ];
+
+                    $notification = new \App\Models\Notification();
+                    $notificationId = $notification->create($notificationData);
+                    
+                    if ($notificationId === false) {
+                        error_log("Error: No se pudo crear la notificación para la solicitud de pago");
+                        throw new \Exception("Fallo al crear la notificación de la solicitud de pago");
+                    } else {
+                        error_log("Notificación creada con ID: " . $notificationId);
+                    }
                     $this->redirect('partner/pending-payments');
                     return;
                 } else {

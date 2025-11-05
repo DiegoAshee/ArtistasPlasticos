@@ -251,7 +251,31 @@ class OnlinePartnerController extends BaseController
         if (!$emailSent) {
             error_log("No se pudo enviar email de confirmación para: " . $record['email']);
         }
+        // Include Notification class
+        require_once __DIR__ . '/../Models/Notification.php';
+        
+        // Create a notification for the new contribution
+        $notificationData = [
+            'title' => 'Nuevo Registro de Solicitud de Socio',
+            'message' => "Se ha registrado un nueva solicitud de socio",
+            'type' => 'info',
+            'data' => json_encode([
+                'name'             => $record['name'],
+                'ci'               => $record['ci'],
+                'email'            => $record['email'],
+            ]),
+            'idRol' => 1 // Asegurarse de que el rol esté definido
+        ];
 
+        $notification = new \App\Models\Notification();
+        $notificationId = $notification->create($notificationData);
+        
+        if ($notificationId === false) {
+            error_log("Error: No se pudo crear la notificación para la solicitud de registro");
+            throw new \Exception("Fallo al crear la notificación de la solicitud de registro");
+        } else {
+            error_log("Notificación creada con ID: " . $notificationId);
+        }
         $this->view('partner/verify', ['success' => 'Correo verificado con éxito. Tu solicitud está en revisión por un administrador.']);
     }
 
