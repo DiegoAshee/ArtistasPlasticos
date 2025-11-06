@@ -555,17 +555,20 @@ private function handleReceiptUpload(array $file, int $partnerId): array
 }*/
 
 //para recibo
+//para recibo
 public function recibo(): void {
     $this->ensureSession();
     [$menuOptions, $roleId] = $this->menu();
 
+    $m = new \Cobro();
+    
     // Obtener el ID desde GET (reimprimir) o desde sesión (nuevo pago)
     $paymentId = isset($_GET['paymentId']) ? (int)$_GET['paymentId'] : null;
     $paymentIds = [];
     
     if ($paymentId) {
-        // Reimprimir un pago específico
-        $paymentIds = [$paymentId];
+        // Reimprimir: obtener el grupo de pagos realizados juntos
+        $paymentIds = $m->getPaymentGroup($paymentId);
     } else {
         // Pago nuevo desde sesión
         $paymentIds = $_SESSION['receipt_payment_ids'] ?? [];
@@ -582,7 +585,6 @@ public function recibo(): void {
         unset($_SESSION['receipt_payment_ids']);
     }
 
-    $m = new \Cobro();
     $receiptData = $m->getReceiptData($paymentIds);
     
     if (!$receiptData) {
