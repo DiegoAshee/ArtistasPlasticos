@@ -334,6 +334,14 @@ class Competence
                 return ['movement/list', 'fas fa-file-invoice'];
 
 
+
+              //Opciones
+            case 'opciones':
+            case 'options':
+            return ['options', 'fas fa-cog'];
+ 
+            
+            
             default:
                 // Si aparece algo desconocido, devuelve link inerte
                 return ['', 'fas fa-circle'];
