@@ -282,6 +282,8 @@ $router->addRoute('POST', '/conceptos/destroy/([0-9]+)','ConceptController', 'de
 
 /*rutas para opciones*/
 // Rutas para Options
+/*rutas para opciones*/
+// Rutas para Options
 $router->addRoute('GET', '/options', 'OptionController', 'index');
 $router->addRoute('GET', '/options/create', 'OptionController', 'create');
 $router->addRoute('POST', '/options/store', 'OptionController', 'store');
@@ -289,6 +291,21 @@ $router->addRoute('GET', '/options/edit', 'OptionController', 'edit');
 $router->addRoute('POST', '/options/update', 'OptionController', 'update');
 $router->addRoute('POST', '/options/activate', 'OptionController', 'activate');
 $router->addRoute('POST', '/options/delete', 'OptionController', 'delete');
+$router->addRoute('GET', '/options/index', 'OptionController', 'index');
+ 
+$router->addRoute('GET','/options','OptionController','index');
+$router->addRoute('GET','/options/index','OptionController','index');
+ 
+$router->addRoute('GET','/options/create','OptionController','create');
+$router->addRoute('POST','/options/store','OptionController','store');
+ 
+$router->addRoute('GET','/options/edit/([0-9]+)','OptionController','edit');
+$router->addRoute('POST','/options/update/([0-9]+)','OptionController','update');
+ 
+$router->addRoute('POST','/options/activate/([0-9]+)','OptionController','activate');
+$router->addRoute('POST','/options/destroy/([0-9]+)','OptionController','destroy');
+ 
+$router->addRoute('POST','/options/delete','OptionController','delete');
 
 //Coneceptos
 //$router->addRoute('GET',  '/conceptos/list',            'CobroController', 'pagadas'); // alias
