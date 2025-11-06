@@ -585,7 +585,7 @@ public function listPartnersWithTotals(array $f = [], int $page = 1, int $pageSi
 }
 
 // Agregar este método al final de la clase Cobro
-public function getReceiptData(array $paymentIds): ?array {
+/*public function getReceiptData(array $paymentIds): ?array {
     try {
         if (empty($paymentIds)) return null;
         
@@ -607,6 +607,97 @@ public function getReceiptData(array $paymentIds): ?array {
             INNER JOIN contribution c ON c.idContribution = p.idContribution
             WHERE p.idPayment IN ($placeholders)
             ORDER BY p.dateCreation DESC
+        ";
+        
+        $st = $this->db->prepare($sql);
+        $st->execute($paymentIds);
+        $payments = $st->fetchAll(\PDO::FETCH_ASSOC);
+        
+        if (empty($payments)) return null;
+        
+        // Calcular totales
+        $totalAmount = array_sum(array_column($payments, 'paidAmount'));
+        
+        return [
+            'payments' => $payments,
+            'partnerName' => $payments[0]['partnerName'],
+            'partnerCI' => $payments[0]['partnerCI'],
+            'paymentTypeName' => $payments[0]['paymentTypeName'],
+            'totalAmount' => $totalAmount,
+            'paymentDate' => $payments[0]['dateCreation'],
+            'receiptNumber' => 'REC-' . str_pad((string)$payments[0]['idPayment'], 6, '0', STR_PAD_LEFT)
+        ];
+        
+    } catch (\PDOException $e) {
+        error_log('Cobro::getReceiptData '.$e->getMessage());
+        return null;
+    }
+}*/
+
+// Método para obtener el grupo de pagos realizados juntos
+public function getPaymentGroup(int $paymentId): array {
+    try {
+        // Primero obtenemos el pago base para conocer fecha y socio
+        $sql = "SELECT idPartner, idPaymentType, dateCreation FROM payment WHERE idPayment = :id";
+        $st = $this->db->prepare($sql);
+        $st->bindValue(':id', $paymentId, \PDO::PARAM_INT);
+        $st->execute();
+        $basePayment = $st->fetch(\PDO::FETCH_ASSOC);
+        
+        if (!$basePayment) return [$paymentId];
+        
+        // Buscamos todos los pagos del mismo socio, mismo tipo, en la misma fecha (± 1 minuto)
+        $sql = "
+            SELECT idPayment 
+            FROM payment 
+            WHERE idPartner = :idPartner 
+            AND idPaymentType = :idPaymentType
+            AND ABS(TIMESTAMPDIFF(SECOND, dateCreation, :dateCreation)) <= 60
+            ORDER BY idPayment ASC
+        ";
+        
+        $st = $this->db->prepare($sql);
+        $st->bindValue(':idPartner', $basePayment['idPartner'], \PDO::PARAM_INT);
+        $st->bindValue(':idPaymentType', $basePayment['idPaymentType'], \PDO::PARAM_INT);
+        $st->bindValue(':dateCreation', $basePayment['dateCreation']);
+        $st->execute();
+        
+        $ids = [];
+        while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
+            $ids[] = (int)$row['idPayment'];
+        }
+        
+        return !empty($ids) ? $ids : [$paymentId];
+        
+    } catch (\PDOException $e) {
+        error_log('Cobro::getPaymentGroup '.$e->getMessage());
+        return [$paymentId];
+    }
+}
+
+// Agregar este método al final de la clase Cobro
+public function getReceiptData(array $paymentIds): ?array {
+    try {
+        if (empty($paymentIds)) return null;
+        
+        $placeholders = implode(',', array_fill(0, count($paymentIds), '?'));
+        
+        $sql = "
+            SELECT 
+                p.idPayment,
+                p.paidAmount,
+                p.dateCreation,
+                pr.name AS partnerName,
+                COALESCE(pr.CI, 'Sin CI') AS partnerCI,
+                pt.description AS paymentTypeName,
+                c.notes AS contributionName,
+                c.monthYear
+            FROM payment p
+            INNER JOIN partner pr ON pr.idPartner = p.idPartner
+            INNER JOIN paymenttype pt ON pt.idPaymentType = p.idPaymentType
+            INNER JOIN contribution c ON c.idContribution = p.idContribution
+            WHERE p.idPayment IN ($placeholders)
+            ORDER BY c.idContribution ASC
         ";
         
         $st = $this->db->prepare($sql);
