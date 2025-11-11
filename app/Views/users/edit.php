@@ -296,32 +296,300 @@ ob_start();
 </div>
 
 <script>
-// Validación básica del formulario
+// Validación en tiempo real para formulario de editar usuario
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const loginInput = document.getElementById('login');
     const emailInput = document.getElementById('email');
+    const roleSelect = document.getElementById('idRol');
+    const passwordInput = document.getElementById('password');
 
+    // Validar login en tiempo real
+    if (loginInput) {
+        loginInput.addEventListener('input', function() {
+            // Permitir solo números y letras (sin espacios)
+            this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
+            
+            if (this.value.length > 0 && this.value.length < 3) {
+                showError(this, 'El login debe tener al menos 3 caracteres');
+            } else if (this.value.length > 20) {
+                this.value = this.value.substring(0, 20);
+                showError(this, 'El login no puede tener más de 20 caracteres');
+            } else {
+                clearError(this);
+            }
+        });
+
+        loginInput.addEventListener('blur', function() {
+            if (this.value.trim().length === 0) {
+                showError(this, 'El login es requerido');
+            }
+        });
+    }
+
+    // Validar email en tiempo real
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (this.value.length > 0 && !emailRegex.test(this.value)) {
+                showError(this, 'Ingrese un correo electrónico válido');
+            } else {
+                clearError(this);
+            }
+        });
+
+        emailInput.addEventListener('blur', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (this.value.trim().length === 0) {
+                showError(this, 'El correo electrónico es requerido');
+            } else if (!emailRegex.test(this.value)) {
+                showError(this, 'El formato del correo no es válido');
+            }
+        });
+    }
+
+    // Validar rol
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            if (this.value === '' || this.value === '0') {
+                showError(this, 'Debe seleccionar un rol');
+            } else {
+                clearError(this);
+            }
+        });
+    }
+
+    // Validar contraseña (si está habilitada)
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            // Solo validar si se está ingresando una contraseña
+            if (this.value.length > 0) {
+                if (this.value.length < 6) {
+                    showError(this, 'La contraseña debe tener al menos 6 caracteres');
+                } else if (this.value.length > 50) {
+                    this.value = this.value.substring(0, 50);
+                    showError(this, 'La contraseña no puede tener más de 50 caracteres');
+                } else if (!/[A-Z]/.test(this.value)) {
+                    showError(this, 'La contraseña debe contener al menos una mayúscula');
+                } else if (!/[a-z]/.test(this.value)) {
+                    showError(this, 'La contraseña debe contener al menos una minúscula');
+                } else if (!/[0-9]/.test(this.value)) {
+                    showError(this, 'La contraseña debe contener al menos un número');
+                } else {
+                    clearError(this);
+                }
+            } else {
+                clearError(this);
+            }
+        });
+    }
+
+    // Validación al enviar el formulario
     form.addEventListener('submit', function(e) {
-        let errors = [];
+        let isValid = true;
+        const errors = [];
 
         // Validar login
-        if (loginInput.value.trim().length < 3) {
-            errors.push('El login debe tener al menos 3 caracteres');
+        if (loginInput) {
+            const loginValue = loginInput.value.trim();
+            
+            if (loginValue.length === 0) {
+                errors.push('El login es requerido');
+                isValid = false;
+                showError(loginInput, 'Campo requerido');
+            } else if (loginValue.length < 3) {
+                errors.push('El login debe tener al menos 3 caracteres');
+                isValid = false;
+                showError(loginInput, 'Login muy corto');
+            } else if (loginValue.length > 20) {
+                errors.push('El login no puede tener más de 20 caracteres');
+                isValid = false;
+                showError(loginInput, 'Login muy largo');
+            } else if (!/^[a-zA-Z0-9]+$/.test(loginValue)) {
+                errors.push('El login solo puede contener letras y números');
+                isValid = false;
+                showError(loginInput, 'Caracteres no válidos');
+            }
         }
 
         // Validar email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailInput.value.trim())) {
-            errors.push('El email debe ser válido');
+        if (emailInput) {
+            const emailValue = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (emailValue.length === 0) {
+                errors.push('El correo electrónico es requerido');
+                isValid = false;
+                showError(emailInput, 'Campo requerido');
+            } else if (!emailRegex.test(emailValue)) {
+                errors.push('El correo electrónico no es válido');
+                isValid = false;
+                showError(emailInput, 'Email inválido');
+            } else if (emailValue.length > 100) {
+                errors.push('El correo electrónico es demasiado largo');
+                isValid = false;
+                showError(emailInput, 'Email muy largo');
+            }
         }
 
-        if (errors.length > 0) {
+        // Validar rol
+        if (roleSelect) {
+            const roleValue = roleSelect.value;
+            
+            if (roleValue === '' || roleValue === '0') {
+                errors.push('Debe seleccionar un rol');
+                isValid = false;
+                showError(roleSelect, 'Seleccione un rol');
+            }
+        }
+
+        // Validar contraseña (solo si se está cambiando)
+        if (passwordInput && passwordInput.value.length > 0) {
+            const passwordValue = passwordInput.value;
+            
+            if (passwordValue.length < 6) {
+                errors.push('La contraseña debe tener al menos 6 caracteres');
+                isValid = false;
+                showError(passwordInput, 'Contraseña muy corta');
+            } else if (passwordValue.length > 50) {
+                errors.push('La contraseña no puede tener más de 50 caracteres');
+                isValid = false;
+                showError(passwordInput, 'Contraseña muy larga');
+            } else if (!/[A-Z]/.test(passwordValue)) {
+                errors.push('La contraseña debe contener al menos una mayúscula');
+                isValid = false;
+                showError(passwordInput, 'Falta mayúscula');
+            } else if (!/[a-z]/.test(passwordValue)) {
+                errors.push('La contraseña debe contener al menos una minúscula');
+                isValid = false;
+                showError(passwordInput, 'Falta minúscula');
+            } else if (!/[0-9]/.test(passwordValue)) {
+                errors.push('La contraseña debe contener al menos un número');
+                isValid = false;
+                showError(passwordInput, 'Falta número');
+            }
+        }
+
+        if (!isValid) {
             e.preventDefault();
-            alert('Errores:\n- ' + errors.join('\n- '));
+            
+            // Mostrar resumen de errores
+            const errorSummary = document.createElement('div');
+            errorSummary.className = 'error-message';
+            errorSummary.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Por favor corrija los siguientes errores:</strong>
+                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            // Eliminar mensajes de error anteriores
+            const oldError = document.querySelector('.error-message');
+            if (oldError) {
+                oldError.remove();
+            }
+            
+            // Insertar el nuevo mensaje de error
+            const editTitle = document.querySelector('.edit-title');
+            editTitle.parentNode.insertBefore(errorSummary, editTitle.nextSibling);
+            
+            // Scroll al primer error
+            errorSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
+
+    // Prevenir espacios en el campo de login
+    if (loginInput) {
+        loginInput.addEventListener('keydown', function(e) {
+            if (e.key === ' ') {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Trimear email al perder el foco
+    if (emailInput) {
+        emailInput.addEventListener('blur', function() {
+            this.value = this.value.trim();
+        });
+    }
 });
+
+function showError(input, message) {
+    // Remover error anterior si existe
+    clearError(input);
+    
+    // Agregar clase de error al input
+    input.style.borderColor = '#dc2626';
+    input.style.backgroundColor = '#fef2f2';
+    
+    // Crear mensaje de error
+    const errorMsg = document.createElement('small');
+    errorMsg.className = 'field-error';
+    errorMsg.style.color = '#dc2626';
+    errorMsg.style.fontSize = '0.875rem';
+    errorMsg.style.marginTop = '0.25rem';
+    errorMsg.style.display = 'block';
+    errorMsg.style.fontWeight = '500';
+    errorMsg.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+    
+    // Insertar mensaje después del input
+    input.parentNode.appendChild(errorMsg);
+}
+
+function clearError(input) {
+    // Restaurar estilos del input
+    input.style.borderColor = '';
+    input.style.backgroundColor = '';
+    
+    // Remover mensaje de error si existe
+    const errorMsg = input.parentNode.querySelector('.field-error');
+    if (errorMsg) {
+        errorMsg.remove();
+    }
+}
+
+// Confirmar antes de salir si hay cambios sin guardar
+let formChanged = false;
+const form = document.querySelector('form');
+const inputs = form.querySelectorAll('input, select');
+
+inputs.forEach(input => {
+    input.addEventListener('change', function() {
+        formChanged = true;
+    });
+});
+
+// Advertir al usuario si intenta salir sin guardar
+window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
+
+// No advertir si se envía el formulario
+form.addEventListener('submit', function() {
+    formChanged = false;
+});
+
+// No advertir si se hace clic en el botón de volver
+const backButton = document.querySelector('.btn-secondary');
+if (backButton) {
+    backButton.addEventListener('click', function(e) {
+        if (formChanged) {
+            if (!confirm('¿Está seguro de que desea salir? Los cambios no guardados se perderán.')) {
+                e.preventDefault();
+            }
+        }
+    });
+}
 </script>
 
 <?php

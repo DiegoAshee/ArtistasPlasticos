@@ -526,6 +526,440 @@ ob_start();
     </div>
 </div>
 
+
+<script>
+// Validaciones en tiempo real para formulario de editar perfil
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    const ciInput = document.getElementById('ci');
+    const phoneInput = document.getElementById('cellPhoneNumber');
+    const addressInput = document.getElementById('address');
+    const birthdayInput = document.getElementById('birthday');
+    const emailInput = document.getElementById('email');
+
+    // Establecer fecha máxima para el campo de nacimiento (hoy)
+    if (birthdayInput) {
+        const today = new Date().toISOString().split('T')[0];
+        birthdayInput.setAttribute('max', today);
+    }
+
+    // Validar Nombre Completo
+    if (nameInput) {
+        nameInput.addEventListener('input', function() {
+            // Permitir solo letras, espacios, acentos y ñ
+            const nameRegex = /^[a-záéíóúñA-ZÁÉÍÓÚÑ\s]+$/;
+            
+            if (this.value.length > 0 && !nameRegex.test(this.value)) {
+                showError(this, 'El nombre solo puede contener letras y espacios');
+            } else if (this.value.trim().length > 0 && this.value.trim().length < 3) {
+                showError(this, 'El nombre debe tener al menos 3 caracteres');
+            } else if (this.value.length > 100) {
+                this.value = this.value.substring(0, 100);
+                showError(this, 'El nombre no puede tener más de 100 caracteres');
+            } else {
+                clearError(this);
+            }
+        });
+
+        nameInput.addEventListener('blur', function() {
+            const trimmedValue = this.value.trim();
+            this.value = trimmedValue;
+            
+            if (trimmedValue.length === 0) {
+                showError(this, 'El nombre es requerido');
+            } else if (trimmedValue.length < 3) {
+                showError(this, 'El nombre debe tener al menos 3 caracteres');
+            }
+        });
+    }
+
+    // Validar Cédula de Identidad
+    if (ciInput) {
+        ciInput.addEventListener('input', function() {
+            // Solo permitir números
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            if (this.value.length > 0 && this.value.length < 6) {
+                showError(this, 'La CI debe tener al menos 6 dígitos');
+            } else if (this.value.length > 10) {
+                this.value = this.value.substring(0, 10);
+                showError(this, 'La CI no puede tener más de 10 dígitos');
+            } else {
+                clearError(this);
+            }
+        });
+
+        ciInput.addEventListener('blur', function() {
+            if (this.value.length > 0 && (this.value.length < 6 || this.value.length > 10)) {
+                showError(this, 'La CI debe tener entre 6 y 10 dígitos');
+            }
+        });
+    }
+
+    // Validar Teléfono
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function() {
+            // Permitir números, espacios, + y -
+            this.value = this.value.replace(/[^0-9\s\+\-]/g, '');
+            
+            const cleanPhone = this.value.replace(/[\s\-]/g, '');
+            const phoneRegex = /^(\+591\s?)?(6|7)[0-9]{7}$/;
+            
+            if (this.value.length > 0 && !phoneRegex.test(cleanPhone)) {
+                showError(this, 'Ingrese un número celular boliviano válido (ej: 65734215 o +591 65734215)');
+            } else {
+                clearError(this);
+            }
+        });
+
+        phoneInput.addEventListener('blur', function() {
+            const trimmedValue = this.value.trim();
+            this.value = trimmedValue;
+            
+            if (trimmedValue.length === 0) {
+                showError(this, 'El teléfono es requerido');
+            }
+        });
+    }
+
+    // Validar Dirección
+    if (addressInput) {
+        addressInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0 && this.value.trim().length < 10) {
+                showError(this, 'La dirección debe tener al menos 10 caracteres');
+            } else if (this.value.length > 200) {
+                this.value = this.value.substring(0, 200);
+                showError(this, 'La dirección no puede tener más de 200 caracteres');
+            } else {
+                clearError(this);
+            }
+        });
+
+        addressInput.addEventListener('blur', function() {
+            const trimmedValue = this.value.trim();
+            this.value = trimmedValue;
+            
+            if (trimmedValue.length > 0 && trimmedValue.length < 10) {
+                showError(this, 'La dirección debe tener al menos 10 caracteres');
+            }
+        });
+    }
+
+    // Validar Fecha de Nacimiento
+    if (birthdayInput) {
+        birthdayInput.addEventListener('change', function() {
+            if (!this.value) {
+                clearError(this);
+                return;
+            }
+
+            const birthday = new Date(this.value);
+            const today = new Date();
+            
+            // Validar que no sea fecha futura
+            if (birthday > today) {
+                showError(this, 'La fecha de nacimiento no puede ser futura');
+                this.value = '';
+                return;
+            }
+
+            // Calcular edad exacta
+            let age = today.getFullYear() - birthday.getFullYear();
+            const monthDiff = today.getMonth() - birthday.getMonth();
+            const dayDiff = today.getDate() - birthday.getDate();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+                age--;
+            }
+
+            // Validar edad mínima de 15 años
+            if (age < 15) {
+                showError(this, 'Debe tener al menos 15 años de edad');
+                this.value = '';
+            } else if (age > 120) {
+                showError(this, 'La fecha de nacimiento no parece válida');
+                this.value = '';
+            } else {
+                clearError(this);
+            }
+        });
+    }
+
+    // Validar Email
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (this.value.length > 0 && !emailRegex.test(this.value)) {
+                showError(this, 'Ingrese un correo electrónico válido');
+            } else if (this.value.length > 100) {
+                this.value = this.value.substring(0, 100);
+                showError(this, 'El correo no puede tener más de 100 caracteres');
+            } else {
+                clearError(this);
+            }
+        });
+
+        emailInput.addEventListener('blur', function() {
+            const trimmedValue = this.value.trim();
+            this.value = trimmedValue;
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (trimmedValue.length === 0) {
+                showError(this, 'El correo electrónico es requerido');
+            } else if (!emailRegex.test(trimmedValue)) {
+                showError(this, 'El formato del correo no es válido');
+            }
+        });
+    }
+
+    // Validación completa al enviar el formulario
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const errors = [];
+
+        // Validar Nombre
+        if (nameInput) {
+            const nameValue = nameInput.value.trim();
+            const nameRegex = /^[a-záéíóúñA-ZÁÉÍÓÚÑ\s]+$/;
+            
+            if (nameValue.length === 0) {
+                errors.push('El nombre completo es requerido');
+                isValid = false;
+                showError(nameInput, 'Campo requerido');
+            } else if (nameValue.length < 3) {
+                errors.push('El nombre debe tener al menos 3 caracteres');
+                isValid = false;
+                showError(nameInput, 'Nombre muy corto');
+            } else if (!nameRegex.test(nameValue)) {
+                errors.push('El nombre solo puede contener letras y espacios');
+                isValid = false;
+                showError(nameInput, 'Caracteres no válidos');
+            }
+        }
+
+        // Validar CI (opcional pero si se ingresa debe ser válido)
+        if (ciInput && ciInput.value.length > 0) {
+            const ciValue = ciInput.value;
+            
+            if (ciValue.length < 6 || ciValue.length > 10) {
+                errors.push('La CI debe tener entre 6 y 10 dígitos');
+                isValid = false;
+                showError(ciInput, 'CI inválida');
+            }
+        }
+
+        // Validar Teléfono
+        if (phoneInput) {
+            const phoneValue = phoneInput.value.replace(/[\s\-]/g, '');
+            const phoneRegex = /^(\+591\s?)?(6|7)[0-9]{7}$/;
+            
+            if (phoneValue.length === 0) {
+                errors.push('El número de teléfono es requerido');
+                isValid = false;
+                showError(phoneInput, 'Campo requerido');
+            } else if (!phoneRegex.test(phoneValue)) {
+                errors.push('El número de teléfono no es válido (debe ser celular boliviano)');
+                isValid = false;
+                showError(phoneInput, 'Teléfono inválido');
+            }
+        }
+
+        // Validar Dirección (opcional pero si se ingresa debe ser válida)
+        if (addressInput && addressInput.value.trim().length > 0) {
+            const addressValue = addressInput.value.trim();
+            
+            if (addressValue.length < 10) {
+                errors.push('La dirección debe tener al menos 10 caracteres');
+                isValid = false;
+                showError(addressInput, 'Dirección muy corta');
+            }
+        }
+
+        // Validar Fecha de Nacimiento (opcional pero si se ingresa debe ser válida)
+        if (birthdayInput && birthdayInput.value) {
+            const birthday = new Date(birthdayInput.value);
+            const today = new Date();
+            
+            let age = today.getFullYear() - birthday.getFullYear();
+            const monthDiff = today.getMonth() - birthday.getMonth();
+            const dayDiff = today.getDate() - birthday.getDate();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+                age--;
+            }
+
+            if (birthday > today) {
+                errors.push('La fecha de nacimiento no puede ser futura');
+                isValid = false;
+                showError(birthdayInput, 'Fecha inválida');
+            } else if (age < 15) {
+                errors.push('Debe tener al menos 15 años de edad');
+                isValid = false;
+                showError(birthdayInput, 'Edad mínima 15 años');
+            } else if (age > 120) {
+                errors.push('La fecha de nacimiento no parece válida');
+                isValid = false;
+                showError(birthdayInput, 'Fecha no válida');
+            }
+        }
+
+        // Validar Email
+        if (emailInput) {
+            const emailValue = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (emailValue.length === 0) {
+                errors.push('El correo electrónico es requerido');
+                isValid = false;
+                showError(emailInput, 'Campo requerido');
+            } else if (!emailRegex.test(emailValue)) {
+                errors.push('El correo electrónico no es válido');
+                isValid = false;
+                showError(emailInput, 'Email inválido');
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Crear mensaje de error general
+            showErrorSummary(errors);
+            
+            // Scroll al primer campo con error
+            const firstError = form.querySelector('.field-value-edit[style*="border-color: rgb(220, 38, 38)"]');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // Prevenir espacios al inicio en campos de texto
+    [nameInput, ciInput, phoneInput, emailInput].forEach(input => {
+        if (input) {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === ' ' && this.selectionStart === 0) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+
+    // Confirmación antes de cancelar si hay cambios
+    let formChanged = false;
+    const inputs = form.querySelectorAll('input, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            formChanged = true;
+        });
+    });
+
+    const cancelButton = document.querySelector('.btn-cancelar');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', function(e) {
+            if (formChanged) {
+                if (!confirm('¿Está seguro de que desea cancelar? Los cambios no guardados se perderán.')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+
+    // No advertir si se envía el formulario
+    form.addEventListener('submit', function() {
+        formChanged = false;
+    });
+});
+
+function showError(input, message) {
+    // Remover error anterior si existe
+    clearError(input);
+    
+    // Agregar estilo de error al input
+    input.style.borderColor = '#dc2626';
+    input.style.backgroundColor = '#fef2f2';
+    
+    // Ocultar mensajes info/warning existentes
+    const existingMessages = input.parentNode.querySelectorAll('.field-message');
+    existingMessages.forEach(msg => msg.style.display = 'none');
+    
+    // Crear mensaje de error
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'field-message';
+    errorMsg.style.background = 'rgba(239, 68, 68, 0.08)';
+    errorMsg.style.color = '#b91c1c';
+    errorMsg.style.borderLeft = '4px solid #dc2626';
+    errorMsg.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    
+    // Insertar mensaje después del input
+    input.parentNode.appendChild(errorMsg);
+}
+
+function clearError(input) {
+    // Restaurar estilos del input
+    input.style.borderColor = '';
+    input.style.backgroundColor = '';
+    
+    // Remover mensajes de error
+    const errorMessages = input.parentNode.querySelectorAll('.field-message');
+    errorMessages.forEach(msg => {
+        if (msg.style.color === 'rgb(185, 28, 28)' || msg.textContent.includes('exclamation-circle')) {
+            msg.remove();
+        } else {
+            msg.style.display = 'flex'; // Mostrar mensajes info/warning originales
+        }
+    });
+}
+
+function showErrorSummary(errors) {
+    // Remover resumen anterior si existe
+    const oldSummary = document.querySelector('.error-summary-box');
+    if (oldSummary) {
+        oldSummary.remove();
+    }
+    
+    // Crear resumen de errores
+    const errorBox = document.createElement('div');
+    errorBox.className = 'error-summary-box';
+    errorBox.style.cssText = `
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 2px solid #dc2626;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    errorBox.innerHTML = `
+        <div style="display: flex; align-items: start; gap: 1rem;">
+            <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 1.5rem; margin-top: 2px;"></i>
+            <div style="flex: 1;">
+                <h4 style="color: #b91c1c; margin: 0 0 0.75rem 0; font-weight: 700; font-size: 1.1rem;">
+                    Por favor corrija los siguientes errores:
+                </h4>
+                <ul style="margin: 0; padding-left: 1.5rem; color: #991b1b;">
+                    ${errors.map(err => `<li style="margin-bottom: 0.5rem;">${err}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    // Insertar al inicio del formulario
+    const form = document.querySelector('form');
+    const firstSection = form.querySelector('.profile-section');
+    form.insertBefore(errorBox, firstSection);
+    
+    // Scroll al resumen de errores
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+
+
+
 <?php
 // Obtener el contenido del buffer
 $content = ob_get_clean();

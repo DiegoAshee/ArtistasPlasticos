@@ -401,6 +401,240 @@ ob_start();
 </div>
 
 <script>
+// Validación en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    const ciInput = document.getElementById('ci');
+    const emailInput = document.getElementById('email');
+    const cellPhoneInput = document.getElementById('cellPhoneNumber');
+    const birthdayInput = document.getElementById('birthday');
+    const dateRegistrationInput = document.getElementById('dateRegistration');
+    const loginInput = document.getElementById('login');
+    
+    // Sincronizar CI con Login
+    ciInput.addEventListener('input', function() {
+        loginInput.value = this.value;
+    });
+    
+    // Validar edad mínima de 15 años
+    birthdayInput.addEventListener('change', function() {
+        const birthday = new Date(this.value);
+        const today = new Date();
+        const age = today.getFullYear() - birthday.getFullYear();
+        const monthDiff = today.getMonth() - birthday.getMonth();
+        const dayDiff = today.getDate() - birthday.getDate();
+        
+        const exactAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        
+        if (exactAge < 15) {
+            showError(this, 'El socio debe tener al menos 15 años de edad');
+            this.value = '';
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validar que la fecha de nacimiento no sea futura
+    birthdayInput.setAttribute('max', new Date().toISOString().split('T')[0]);
+    
+    // Validar fecha de registro
+    dateRegistrationInput.addEventListener('change', function() {
+        const regDate = new Date(this.value);
+        const today = new Date();
+        
+        if (regDate > today) {
+            showError(this, 'La fecha de registro no puede ser futura');
+            this.value = '';
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validar CI (solo números, mínimo 6 dígitos, máximo 10)
+    ciInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        if (this.value.length > 0 && this.value.length < 6) {
+            showError(this, 'La CI debe tener al menos 6 dígitos');
+        } else if (this.value.length > 10) {
+            this.value = this.value.substring(0, 10);
+            showError(this, 'La CI no puede tener más de 10 dígitos');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validar nombre (solo letras y espacios, mínimo 3 caracteres)
+    nameInput.addEventListener('input', function() {
+        const nameRegex = /^[a-záéíóúñA-ZÁÉÍÓÚÑ\s]+$/;
+        
+        if (this.value.length > 0 && !nameRegex.test(this.value)) {
+            showError(this, 'El nombre solo puede contener letras y espacios');
+        } else if (this.value.length > 0 && this.value.length < 3) {
+            showError(this, 'El nombre debe tener al menos 3 caracteres');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validar email
+    emailInput.addEventListener('input', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (this.value.length > 0 && !emailRegex.test(this.value)) {
+            showError(this, 'Ingrese un correo electrónico válido');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validar teléfono (formato boliviano)
+    cellPhoneInput.addEventListener('input', function() {
+        // Permitir solo números, espacios, + y -
+        this.value = this.value.replace(/[^0-9\s\+\-]/g, '');
+        
+        const phoneRegex = /^(\+591\s?)?(6|7)[0-9]{7}$/;
+        const cleanPhone = this.value.replace(/[\s\-]/g, '');
+        
+        if (this.value.length > 0 && !phoneRegex.test(cleanPhone)) {
+            showError(this, 'Ingrese un número de celular boliviano válido (ej: +591 65734215 o 65734215)');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validación al enviar el formulario
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const errors = [];
+        
+        // Validar nombre
+        if (nameInput.value.trim().length < 3) {
+            errors.push('El nombre debe tener al menos 3 caracteres');
+            isValid = false;
+            showError(nameInput, 'Campo requerido');
+        }
+        
+        // Validar CI
+        if (ciInput.value.length < 6 || ciInput.value.length > 10) {
+            errors.push('La CI debe tener entre 6 y 10 dígitos');
+            isValid = false;
+            showError(ciInput, 'CI inválida');
+        }
+        
+        // Validar email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailInput.value)) {
+            errors.push('El correo electrónico no es válido');
+            isValid = false;
+            showError(emailInput, 'Email inválido');
+        }
+        
+        // Validar teléfono
+        const phoneRegex = /^(\+591\s?)?(6|7)[0-9]{7}$/;
+        const cleanPhone = cellPhoneInput.value.replace(/[\s\-]/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+            errors.push('El número de celular no es válido');
+            isValid = false;
+            showError(cellPhoneInput, 'Teléfono inválido');
+        }
+        
+        // Validar edad
+        const birthday = new Date(birthdayInput.value);
+        const today = new Date();
+        const age = today.getFullYear() - birthday.getFullYear();
+        const monthDiff = today.getMonth() - birthday.getMonth();
+        const dayDiff = today.getDate() - birthday.getDate();
+        const exactAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        
+        if (exactAge < 15) {
+            errors.push('El socio debe tener al menos 15 años de edad');
+            isValid = false;
+            showError(birthdayInput, 'Edad mínima 15 años');
+        }
+        
+        // Validar fecha de registro
+        const regDate = new Date(dateRegistrationInput.value);
+        if (regDate > today) {
+            errors.push('La fecha de registro no puede ser futura');
+            isValid = false;
+            showError(dateRegistrationInput, 'Fecha inválida');
+        }
+        
+        // Validar dirección
+        const addressInput = document.getElementById('address');
+        if (addressInput.value.trim().length < 10) {
+            errors.push('La dirección debe tener al menos 10 caracteres');
+            isValid = false;
+            showError(addressInput, 'Dirección muy corta');
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Mostrar resumen de errores
+            const errorSummary = document.createElement('div');
+            errorSummary.className = 'error-message';
+            errorSummary.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Por favor corrija los siguientes errores:</strong>
+                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            // Eliminar mensajes de error anteriores
+            const oldError = document.querySelector('.error-message');
+            if (oldError) {
+                oldError.remove();
+            }
+            
+            // Insertar el nuevo mensaje de error
+            const editTitle = document.querySelector('.edit-title');
+            editTitle.parentNode.insertBefore(errorSummary, editTitle.nextSibling);
+            
+            // Scroll al primer error
+            errorSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+});
+
+function showError(input, message) {
+    // Remover error anterior si existe
+    clearError(input);
+    
+    // Agregar clase de error al input
+    input.style.borderColor = '#dc2626';
+    input.style.backgroundColor = '#fef2f2';
+    
+    // Crear mensaje de error
+    const errorMsg = document.createElement('small');
+    errorMsg.className = 'field-error';
+    errorMsg.style.color = '#dc2626';
+    errorMsg.style.fontSize = '0.875rem';
+    errorMsg.style.marginTop = '0.25rem';
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = message;
+    
+    // Insertar mensaje después del input
+    input.parentNode.appendChild(errorMsg);
+}
+
+function clearError(input) {
+    // Restaurar estilos del input
+    input.style.borderColor = '';
+    input.style.backgroundColor = '';
+    
+    // Remover mensaje de error si existe
+    const errorMsg = input.parentNode.querySelector('.field-error');
+    if (errorMsg) {
+        errorMsg.remove();
+    }
+}
+
 function previewImage(input, previewId, fileNameId) {
     const preview = document.getElementById(previewId);
     const fileNameElement = document.getElementById(fileNameId);
@@ -417,33 +651,38 @@ function previewImage(input, previewId, fileNameId) {
         // Mostrar el nombre del archivo
         fileNameElement.textContent = file.name;
         
+        // Verificar el tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            alert('Por favor seleccione un archivo de imagen válido (JPG, PNG)');
+            input.value = '';
+            preview.style.display = 'none';
+            fileNameElement.textContent = '';
+            if (currentImage) currentImage.style.display = 'block';
+            if (noImage) noImage.style.display = 'block';
+            return;
+        }
+        
         // Verificar el tamaño del archivo (máximo 2MB)
         if (file.size > 2 * 1024 * 1024) {
             alert('El archivo no puede ser mayor a 2MB');
             input.value = '';
             preview.style.display = 'none';
             fileNameElement.textContent = '';
-            
-            // Mostrar nuevamente la imagen actual o el mensaje de no disponible
             if (currentImage) currentImage.style.display = 'block';
             if (noImage) noImage.style.display = 'block';
             return;
         }
         
-        // Mostrar vista previa para imágenes
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-            }
-            reader.readAsDataURL(file);
+        // Mostrar vista previa
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
         }
+        reader.readAsDataURL(file);
     } else {
         preview.style.display = 'none';
         fileNameElement.textContent = '';
-        
-        // Mostrar nuevamente la imagen actual o el mensaje de no disponible
         if (currentImage) currentImage.style.display = 'block';
         if (noImage) noImage.style.display = 'block';
     }
