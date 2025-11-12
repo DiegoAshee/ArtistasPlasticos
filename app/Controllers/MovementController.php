@@ -197,6 +197,8 @@ class MovementController extends BaseController
             $error = 'El tipo de pago es requerido';
         } elseif (empty($idConcept)) {
             $error = 'El concepto es requerido';
+        } elseif (strtotime($dateCreation) > time()) {
+            $error = 'No se pueden registrar movimientos con fecha futura';
         }
 
         if ($error) {
