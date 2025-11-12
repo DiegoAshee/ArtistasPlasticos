@@ -25,7 +25,7 @@ foreach ($menuOptions as $it) {
 <div class="logo">
   <img src="<?= asset($logo_url) ?>" alt="Logo <?= htmlspecialchars($site_title, ENT_QUOTES, 'UTF-8') ?>">
   <h2><?= htmlspecialchars($site_title, ENT_QUOTES, 'UTF-8') ?></h2>
-  <p class="tagline"><?= htmlspecialchars($tagline, ENT_QUOTES, 'UTF-8') ?></p>
+  
 </div>
 
 <nav class="nav-menu">
