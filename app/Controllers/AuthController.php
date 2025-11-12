@@ -84,7 +84,7 @@ class AuthController extends BaseController
                             }
 
                             // Ir al dashboard si no requiere cambio de contraseña
-                            $this->redirect('dashboard');
+                            $this->redirect('homepage');
                         } else {
                             // Login fallido - incrementar intentos
                             $userModel->incrementFailedAttempts($login);
