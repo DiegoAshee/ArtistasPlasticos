@@ -223,6 +223,24 @@ class OnlinePartnerController extends BaseController
      */
     public function verifyEmail(): void
     {
+       // 🔍 GUARDAR EN ARCHIVO PERSONALIZADO
+    $logFile = __DIR__ . '/../logs/verification_debug.log';
+    $logDir = dirname($logFile);
+    
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0777, true);
+    }
+    
+    $logData = sprintf(
+        "[%s] IP: %s | User-Agent: %s | Token: %s | Referer: %s\n",
+        date('Y-m-d H:i:s'),
+        $_SERVER['REMOTE_ADDR'] ?? 'N/A',
+        $_SERVER['HTTP_USER_AGENT'] ?? 'N/A',
+        substr($_GET['token'] ?? 'N/A', 0, 10) . '...',
+        $_SERVER['HTTP_REFERER'] ?? 'N/A'
+    );
+    
+    file_put_contents($logFile, $logData, FILE_APPEND);
         $token = trim((string)($_GET['token'] ?? ''));
 
         if (!$token) {
