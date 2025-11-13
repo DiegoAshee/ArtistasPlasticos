@@ -104,7 +104,7 @@ class EmailTemplates
                     </a>
                 </div>
                 <p><small>Este enlace expirará en 24 horas.</small></p>
-                <p><small>Si no solicitaste este registro, ignora este correo.</small></p>
+                <p><small>Si no solicitaste este registro o ya te llego un correo confirmando tu registro, ignora este correo.</small></p>
                 <hr style='margin: 30px 0; border: 1px solid #eee;'>
                 <p><strong>Saludos,<br>{$title}</strong></p>
             </div>
@@ -135,15 +135,14 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "Confirmación de solicitud de Registro como socio de {$title}";
+        $subject = "Confirmación de solicitud de registro como socio de {$title}";
 
         // Construir mensaje de contacto si hay teléfono
         $contactInfo = '';
+        $contactInfoText = '';
         if (!empty($contactPhone)) {
             $contactInfo = "<p>Si tienes alguna consulta, puedes comunicarte con nosotros al <strong>{$contactPhone}</strong>.</p>";
             $contactInfoText = "Si tienes alguna consulta, puedes comunicarte con nosotros al {$contactPhone}.\n\n";
-        } else {
-            $contactInfoText = '';
         }
 
         $htmlBody = "
@@ -181,8 +180,9 @@ class EmailTemplates
 
         return compact('subject', 'htmlBody', 'textBody');
     }
-/**
-     * Template para email de cambios de registro
+
+    /**
+     * Template para email de solicitud de cambios de información
      */
     public static function changeInformation(array $data): array
     {
@@ -195,27 +195,28 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "Confirmación de Registro de Solicitud de Cambios de cuanta en {$title}";
+        $subject = "Confirmación de registro de solicitud de cambios de cuenta en {$title}";
 
         // Construir mensaje de contacto si hay teléfono
         $contactInfo = '';
+        $contactInfoText = '';
         if (!empty($contactPhone)) {
             $contactInfo = "<p>Si tienes alguna consulta, puedes comunicarte con nosotros al <strong>{$contactPhone}</strong>.</p>";
             $contactInfoText = "Si tienes alguna consulta, puedes comunicarte con nosotros al {$contactPhone}.\n\n";
-        } else {
-            $contactInfoText = '';
         }
 
         $htmlBody = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <h2 style='color: #28a745;'>¡Hola {$name}!</h2>
-                <p>Tu solicitud de cambios fue recibido exitosamente en {$title}.</p>
+                <p>Tu solicitud de cambios fue recibida exitosamente en {$title}.</p>
                 
                 <div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;'>
-                    <h3 style='margin-top: 0; color: #333;'>Datos registrados:</h3>
+                    <h3 style='margin-top: 0; color: #333;'>Datos solicitados:</h3>
+                    <p><strong>Nombre:</strong> {$name}</p>
                     <p><strong>CI:</strong> {$ci}</p>
                     <p><strong>Correo:</strong> {$email}</p>
                     <p><strong>Celular:</strong> {$cellphone}</p>
+                    <p><strong>Dirección:</strong> {$address}</p>
                     <p><strong>Fecha de nacimiento:</strong> {$birthday}</p>
                 </div>
                 
@@ -227,13 +228,13 @@ class EmailTemplates
         ";
 
         $textBody = "Hola {$name},\n\n" .
-                    "Tu solicitud de cambios fue recibido exitosamente en {$title}.\n\n" .
-                    "DATOS REGISTRADOS:\n" .
+                    "Tu solicitud de cambios fue recibida exitosamente en {$title}.\n\n" .
+                    "DATOS SOLICITADOS:\n" .
                     "Nombre: {$name}\n" .
                     "CI: {$ci}\n" .
-                    "Dirección: {$address}\n" .
                     "Correo: {$email}\n" .
                     "Celular: {$cellphone}\n" .
+                    "Dirección: {$address}\n" .
                     "Fecha de nacimiento: {$birthday}\n\n" .
                     "Nos pondremos en contacto contigo muy pronto.\n\n" .
                     $contactInfoText .
@@ -241,8 +242,9 @@ class EmailTemplates
 
         return compact('subject', 'htmlBody', 'textBody');
     }
+
     /**
-     * Template para email de cambios de registro
+     * Template para email de confirmación de cambios aprobados
      */
     public static function changeConfirmation(array $data): array
     {
@@ -255,50 +257,52 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "Confirmación de Cambios en cuanta de {$title}";
+        $subject = "Confirmación de cambios en cuenta de {$title}";
 
         // Construir mensaje de contacto si hay teléfono
         $contactInfo = '';
+        $contactInfoText = '';
         if (!empty($contactPhone)) {
             $contactInfo = "<p>Si tienes alguna consulta, puedes comunicarte con nosotros al <strong>{$contactPhone}</strong>.</p>";
             $contactInfoText = "Si tienes alguna consulta, puedes comunicarte con nosotros al {$contactPhone}.\n\n";
-        } else {
-            $contactInfoText = '';
         }
 
         $htmlBody = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <h2 style='color: #28a745;'>¡Hola {$name}!</h2>
-                <p>Tu solicitud de cambios en tu cuenta de {$title} fue aceptado.</p>
+                <p>Tu solicitud de cambios en tu cuenta de {$title} fue aceptada.</p>
                 
                 <div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;'>
-                    <h3 style='margin-top: 0; color: #333;'>Datos nuevos:</h3>
+                    <h3 style='margin-top: 0; color: #333;'>Datos actualizados:</h3>
                     <p><strong>Nombre:</strong> {$name}</p>
                     <p><strong>CI:</strong> {$ci}</p>
-                    <p><strong>Address:</strong> {$address}</p>
                     <p><strong>Correo:</strong> {$email}</p>
                     <p><strong>Celular:</strong> {$cellphone}</p>
+                    <p><strong>Dirección:</strong> {$address}</p>
                     <p><strong>Fecha de nacimiento:</strong> {$birthday}</p>
                 </div>
                 
+                {$contactInfo}
                 <hr style='margin: 30px 0; border: 1px solid #eee;'>
                 <p><strong>Saludos,<br>{$title}</strong></p>
             </div>
         ";
 
         $textBody = "Hola {$name},\n\n" .
-                    "Tu solicitud de cambios en tu cuenta de {$title} fue aceptado.\n\n" .
-                    "DATOS NUEVOS:\n" .
+                    "Tu solicitud de cambios en tu cuenta de {$title} fue aceptada.\n\n" .
+                    "DATOS ACTUALIZADOS:\n" .
                     "Nombre: {$name}\n" .
                     "CI: {$ci}\n" .
-                    "Dirección: {$address}\n" .
                     "Correo: {$email}\n" .
                     "Celular: {$cellphone}\n" .
+                    "Dirección: {$address}\n" .
                     "Fecha de nacimiento: {$birthday}\n\n" .
+                    $contactInfoText .
                     "Saludos,\n{$title}";
 
         return compact('subject', 'htmlBody', 'textBody');
     }
+
     /**
      * Template para credenciales de login (genérico)
      */
@@ -311,7 +315,7 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "Credenciales de Acceso - {$title}";
+        $subject = "Credenciales de acceso - {$title}";
 
         // Construir mensaje de contacto
         $contactInfo = '';
@@ -323,7 +327,6 @@ class EmailTemplates
 
         $htmlBody = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                <!--<h2 style='color: #28a745;'>¡Bienvenido!</h2>-->
                 <h2 style='color: #28a745;'>¡Bienvenido {$name}!</h2>
                 <p>Se han generado tus credenciales de acceso al sistema de {$title}.</p>
                 
@@ -354,8 +357,7 @@ class EmailTemplates
             </div>
         ";
 
-        $textBody = //"¡Bienvenido!\n\n" .
-                    "¡Bienvenido {$name}!\n\n" .
+        $textBody = "¡Bienvenido {$name}!\n\n" .
                     "Se han generado tus credenciales de acceso al sistema de {$title}.\n\n" .
                     "DATOS DE ACCESO:\n" .
                     "Usuario: {$login}\n" .
@@ -380,7 +382,7 @@ class EmailTemplates
         $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
         $contactPhone = self::getContactPhone();
 
-        $subject = "¡Solicitud Aprobada! - {$title}";
+        $subject = "¡Solicitud aprobada! - {$title}";
 
         // Construir mensaje de contacto
         $contactInfo = '';
@@ -393,7 +395,7 @@ class EmailTemplates
         $htmlBody = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <h2 style='color: #28a745;'>¡Felicidades {$name}!</h2>
-                <p>Su solicitud ha sido <strong style='color: #28a745;'>aceptada</strong> como miembro de {$title}.</p>
+                <p>Tu solicitud ha sido <strong style='color: #28a745;'>aceptada</strong> como miembro de {$title}.</p>
                 
                 <div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;'>
                     <h3 style='color: #28a745; margin-top: 0;'>Datos de acceso al sistema:</h3>
@@ -410,7 +412,7 @@ class EmailTemplates
                 
                 <div style='background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;'>
                     <p style='margin: 0; color: #004085;'>
-                        <strong>RECORDATORIO:</strong> Una vez en el sistema, debe realizar el pago de su cuota mensual.
+                        <strong>RECORDATORIO:</strong> Una vez en el sistema, debes realizar el pago de tu cuota mensual.
                     </p>
                 </div>
                 
@@ -429,12 +431,12 @@ class EmailTemplates
         ";
 
         $textBody = "¡Felicidades {$name}!\n\n" .
-                    "Su solicitud ha sido ACEPTADA como miembro de {$title}.\n\n" .
+                    "Tu solicitud ha sido ACEPTADA como miembro de {$title}.\n\n" .
                     "DATOS DE ACCESO:\n" .
                     "Usuario: {$login}\n" .
                     "Contraseña temporal: {$password}\n\n" .
                     "IMPORTANTE: Al ingresar por primera vez deberás cambiar tu contraseña.\n\n" .
-                    "RECORDATORIO: Una vez en el sistema, debe realizar el pago de su cuota mensual.\n\n" .
+                    "RECORDATORIO: Una vez en el sistema, debes realizar el pago de tu cuota mensual.\n\n" .
                     "Puedes acceder al sistema en: {$loginUrl}\n\n" .
                     $contactInfoText .
                     "¡Bienvenido a {$title}!\n" .
@@ -442,63 +444,65 @@ class EmailTemplates
 
         return compact('subject', 'htmlBody', 'textBody');
     }
+
     /**
- * Template para email de desaprobación de solicitud
- */
-public static function disapprovalNotification(array $data): array
-{
-    $name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');
-    $registerUrl = $data['register_url'] ?? (defined('BASE_URL') ? BASE_URL . 'partner/register' : '#');
-    $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
-    $contactPhone = self::getContactPhone();
+     * Template para email de desaprobación de solicitud
+     */
+    public static function disapprovalNotification(array $data): array
+    {
+        $name = htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8');
+        $registerUrl = $data['register_url'] ?? (defined('BASE_URL') ? BASE_URL . 'partner/register' : '#');
+        $title = htmlspecialchars(self::getOrganizationTitle(), ENT_QUOTES, 'UTF-8');
+        $contactPhone = self::getContactPhone();
 
-    $subject = "Solicitud de Asociación Rechazada - {$title}";
+        $subject = "Solicitud de asociación rechazada - {$title}";
 
-    // Construir mensaje de contacto
-    $contactInfo = '';
-    $contactInfoText = '';
-    if (!empty($contactPhone)) {
-        $contactInfo = "<p>Para más información o aclaraciones, comunícate con nosotros al <strong>{$contactPhone}</strong>.</p>";
-        $contactInfoText = "Para más información o aclaraciones, comunícate con nosotros al {$contactPhone}.\n\n";
+        // Construir mensaje de contacto
+        $contactInfo = '';
+        $contactInfoText = '';
+        if (!empty($contactPhone)) {
+            $contactInfo = "<p>Para más información o aclaraciones, comunícate con nosotros al <strong>{$contactPhone}</strong>.</p>";
+            $contactInfoText = "Para más información o aclaraciones, comunícate con nosotros al {$contactPhone}.\n\n";
+        }
+
+        $htmlBody = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <h2 style='color: #dc3545;'>Estimado/a {$name}</h2>
+                <p>Lamentamos informarte que tu solicitud para ser miembro de <strong>{$title}</strong> 
+                   ha sido <strong style='color: #dc3545;'>rechazada</strong>.</p>
+                
+                <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                    <p style='margin: 0; color: #856404;'>
+                        Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, 
+                        no dudes en contactarnos.
+                    </p>
+                </div>
+                
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href=\"{$registerUrl}\" 
+                       style=\"display:inline-block; padding:15px 30px; background:#007bff; color:#fff; 
+                              text-decoration:none; border-radius:8px; font-weight:bold; font-size: 16px;\">
+                        Realizar Nueva Solicitud
+                    </a>
+                </div>
+                
+                {$contactInfo}
+                <hr style='margin: 30px 0; border: 1px solid #eee;'>
+                <p><strong>Atentamente,<br>Equipo Administrativo de {$title}</strong></p>
+            </div>
+        ";
+
+        $textBody = "Estimado/a {$name},\n\n" .
+                    "Lamentamos informarte que tu solicitud para ser miembro de {$title} ha sido RECHAZADA.\n\n" .
+                    "Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, no dudes en contactarnos.\n\n" .
+                    "Puedes realizar una nueva solicitud en: {$registerUrl}\n\n" .
+                    $contactInfoText .
+                    "Atentamente,\n" .
+                    "Equipo Administrativo de {$title}";
+
+        return compact('subject', 'htmlBody', 'textBody');
     }
 
-    $htmlBody = "
-        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-            <h2 style='color: #dc3545;'>Estimado/a {$name}</h2>
-            <p>Lamentamos informarte que tu solicitud para ser miembro de <strong>{$title}</strong> 
-               ha sido <strong style='color: #dc3545;'>rechazada</strong>.</p>
-            
-            <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;'>
-                <p style='margin: 0; color: #856404;'>
-                    Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, 
-                    no dudes en contactarnos.
-                </p>
-            </div>
-            
-            <div style='text-align: center; margin: 30px 0;'>
-                <a href=\"{$registerUrl}\" 
-                   style=\"display:inline-block; padding:15px 30px; background:#007bff; color:#fff; 
-                          text-decoration:none; border-radius:8px; font-weight:bold; font-size: 16px;\">
-                    Realizar Nueva Solicitud
-                </a>
-            </div>
-            
-            {$contactInfo}
-            <hr style='margin: 30px 0; border: 1px solid #eee;'>
-            <p><strong>Atentamente,<br>Equipo Administrativo de {$title}</strong></p>
-        </div>
-    ";
-
-    $textBody = "Estimado/a {$name},\n\n" .
-                "Lamentamos informarte que tu solicitud para ser miembro de {$title} ha sido RECHAZADA.\n\n" .
-                "Si consideras que esta decisión fue un error o deseas presentar una nueva solicitud, no dudes en contactarnos.\n\n" .
-                "Puedes realizar una nueva solicitud en: {$registerUrl}\n\n" .
-                $contactInfoText .
-                "Atentamente,\n" .
-                "Equipo Administrativo de {$title}";
-
-    return compact('subject', 'htmlBody', 'textBody');
-}
     /**
      * Template para email de recuperación de contraseña (legacy)
      */
