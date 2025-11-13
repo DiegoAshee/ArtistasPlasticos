@@ -316,6 +316,24 @@ ob_start();
                         <div class="form-text">Este será el nombre que aparecerá en el menú de navegación.</div>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="url_option" class="form-label">
+                            Ruta (urlOption) <small class="text-muted">(opcional)</small>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-link text-primary"></i>
+                            </span>
+                            <input type="text"
+                                   class="form-control"
+                                   id="url_option"
+                                   name="url_option"
+                                   value="<?= htmlspecialchars($formData['url_option'] ?? '') ?>"
+                                   placeholder="Ej: /competence/competence_list o competence/competence_list">
+                        </div>
+                        <div class="form-text">Si indicas una ruta, el menú enlazará a esta URL en lugar del comportamiento por defecto.</div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="reset" class="btn btn-light">
                             <i class="fas fa-undo me-2"></i>Limpiar

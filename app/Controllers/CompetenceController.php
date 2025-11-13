@@ -86,6 +86,7 @@ class CompetenceController extends BaseController
         // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $menuOption = trim($_POST['menu_option'] ?? '');
+            $urlOption = trim($_POST['url_option'] ?? '');
             
             // Basic validation
             $errors = [];
@@ -95,7 +96,7 @@ class CompetenceController extends BaseController
             
             if (empty($errors)) {
                 try {
-                    $result = $this->competenceModel->create($menuOption);
+                    $result = $this->competenceModel->create($menuOption, $urlOption !== '' ? $urlOption : null);
                     
                     if ($result !== false) {
                         $_SESSION['success_message'] = 'Competencia creada exitosamente';
@@ -119,7 +120,8 @@ class CompetenceController extends BaseController
                 'menuOptions' => $menuOptions,
                 'errors' => $errors,
                 'formData' => [
-                    'menu_option' => $menuOption
+                        'menu_option' => $menuOption,
+                        'url_option' => $urlOption
                 ],
                 'success' => $_SESSION['success'] ?? null
             ];
@@ -138,7 +140,8 @@ class CompetenceController extends BaseController
             'menuOptions' => $menuOptions,
             'formData' => [
                 'name' => '',
-                'menu_option' => ''
+                'menu_option' => '',
+                'url_option' => ''
             ]
         ];
         
@@ -211,10 +214,11 @@ class CompetenceController extends BaseController
         }
         
         // Si es una petición POST, procesar la actualización
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 // Obtener el nombre del formulario
-                $name = $_POST['menu_option'] ?? '';
+        $name = $_POST['menu_option'] ?? '';
+        $urlOption = trim($_POST['url_option'] ?? '');
 
                 if (empty($name) || $idCompetence <= 0) {
                     $_SESSION['error'] = 'El nombre de la competencia es requerido';
@@ -222,10 +226,22 @@ class CompetenceController extends BaseController
                     return false;
                 }
 
-                $sql = "UPDATE `competence` SET `menuOption` = :name WHERE `idCompetence` = :id";
-                $stmt = $db->prepare($sql);
-                $stmt->bindValue(':name', $name, \PDO::PARAM_STR);
-                $stmt->bindValue(':id', $idCompetence, \PDO::PARAM_INT);
+                // Comprobamos si la columna urlOption existe para actualizarla de forma segura
+                $descStmt = $db->query("DESCRIBE `competence`");
+                $columns = $descStmt ? $descStmt->fetchAll(\PDO::FETCH_COLUMN) : [];
+
+                if (in_array('urlOption', $columns, true)) {
+                    $sql = "UPDATE `competence` SET `menuOption` = :name, `urlOption` = :urlOption WHERE `idCompetence` = :id";
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindValue(':name', $name, \PDO::PARAM_STR);
+                    $stmt->bindValue(':urlOption', $urlOption !== '' ? $urlOption : null, \PDO::PARAM_STR);
+                    $stmt->bindValue(':id', $idCompetence, \PDO::PARAM_INT);
+                } else {
+                    $sql = "UPDATE `competence` SET `menuOption` = :name WHERE `idCompetence` = :id";
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindValue(':name', $name, \PDO::PARAM_STR);
+                    $stmt->bindValue(':id', $idCompetence, \PDO::PARAM_INT);
+                }
                 
                 if ($stmt->execute()) {
                     $_SESSION['success'] = 'Competencia actualizada correctamente';
@@ -258,7 +274,8 @@ class CompetenceController extends BaseController
      */
     public function delete(int $idCompetence)
     {
-        requireRole([1], '../homepage');
+        // No usar requireRole aquí: para peticiones AJAX queremos devolver JSON
+        // y no provocar un redirect HTML que rompería la respuesta.
         // Clear any previous output
         if (ob_get_level()) {
             ob_clean();
@@ -320,10 +337,19 @@ class CompetenceController extends BaseController
             error_log("Attempting to delete competence ID: " . $idCompetence . ", Menu Option: " . ($competence['menuOption'] ?? 'N/A'));
             
             // Proceed with deletion
-            $deleteSql = "DELETE FROM competence WHERE idCompetence = :id";
+            // First remove any dependent rows in `permission` to satisfy FK constraints
+            $delPermSql = "DELETE FROM `permission` WHERE idCompetence = :id";
+            $delPermStmt = $db->prepare($delPermSql);
+            $delPermStmt->bindValue(':id', $idCompetence, \PDO::PARAM_INT);
+            if ($delPermStmt->execute() === false) {
+                $errorInfo = $delPermStmt->errorInfo();
+                throw new \Exception('Error al eliminar permisos relacionados: ' . ($errorInfo[2] ?? 'desconocido'));
+            }
+
+            // Now delete the competence itself
+            $deleteSql = "DELETE FROM `competence` WHERE idCompetence = :id";
             $deleteStmt = $db->prepare($deleteSql);
             $deleteStmt->bindValue(':id', $idCompetence, \PDO::PARAM_INT);
-            
             $result = $deleteStmt->execute();
             
             if (!$result) {

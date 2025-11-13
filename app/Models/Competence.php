@@ -75,7 +75,7 @@ class Competence
      * @param string $menuOption The menu option text
      * @return int|false The ID of the created competence or false on failure
      */
-    public function create(string $menuOption): int|false
+    public function create(string $menuOption, ?string $urlOption = null): int|false
     {
         $db = Database::singleton()->getConnection();
         
@@ -92,12 +92,19 @@ class Competence
             $stmt = $db->query("DESCRIBE `competence`");
             $columns = $stmt->fetchAll(\PDO::FETCH_COLUMN);
             error_log('Competence table columns: ' . print_r($columns, true));
-            
-            $sql = "INSERT INTO `competence` (menuOption) 
-                    VALUES (:menuOption)";
-            
+
+            // If the table has a urlOption column we include it in the INSERT
+            if (in_array('urlOption', $columns, true)) {
+                $sql = "INSERT INTO `competence` (menuOption, urlOption) VALUES (:menuOption, :urlOption)";
+            } else {
+                $sql = "INSERT INTO `competence` (menuOption) VALUES (:menuOption)";
+            }
+
             $stmt = $db->prepare($sql);
             $stmt->bindValue(':menuOption', trim($menuOption), \PDO::PARAM_STR);
+            if (strpos($sql, 'urlOption') !== false) {
+                $stmt->bindValue(':urlOption', $urlOption !== null ? trim($urlOption) : null, \PDO::PARAM_STR);
+            }
             
             if ($stmt->execute()) {
                 return (int)$db->lastInsertId();
@@ -141,7 +148,8 @@ class Competence
             // Solo pedimos el nombre (menuOption)
             $sql = "
                 SELECT
-                    c.menuOption AS name
+                    c.menuOption AS name,
+                    c.urlOption AS urlOption
                 FROM `permission` p
                 INNER JOIN `competence` c ON c.idCompetence = p.idCompetence
                 WHERE p.idRol = :role
@@ -158,24 +166,56 @@ class Competence
                 //antiguo metodo imprime el nombre de la base de datos tal cual
                 /*
                 $name = trim((string)($row['name'] ?? ''));
-                [$url, $icon] = $this->mapNameToRouteAndIcon($name);
-                if ($url === '')  { $url  = '#'; }
-                if ($icon === '') { $icon = 'fas fa-circle'; }
+                // Prefer explicit URL stored in the competence (urlOption). If the column
+                // contains a path like '/competence/competence_list' or 'competence/competence_list'
+                // we normalize it by trimming leading slash. Otherwise fall back to mapping by name.
+                $rawUrl = trim((string)($row['urlOption'] ?? ''));
+                if ($rawUrl !== '') {
+                    $url = ltrim($rawUrl, '/');
+                    $icon = $this->mapNameToRouteAndIcon($name)[1] ?? 'fas fa-circle';
+                } else {
+                    [$url, $icon] = $this->mapNameToRouteAndIcon($name);
+                    if ($url === '')  { $url  = '#'; }
+                    if ($icon === '') { $icon = 'fas fa-circle'; }
+                }
                 */
                 
                 // Formatear nombres compuestos (ej: "SolicitudesPendientes" → "Solicitudes Pendientes")
                 $name = trim((string)($row['name'] ?? ''));
                 $displayName = $this->formatMenuName($name);
-                
-                [$url, $icon] = $this->mapNameToRouteAndIcon($name);
-                if ($url === '')  { $url  = '#'; }
-                if ($icon === '') { $icon = 'fas fa-circle'; }
+
+                // Preferir la URL explícita almacenada en la tabla (urlOption).
+                $rawUrlOption = trim((string)($row['urlOption'] ?? ''));
+                $icon = 'fas fa-circle';
+                $url = '';
+
+                if ($rawUrlOption !== '') {
+                    // Si la urlOption es absoluta (http/https) la dejamos tal cual en el campo
+                    // 'url' (la vista puede detectarla). Si es relativa, normalizamos quitando
+                    // la barra inicial para que la vista use u() correctamente.
+                    if (preg_match('#^https?://#i', $rawUrlOption)) {
+                        $url = $rawUrlOption; // absoluta
+                    } else {
+                        $url = ltrim($rawUrlOption, '/'); // relativo sin slash inicial
+                    }
+                    // Intenta obtener un icono basado en el nombre; si no hay, se mantiene el default
+                    $icon = $this->mapNameToRouteAndIcon($name)[1] ?? $icon;
+                } else {
+                    // Fallback al mapeo por nombre (index.php/mapa de rutas)
+                    [$mappedUrl, $mappedIcon] = $this->mapNameToRouteAndIcon($name);
+                    $url = $mappedUrl;
+                    $icon = $mappedIcon ?: $icon;
+                }
+
+                if ($url === '') { $url = '#'; }
 
                 $items[] = [
-                    'name'    => ($displayName !== '' ? $displayName : 'Opción'),
-                    'url'     => $url,                  // relativo, sin slash inicial
-                    'icon'    => $icon,
-                    'section' => $this->inferSection($url, $name),
+                    'name'      => ($displayName !== '' ? $displayName : 'Opción'),
+                    'label'     => ($displayName !== '' ? $displayName : 'Opción'), // for layouts that expect 'label'
+                    'url'       => $url,                  // relativo (sin slash inicial) o URL absoluta
+                    'urlOption' => $rawUrlOption,         // conservar el valor crudo si viene de BD
+                    'icon'      => $icon,
+                    'section'   => $this->inferSection(is_string($url) ? ltrim($url, '/') : '', $name),
                 ];
             }
 

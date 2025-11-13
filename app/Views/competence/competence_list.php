@@ -329,7 +329,7 @@ ob_start();
                                                    title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" data-id="<?= $competence['idCompetence'] ?>" title="Eliminar">
+                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal" data-id="<?= $competence['idCompetence'] ?>" data-delete-url="<?= htmlspecialchars(u('competence/delete/' . $competence['idCompetence']), ENT_QUOTES, 'UTF-8') ?>" title="Eliminar">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </div>
@@ -387,15 +387,17 @@ require_once __DIR__ . '/../layouts/app.php';
         $('#deleteConfirmationModal').on('show.bs.modal', function(event) {
             var button = $(event.relatedTarget);
             var idCompetence = button.data('id');
+            var deleteUrl = button.data('delete-url');
             var modal = $(this);
             var row = button.closest('tr');
-            
+
             // Guardar la referencia a la fila para eliminarla después
             modal.data('row', row);
-            
-            // Actualizar el ID en el formulario
+
+            // Actualizar el ID y la URL en el formulario/modal
             modal.data('id', idCompetence);
-            
+            modal.data('url', deleteUrl);
+
             // Actualizar el nombre de la competencia en el mensaje
             var competenceName = row.find('td:first-child span').text().trim();
             modal.find('#competenceName').text(competenceName);
@@ -408,6 +410,7 @@ require_once __DIR__ . '/../layouts/app.php';
             var modal = $('#deleteConfirmationModal');
             var idCompetence = modal.data('id');
             var row = modal.data('row');
+            var deleteUrl = modal.data('url');
             
             // Mostrar indicador de carga
             var submitBtn = modal.find('button[type="submit"]');
@@ -416,12 +419,12 @@ require_once __DIR__ . '/../layouts/app.php';
             
             console.log('Enviando solicitud para eliminar competencia ID:', idCompetence);
             
-            // Get base URL from the current page
-            var baseUrl = window.location.pathname.split('/competence/')[0];
-            
+            // Build delete URL using server-side helper to ensure correct BASE_URL and subfolder
+            var deleteBase = '<?= rtrim(u('competence/delete'), '/') ?>';
+
             // Enviar la solicitud de eliminación
             $.ajax({
-                url: baseUrl + '/competence/delete/' + idCompetence,
+                url: deleteUrl || (deleteBase + '/' + idCompetence),
                 type: 'POST',
                 dataType: 'json',
                 success: function(response, status, xhr) {
@@ -468,7 +471,8 @@ require_once __DIR__ . '/../layouts/app.php';
                         }
                     } catch (e) {
                         console.error('Error al analizar la respuesta de error:', e);
-                        errorMessage = 'Error en el formato de la respuesta del servidor';
+                        // Leave the raw response text visible in the console for easier debugging
+                        errorMessage = 'Error en la respuesta del servidor: ' + (xhr.responseText || xhr.statusText);
                     }
                     
                     showNotification('danger', errorMessage);
