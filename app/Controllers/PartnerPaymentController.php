@@ -91,16 +91,20 @@ class PartnerPaymentController extends BaseController
                     // Include Notification class
                     require_once __DIR__ . '/../Models/Notification.php';
                     
-                    // Create a notification for the new contribution
+                    // Create a notification for the new contribution (single)
                     $notificationData = [
                         'title' => 'Nuevo Solictud de Pago de Socio',
                         'message' => "Se ha registrado un nueva solicitud de pago de socio",
                         'type' => 'info',
-                        'data' => json_encode([
-                            'idContribution'             => $idContribution,
-                            'amount'               => $amount,
-                            'idPartner'            => $idPartner,
-                        ]),
+                        // Pasar array con entity/id/url explícitos
+                        'data' => [
+                            'idContribution' => $idContribution,
+                            'amount' => $amount,
+                            'idPartner' => $idPartner,
+                            'entity' => 'contribution',
+                            'id' => (int)$idContribution,
+                            'url' => 'contribution/edit/' . (int)$idContribution,
+                        ],
                         'idRol' => 1 // Asegurarse de que el rol esté definido
                     ];
 
@@ -188,16 +192,22 @@ class PartnerPaymentController extends BaseController
                     // Include Notification class
                     require_once __DIR__ . '/../Models/Notification.php';
                     
-                    // Create a notification for the new contribution
+                    // Create a notification for the new contribution (multiple)
+                    // Añadimos entity/id/url usando la primera contribución como destino principal
+                    $firstId = isset($validContributions[0]['idContribution']) ? (int)$validContributions[0]['idContribution'] : null;
                     $notificationData = [
                         'title' => 'Nuevo Solictud de Pago de Socio',
                         'message' => "Se ha registrado un nueva solicitud de pago de socio",
                         'type' => 'info',
-                        'data' => json_encode([
-                            'idContributions'             => $validContributions,
-                            'amount'               => $totalAmount,
-                            'idPartner'            => $idPartner,
-                        ]),
+                        'data' => [
+                            'idContributions' => $validContributions,
+                            'amount' => $totalAmount,
+                            'idPartner' => $idPartner,
+                            // convenience fields for redirect
+                            'entity' => 'contribution',
+                            'id' => $firstId,
+                            'url' => $firstId ? 'contribution/edit/' . $firstId : null,
+                        ],
                         'idRol' => 1 // Asegurarse de que el rol esté definido
                     ];
 

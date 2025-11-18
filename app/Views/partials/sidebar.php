@@ -10,6 +10,84 @@ if (!function_exists('asset')) {
     function asset(string $path): string { return u($path); }
 }
 
+/**
+ * Mapear nombres de menú a iconos por código (sin tocar la base de datos).
+ * Devuelve cadena vacía si no debe mostrarse icono.
+ */
+if (!function_exists('mapMenuNameToIcon')) {
+  function mapMenuNameToIcon(string $name): string {
+    $n = mb_strtolower(trim($name), 'UTF-8');
+    switch ($n) {
+      case 'dashboard':
+        return 'fas fa-home';
+      case 'analytics':
+      case 'analitica':
+      case 'analíticas':
+      case 'analiticas':
+        return 'fas fa-chart-line';
+      case 'socios':
+      case 'partners':
+        return 'fas fa-users';
+      case 'socio':
+        // Caso especial: si el nombre es "socio" no mostramos icono
+        return '';
+      case 'nuevo socio':
+      case 'alta socio':
+        return 'fas fa-user-plus';
+      case 'usuarios':
+      case 'users':
+        return 'fas fa-users';
+      case 'contribución':
+      case 'contribution':
+        return 'fas fa-users';
+      case 'permisos':
+      case 'permissions':
+        return 'fas fa-user-lock';
+      case 'roles':
+        return 'fas fa-user-shield';
+      case 'historial pagos':
+      case 'historial de pagos':
+        return 'fas fa-history';
+      case 'reportes':
+      case 'reporting':
+        return 'fas fa-file-invoice';
+      case 'configuracion':
+      case 'configuración':
+      case 'ajustes':
+      case 'settings':
+        return 'fas fa-cog';
+      case 'backup':
+      case 'respaldo':
+        return 'fas fa-database';
+      case 'mi perfil':
+      case 'perfil':
+      case 'profile':
+        return 'fas fa-user';
+      case 'ayuda':
+      case 'help':
+        return 'fas fa-question-circle';
+      case 'mis pagos':
+      case 'pagos':
+        return 'fas fa-file-invoice';
+      case 'pagos pendientes':
+        return 'fas fa-file-invoice';
+      case 'competencias':
+        return 'fas fa-cogs';
+      case 'cobros':
+      case 'recibos':
+      case 'ingresos':
+        return 'fas fa-receipt';
+      case 'conceptos':
+        return 'fas fa-receipt';
+      case 'opciones':
+      case 'options':
+        return 'fas fa-cog';
+      default:
+        return 'fas fa-circle';
+    }
+  }
+}
+
 // Normaliza datos que deberían venir del controlador
 $menuOptions = $menuOptions ?? [];
 $currentPath = $currentPath ?? '';
@@ -37,13 +115,45 @@ foreach ($menuOptions as $it) {
         <?php foreach ($items as $item): ?>
           <?php
             $name = (string)($item['name'] ?? 'Opción');
-            $url  = (string)($item['url']  ?? '#');          // relativo
-            $icon = (string)($item['icon'] ?? 'fas fa-circle');
-            $href = u($url);
-            $active = ($currentPath !== '' && $url !== '' && $currentPath === $url) ? ' active' : '';
+            // Priorizar urlOption (guardada en la tabla `competence`) si existe,
+            // luego fallback a 'url' (antiguo comportamiento), y por último '#'.
+            $rawUrl = (string)($item['urlOption'] ?? $item['url'] ?? '');
+      // Icono provisto por la BD (puede ser 'none' o cadena vacía para ocultarlo)
+      $iconRaw = $item['icon'] ?? null;
+      if (is_string($iconRaw)) { $iconRaw = trim($iconRaw); }
+      if ($iconRaw === null || $iconRaw === '') {
+        // Derivar icono por nombre (mapeo en código)
+        $icon = mapMenuNameToIcon($name);
+      } elseif (strtolower((string)$iconRaw) === 'none') {
+        // Token especial para ocultar icono
+        $icon = '';
+      } else {
+        $icon = (string)$iconRaw;
+      }
+
+            // Normalizar y decidir href:
+            // - Si es vacío o '#', usar '#'.
+            // - Si es absoluta (http:// o https://) usarla tal cual.
+            // - Si es relativa (p.ej '/dashboard' o 'dashboard'), pasar por u() después de limpiar la barra.
+            if ($rawUrl === '' || $rawUrl === '#') {
+                $href = '#';
+                $urlForActive = '';
+            } elseif (preg_match('#^https?://#i', $rawUrl)) {
+                $href = $rawUrl; // URL absoluta
+                // Para la detección de activo, extraemos la ruta relativa si es del mismo host
+                $urlForActive = ltrim(parse_url($rawUrl, PHP_URL_PATH) ?: '', '/');
+            } else {
+                // ruta relativa: eliminar slash inicial para que u() la normalice correctamente
+                $urlForActive = ltrim($rawUrl, '/');
+                $href = u($urlForActive);
+            }
+
+            $active = ($currentPath !== '' && $urlForActive !== '' && $currentPath === $urlForActive) ? ' active' : '';
           ?>
           <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>" class="nav-item<?= $active ?>">
-            <i class="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>"></i>
+            <?php if ($icon !== ''): ?>
+              <i class="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>"></i>
+            <?php endif; ?>
             <span><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?></span>
           </a>
         <?php endforeach; ?>

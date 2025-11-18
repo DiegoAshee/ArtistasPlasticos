@@ -134,7 +134,7 @@ ob_start();
                             $dateString = $date->format('d M Y');
                         }
                         ?>
-                        <div class="notification-card <?= $notificationClass ?>" data-id="<?= htmlspecialchars($n['id']) ?>">
+                        <a href="<?= htmlspecialchars(u('notifications/open/' . $n['id']), ENT_QUOTES) ?>" class="notification-card <?= $notificationClass ?>" data-id="<?= htmlspecialchars($n['id']) ?>">
                             <div class="notification-content">
                                 <div class="notification-header">
                                     <h4 class="notification-title"><?= htmlspecialchars($n['title']) ?></h4>
@@ -152,21 +152,21 @@ ob_start();
                                         <?php if (!$isRead): ?>
                                             <button type="button" 
                                                     class="btn-action btn-mark-read" 
-                                                    onclick="markAsRead('<?= $n['id'] ?>', this)" 
+                                                    onclick="event.stopPropagation(); markAsRead('<?= $n['id'] ?>', this)" 
                                                     title="Marcar como leída">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         <?php endif; ?>
                                         <button type="button" 
                                                 class="btn-action btn-delete" 
-                                                onclick="deleteNotification('<?= $n['id'] ?>', this)" 
+                                                onclick="event.stopPropagation(); deleteNotification('<?= $n['id'] ?>', this)" 
                                                 title="Eliminar">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -186,6 +186,9 @@ ob_start();
     }
     
     .notification-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
         background: white;
         border-radius: 12px;
         padding: 1rem;
@@ -559,6 +562,17 @@ function markAsRead(id, element) {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
                     deleteNotification(id, this);
+                });
+            });
+            // Hacer clic en la tarjeta entera abra la notificación (si tiene data-href)
+            document.querySelectorAll('.notification-card[data-href]').forEach(card => {
+                card.addEventListener('click', function(e){
+                    // Si el click viene desde un botón dentro de la tarjeta, no navegamos
+                    if (e.target.closest('.btn-action')) return;
+                    const href = card.getAttribute('data-href');
+                    if (href) {
+                        window.location.href = href;
+                    }
                 });
             });
         });

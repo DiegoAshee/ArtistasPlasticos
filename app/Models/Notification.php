@@ -270,6 +270,25 @@ class Notification
     }
 }
 
+    /**
+     * Obtener una notificación por su ID
+     * @param int $id
+     * @return array|null
+     */
+    public function getById(int $id): ?array
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM notifications WHERE id = :id LIMIT 1");
+            $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            $this->setError('Error al obtener la notificación: ' . $e->getMessage(), ['id' => $id]);
+            return null;
+        }
+    }
+
     public function create(array $data)
     {
         try {
@@ -298,6 +317,73 @@ class Notification
                 'type'       => $data['type'] ?? 'info',
                 'data'       => is_string($data['data'] ?? null) ? $data['data'] : json_encode($data['data'] ?? []),
             ];
+
+            // NORMALIZAR: intentar detectar ids/entidades comunes y añadir campos estandarizados
+            // para facilitar redirecciones posteriores (ej. entity, id, url).
+            try {
+                $decoded = json_decode($payload['data'], true);
+                if (!is_array($decoded)) {
+                    $decoded = [];
+                }
+
+                $normalized = $decoded;
+
+                // Helpers para buscar variantes de keys
+                $findKey = function(array $arr, array $candidates) {
+                    foreach ($candidates as $k) {
+                        if (isset($arr[$k]) && $arr[$k] !== '') {
+                            return $arr[$k];
+                        }
+                    }
+                    return null;
+                };
+
+                // CONTRIBUTION
+                $cid = $findKey($normalized, ['contribution_id', 'idContribution', 'contributionId', 'id_contribution']);
+                if ($cid === null && !empty($normalized['idContributions']) && is_array($normalized['idContributions'])) {
+                    $first = $normalized['idContributions'][0] ?? null;
+                    if (is_array($first)) {
+                        $cid = $findKey($first, ['idContribution', 'contribution_id', 'contributionId']);
+                    } elseif (is_numeric($first)) {
+                        $cid = (int)$first;
+                    }
+                }
+
+                if ($cid !== null && $cid !== '') {
+                    $normalized['entity'] = 'contribution';
+                    $normalized['id'] = (int)$cid;
+                    // also provide a convenience url that open() can use directly
+                    if (empty($normalized['url'])) {
+                        $normalized['url'] = 'contribution/edit/' . (int)$cid;
+                    }
+                }
+
+                // PARTNER
+                $pid = $findKey($normalized, ['idPartner', 'partner_id', 'id_partner', 'partnerId']);
+                if ($pid !== null && $pid !== '') {
+                    $normalized['entity'] = $normalized['entity'] ?? 'partner';
+                    $normalized['id'] = $normalized['id'] ?? (int)$pid;
+                    if (empty($normalized['url'])) {
+                        $normalized['url'] = 'admin/review-payments?mode=partners&partner=' . (int)$pid;
+                    }
+                }
+
+                // PAYMENT
+                $payId = $findKey($normalized, ['payment_id', 'idPayment', 'paymentId', 'id_payment']);
+                if ($payId !== null && $payId !== '') {
+                    $normalized['entity'] = $normalized['entity'] ?? 'payment';
+                    $normalized['id'] = $normalized['id'] ?? (int)$payId;
+                    if (empty($normalized['url'])) {
+                        $normalized['url'] = 'payment/edit/' . (int)$payId;
+                    }
+                }
+
+                // Re-encode normalizado
+                $payload['data'] = json_encode($normalized, JSON_UNESCAPED_UNICODE);
+            } catch (\Throwable $e) {
+                // No bloquear la creación por un fallo de normalización
+                error_log('Notification normalization error: ' . $e->getMessage());
+            }
             if ($roleColumn) {
                 $payload['role_value'] = $data['idRol'] ?? ($data['role_id'] ?? ($data['id_Rol'] ?? null));
             }

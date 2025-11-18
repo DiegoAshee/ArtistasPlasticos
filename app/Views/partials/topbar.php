@@ -97,8 +97,8 @@ $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
           <?php foreach ($notifications as $notification): ?>
             <?php
               $nid = (int)$notification['id'];
-              // destino: si hay url válida, usarla; si no, usar la lista con focus
-              $dest = $notification['url'] ? $notification['url'] : (u('notifications/all') . '?focus=' . $nid);
+              // Usar la ruta local que marca como leída y redirige: /notifications/open/{id}
+              $dest = u('notifications/open/' . $nid);
             ?>
             <a class="notification-item <?= !$notification['read'] ? 'unread' : '' ?>" 
                data-id="<?= $nid ?>"
