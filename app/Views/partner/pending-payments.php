@@ -389,38 +389,63 @@ ob_start();
         width: 50px;
     }
 
-    /* Barra de resumen de pago */
-    .payment-summary {
-        position: sticky;
-        bottom: 0;
-        background: var(--bg-light);
-        padding: 20px;
-        border-radius: 12px;
-        margin-top: 20px;
-        display: flex;
-        justify-content: space-between;
+    /* Barra de acciones flotante */
+    .floating-actions {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: var(--success);
+        padding: 20px 30px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        z-index: 100;
+        display: none;
         align-items: center;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        z-index: 10;
-        border: 2px solid var(--success);
+        gap: 20px;
+        animation: slideUp 0.3s ease;
     }
 
-    .total-amount {
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--success);
+    @keyframes slideUp {
+        from {
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 
-    .selected-info {
+    .floating-actions.show {
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
     }
 
-    .selected-count {
+    .floating-info {
+        color: white;
+    }
+
+    .floating-count {
         font-size: 14px;
-        color: #6c757d;
-        font-weight: 500;
+        opacity: 0.9;
+        margin-bottom: 4px;
+    }
+
+    .floating-total {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .floating-actions .btn {
+        background: white !important;
+        color: var(--success) !important;
+        border: none !important;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .floating-actions .btn:hover {
+        background: #f0f0f0 !important;
     }
 
     /* Paginación mejorada */
@@ -492,14 +517,14 @@ ob_start();
 
     .modal-content {
         background: white;
-        margin: 5% auto;
+        margin: 3% auto;
         padding: 28px;
         width: 90%;
-        max-width: 550px;
+        max-width: 650px;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         position: relative;
-        max-height: 85vh;
+        max-height: 90vh;
         overflow-y: auto;
     }
 
@@ -545,7 +570,63 @@ ob_start();
         box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
 
-    /* ===== ESTILOS PARA UPLOAD DE ARCHIVOS (COMO EN REGISTRO) ===== */
+    /* Lista de contribuciones seleccionadas en modal */
+    .selected-contributions-list {
+        background: var(--bg-light);
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .contribution-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .contribution-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .contribution-item-period {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .contribution-item-amount {
+        font-weight: 700;
+        color: var(--success);
+    }
+
+    .total-summary {
+        background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        color: white;
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .total-summary-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .total-summary-amount {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    /* ===== ESTILOS PARA UPLOAD DE ARCHIVOS ===== */
     .image-upload-box {
         border: 2px dashed var(--cream-400);
         border-radius: 8px;
@@ -638,7 +719,7 @@ ob_start();
         display: block;
     }
 
-    .field-error {
+ .field-error {
         color: var(--error-color);
         font-size: 0.875rem;
         margin-top: 0.5rem;
@@ -650,6 +731,32 @@ ob_start();
 
     .field-error i {
         font-size: 0.875rem;
+    }
+
+    /* Alerta de error más visible */
+    .alert-error {
+        background: #fee2e2;
+        border: 2px solid #dc2626;
+        color: #991b1b;
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin: 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        animation: shake 0.5s ease;
+    }
+
+    .alert-error i {
+        font-size: 1.5rem;
+        color: #dc2626;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
     }
 
     .success-message,
@@ -676,10 +783,12 @@ ob_start();
             flex-direction: column;
         }
 
-        .payment-summary {
+        .floating-actions {
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
             flex-direction: column;
-            gap: 15px;
-            text-align: center;
+            padding: 16px;
         }
 
         .filters-section form {
@@ -690,7 +799,7 @@ ob_start();
         .modal-content {
             width: 95%;
             padding: 20px;
-            margin: 10% auto;
+            margin: 5% auto;
         }
     }
 </style>
@@ -710,139 +819,92 @@ ob_start();
         </div>
     <?php endif; ?>
 
-    <!-- Formulario para pagos múltiples -->
-    <form id="paymentForm" action="<?= u('partner/pending-payments') ?>" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="action" value="payMultiple">
-        
-        <!-- Tabla de contribuciones pendientes -->
-        <div class="table-container">
-            <div style="padding: 20px; border-bottom: 1px solid var(--border-color); background: var(--grid-bg);">
-                <h2 style="margin: 0; color: var(--text-light);">
-                    <i class="fas fa-exclamation-circle"></i> 
-                    Contribuciones Pendientes (<?= $total ?> registros)
-                </h2>
-            </div>
+    <!-- Tabla de contribuciones pendientes -->
+    <div class="table-container">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border-color); background: var(--grid-bg);">
+            <h2 style="margin: 0; color: var(--text-light);">
+                <i class="fas fa-exclamation-circle"></i> 
+                Contribuciones Pendientes (<?= $total ?> registros)
+            </h2>
+        </div>
 
-            <table class="modern-table">
-                <thead>
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAll" title="Seleccionar todos">
+                    </th>
+                    <th>Período</th>
+                    <th>Monto Total</th>
+                    <th>Acción Individual</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($pendingPayments)): ?>
                     <tr>
-                        <th class="checkbox-cell">
-                            <input type="checkbox" id="selectAll" title="Seleccionar todos">
-                        </th>
-                        <th>Período</th>
-                        <th>Monto Total</th>
-                        <th>Acción Individual</th>
+                        <td colspan="4">
+                            <div class="no-results">
+                                <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; color: var(--success);"></i>
+                                ¡Excelente! No hay pagos pendientes<br>
+                                <small style="color: #6c757d; margin-top: 10px;">
+                                    Estás al día con todas tus contribuciones.
+                                </small>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($pendingPayments)): ?>
+                <?php else: ?>
+                    <?php foreach ($pendingPayments as $payment): ?>
                         <tr>
-                            <td colspan="5">
-                                <div class="no-results">
-                                    <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; color: var(--success);"></i>
-                                    ¡Excelente! No hay pagos pendientes<br>
-                                    <small style="color: #6c757d; margin-top: 10px;">
-                                        Estás al día con todas tus contribuciones.
-                                    </small>
+                            <td class="checkbox-cell">
+                                <input type="checkbox" 
+                                       name="selected_contributions[]" 
+                                       value="<?= (int)($payment['idContribution'] ?? 0) ?>"
+                                       data-amount="<?= $payment['balance'] ?? 0 ?>"
+                                       data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>"
+                                       class="contribution-checkbox">
+                            </td>
+                            <td>
+                                <div class="contribution-info">
+                                    <div class="contribution-period">
+                                        <?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>
+                                    </div>
+                                    <?php if (!empty($payment['notes'])): ?>
+                                        <div class="contribution-notes">
+                                            <?= htmlspecialchars($payment['notes']) ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </td>
+                            <td>
+                                <div class="contribution-amount">
+                                    Bs. <?= number_format($payment['amount'] ?? 0, 2) ?>
+                                </div>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-primary open-pay-modal" 
+                                        data-id="<?= (int)($payment['idContribution'] ?? 0) ?>" 
+                                        data-amount="<?= $payment['balance'] ?? 0 ?>"
+                                        data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>">
+                                    <i class="fas fa-credit-card"></i> Pagar Solo Este
+                                </button>
+                            </td>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($pendingPayments as $payment): ?>
-                            <tr>
-                                <td class="checkbox-cell">
-                                    <input type="checkbox" 
-                                           name="selected_contributions[]" 
-                                           value="<?= (int)($payment['idContribution'] ?? 0) ?>"
-                                           data-amount="<?= $payment['balance'] ?? 0 ?>"
-                                           data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>"
-                                           class="contribution-checkbox">
-                                </td>
-                                <td>
-                                    <div class="contribution-info">
-                                        <div class="contribution-period">
-                                            <?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>
-                                        </div>
-                                        <?php if (!empty($payment['notes'])): ?>
-                                            <div class="contribution-notes">
-                                                <?= htmlspecialchars($payment['notes']) ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contribution-amount">
-                                        Bs. <?= number_format($payment['amount'] ?? 0, 2) ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-primary open-pay-modal" 
-                                            data-id="<?= (int)($payment['idContribution'] ?? 0) ?>" 
-                                            data-amount="<?= $payment['balance'] ?? 0 ?>"
-                                            data-period="<?= htmlspecialchars($formatMonthYear($payment['monthYear'] ?? '')) ?>">
-                                        <i class="fas fa-credit-card"></i> Pagar Solo Este
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Barra de resumen para pagos múltiples -->
-        <div class="payment-summary" id="paymentSummary" style="display: none;">
-            <div class="selected-info">
-                <div class="total-amount" id="totalAmount">Bs. 0.00</div>
-                <div class="selected-count" id="selectedCount">0 contribuciones seleccionadas</div>
-            </div>
-            <div>
-                <input type="hidden" name="totalAmount" id="totalAmountInput" value="0">
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-credit-card"></i> Pagar Seleccionados
-                </button>
-            </div>
-        </div>
-
-        <!-- Campo para comprobante múltiple CON PREVIEW -->
-        <div id="multipleProofSection" style="display: none; margin-top: 20px; padding: 24px; background: #f8f9fa; border-radius: 12px;">
-            <div class="form-group">
-                <label style="font-size: 1rem; margin-bottom: 12px;">
-                    <i class="fas fa-qrcode"></i> Escanea el QR para realizar el pago:
-                </label>
-                <?php if ($qrImageUrl): ?>
-                    <div style="text-align: center; margin: 15px 0;">
-                        <img src="<?= htmlspecialchars($qrImageUrl) ?>" alt="QR Pago" 
-                             style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <small style="color: #6c757d; display: block; margin-top: 8px;">
-                            Usa este QR para completar el pago por transferencia.
-                        </small>
-                    </div>
-                <?php else: ?>
-                    <p style="color: #6c757d; text-align: center; padding: 20px;">No se encontró un QR asociado.</p>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-            </div>
-            
-            <div class="form-group" id="multipleProofGroup">
-                <label for="proofMultiple" style="font-size: 1rem; margin-bottom: 8px;">
-                    <i class="fas fa-upload"></i> Comprobante de Transferencia (Para pagos múltiples) *
-                </label>
-                <div class="image-upload-box" onclick="document.getElementById('proofMultiple').click()">
-                    <i class="fas fa-file-upload"></i>
-                    <p>Subir Comprobante</p>
-                    <small>Haga clic para seleccionar el archivo</small>
-                    <small style="margin-top: 4px;">JPG, PNG, PDF - Máx. 2MB</small>
-                    <input type="file" name="proof" id="proofMultiple" 
-                           accept="image/jpeg,image/png,application/pdf" 
-                           style="display: none"
-                           onchange="handleFileSelect(this, 'multiplePreview', 'multipleFileName', 'multipleStatus', 'multipleProofGroup')">
-                    <img id="multiplePreview" class="image-preview" alt="Vista previa del comprobante">
-                    <span id="multipleFileName" class="file-name"></span>
-                    <div id="multipleStatus" class="file-status"></div>
-                </div>
-            </div>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Botón flotante para pagar seleccionados -->
+    <div class="floating-actions" id="floatingActions">
+        <div class="floating-info">
+            <div class="floating-count" id="floatingCount">0 contribuciones</div>
+            <div class="floating-total" id="floatingTotal">Bs. 0.00</div>
         </div>
-    </form>
+        <button type="button" class="btn" id="openMultiplePayModal">
+            <i class="fas fa-credit-card"></i> Proceder al Pago
+        </button>
+    </div>
 
     <!-- Paginación -->
     <?php if ($totalPages > 1): ?>
@@ -891,20 +953,51 @@ ob_start();
     <?php endif; ?>
 </div>
 
-<!-- Modal para Pago Individual -->
+<!-- Modal Unificado para Pagos (Individual y Múltiple) -->
 <div id="payModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2 style="margin-bottom: 25px; color: var(--text-dark);">
-            <i class="fas fa-credit-card"></i> Realizar Pago Individual por Transferencia
+        <h2 style="margin-bottom: 25px; color: var(--text-dark);" id="modalTitle">
+            <i class="fas fa-credit-card"></i> Realizar Pago por Transferencia
         </h2>
         
         <form method="POST" action="<?= u('partner/pending-payments') ?>" enctype="multipart/form-data" id="payForm">
-            <input type="hidden" name="action" value="pay">
+            <input type="hidden" name="action" id="paymentAction" value="pay">
             <input type="hidden" name="idContribution" id="payId">
             
+            <!-- Lista de contribuciones (solo para múltiples) -->
+            <div id="multipleContributionsSection" style="display: none;">
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-list"></i> Contribuciones Seleccionadas:
+                    </label>
+                    <div class="selected-contributions-list" id="contributionsList"></div>
+                </div>
+            </div>
+
+            <!-- Info para pago individual -->
+            <div id="singleContributionSection">
+                <div class="form-group">
+                    <label for="period">Período:</label>
+                    <input type="text" id="period" readonly 
+                           style="background-color: var(--bg-light); color: #6c757d;">
+                </div>
+            </div>
+
+            <!-- Monto total -->
+            <div class="total-summary">
+                <div>
+                    <div class="total-summary-label" id="amountLabel">Monto a Pagar:</div>
+                </div>
+                <div class="total-summary-amount" id="totalAmountDisplay">Bs. 0.00</div>
+            </div>
+
+            <input type="hidden" name="amount" id="amount">
+            <input type="hidden" name="totalAmount" id="totalAmount">
+            <div id="selectedContributionsInput"></div>
+            
             <div class="form-group">
-                <label style="font-size: 1rem;">
+                <label style="font-size: 1rem; margin-bottom: 12px;">
                     <i class="fas fa-qrcode"></i> Escanea el QR para realizar el pago:
                 </label>
                 <?php if ($qrImageUrl): ?>
@@ -916,24 +1009,11 @@ ob_start();
                         </small>
                     </div>
                 <?php else: ?>
-                    <p style="color: #6c757d; text-align: center; padding: 15px;">No se encontró un QR asociado.</p>
+                    <p style="color: #6c757d; text-align: center; padding: 20px;">No se encontró un QR asociado.</p>
                 <?php endif; ?>
             </div>
-            
-            <div class="form-group">
-                <label for="amount">Monto a Pagar:</label>
-                <input type="number" name="amount" id="amount" step="0.01" required readonly
-                       style="background-color: var(--bg-light); font-weight: bold; color: var(--text-dark);">
-                <small style="color: #6c757d;">Este es el saldo pendiente de la contribución seleccionada</small>
-            </div>
-            
-            <div class="form-group">
-                <label for="period">Período:</label>
-                <input type="text" id="period" readonly 
-                       style="background-color: var(--bg-light); color: #6c757d;">
-            </div>
 
-            <div class="form-group" id="singleProofGroup">
+            <div class="form-group" id="proofGroup">
                 <label for="proof" style="font-size: 1rem;">
                     <i class="fas fa-upload"></i> Comprobante de Transferencia *
                 </label>
@@ -946,10 +1026,10 @@ ob_start();
                            accept="image/jpeg,image/png,application/pdf" 
                            required 
                            style="display: none"
-                           onchange="handleFileSelect(this, 'singlePreview', 'singleFileName', 'singleStatus', 'singleProofGroup')">
-                    <img id="singlePreview" class="image-preview" alt="Vista previa del comprobante">
-                    <span id="singleFileName" class="file-name"></span>
-                    <div id="singleStatus" class="file-status"></div>
+                           onchange="handleFileSelect(this, 'proofPreview', 'proofFileName', 'proofStatus', 'proofGroup')">
+                    <img id="proofPreview" class="image-preview" alt="Vista previa del comprobante">
+                    <span id="proofFileName" class="file-name"></span>
+                    <div id="proofStatus" class="file-status"></div>
                 </div>
             </div>
 
@@ -969,7 +1049,7 @@ ob_start();
 </div>
 
 <script>
-// Función mejorada para manejo de archivos con previsualización (igual que en registro)
+// Función mejorada para manejo de archivos con previsualización
 function handleFileSelect(input, previewId, fileNameId, statusId, groupId) {
     const preview = document.getElementById(previewId);
     const fileNameElement = document.getElementById(fileNameId);
@@ -1027,14 +1107,9 @@ function handleFileSelect(input, previewId, fileNameId, statusId, groupId) {
             reader.onload = function(e) {
                 preview.src = e.target.result;
                 preview.style.display = 'block';
-                
-                preview.onload = function() {
-                    console.log('Preview cargado correctamente');
-                }
             }
             reader.readAsDataURL(file);
         } else if (fileExtension === '.pdf') {
-            // Para PDFs, mostrar ícono en lugar de preview
             preview.style.display = 'none';
         }
     } else {
@@ -1046,7 +1121,6 @@ function showError(group, statusElement, message) {
     if (group) {
         group.classList.add('has-error');
         
-        // Agregar mensaje de error debajo del upload box
         const errorDiv = document.createElement('div');
         errorDiv.className = 'field-error';
         errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
@@ -1081,20 +1155,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Referencias a elementos
     const modal = document.getElementById('payModal');
     const payForm = document.getElementById('payForm');
-    const paymentForm = document.getElementById('paymentForm');
     const checkboxes = document.querySelectorAll('.contribution-checkbox');
     const selectAllCheckbox = document.getElementById('selectAll');
-    const paymentSummary = document.getElementById('paymentSummary');
-    const totalAmount = document.getElementById('totalAmount');
-    const totalAmountInput = document.getElementById('totalAmountInput');
-    const selectedCount = document.getElementById('selectedCount');
-    const multipleProofSection = document.getElementById('multipleProofSection');
+    const floatingActions = document.getElementById('floatingActions');
+    const floatingCount = document.getElementById('floatingCount');
+    const floatingTotal = document.getElementById('floatingTotal');
+    const openMultiplePayModalBtn = document.getElementById('openMultiplePayModal');
 
-    // Función para actualizar el resumen de pagos múltiples
-    function updatePaymentSummary() {
+    // Variables para datos seleccionados
+    let selectedContributions = [];
+
+    // Función para actualizar contribuciones seleccionadas
+    function updateSelectedContributions() {
+        selectedContributions = [];
         let total = 0;
         let count = 0;
-        const selectedContributions = [];
 
         checkboxes.forEach(checkbox => {
             if (checkbox.checked) {
@@ -1109,19 +1184,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        totalAmount.textContent = 'Bs. ' + total.toFixed(2);
-        totalAmountInput.value = total.toFixed(2);
-        selectedCount.textContent = count + ' contribución' + (count !== 1 ? 'es' : '') + ' seleccionada' + (count !== 1 ? 's' : '');
-
+        // Actualizar botón flotante
         if (count > 0) {
-            paymentSummary.style.display = 'flex';
-            multipleProofSection.style.display = 'block';
-            // Hacer requerido el campo de comprobante para pagos múltiples
-            document.getElementById('proofMultiple').required = true;
+            floatingActions.classList.add('show');
+            floatingCount.textContent = count + ' contribución' + (count !== 1 ? 'es' : '') + ' seleccionada' + (count !== 1 ? 's' : '');
+            floatingTotal.textContent = 'Bs. ' + total.toFixed(2);
         } else {
-            paymentSummary.style.display = 'none';
-            multipleProofSection.style.display = 'none';
-            document.getElementById('proofMultiple').required = false;
+            floatingActions.classList.remove('show');
         }
 
         // Actualizar estado del checkbox "Seleccionar todos"
@@ -1138,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners para checkboxes individuales
     checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updatePaymentSummary);
+        checkbox.addEventListener('change', updateSelectedContributions);
     });
 
     // Event listener para "Seleccionar todos"
@@ -1148,7 +1217,19 @@ document.addEventListener('DOMContentLoaded', function() {
             checkboxes.forEach(checkbox => {
                 checkbox.checked = isChecked;
             });
-            updatePaymentSummary();
+            updateSelectedContributions();
+        });
+    }
+
+    // Abrir modal para pagos múltiples
+    if (openMultiplePayModalBtn) {
+        openMultiplePayModalBtn.addEventListener('click', function() {
+            if (selectedContributions.length === 0) {
+                alert('Por favor seleccione al menos una contribución.');
+                return;
+            }
+
+            openPaymentModal(true, selectedContributions);
         });
     }
 
@@ -1159,20 +1240,90 @@ document.addEventListener('DOMContentLoaded', function() {
             const amount = this.getAttribute('data-amount') || 0;
             const period = this.getAttribute('data-period') || '';
             
-            document.getElementById('payId').value = id;
-            document.getElementById('amount').value = parseFloat(amount).toFixed(2);
-            document.getElementById('period').value = period;
-            
-            // Limpiar el campo de archivo al abrir modal
-            const proofInput = document.getElementById('proof');
-            const preview = document.getElementById('singlePreview');
-            const fileName = document.getElementById('singleFileName');
-            const status = document.getElementById('singleStatus');
-            clearFile(proofInput, preview, fileName, status);
-            
-            modal.style.display = 'block';
+            openPaymentModal(false, [{
+                id: id,
+                amount: parseFloat(amount),
+                period: period
+            }]);
         });
     });
+
+    // Función para abrir el modal
+    function openPaymentModal(isMultiple, contributions) {
+        const modalTitle = document.getElementById('modalTitle');
+        const paymentAction = document.getElementById('paymentAction');
+        const singleSection = document.getElementById('singleContributionSection');
+        const multipleSection = document.getElementById('multipleContributionsSection');
+        const contributionsList = document.getElementById('contributionsList');
+        const periodInput = document.getElementById('period');
+        const amountLabel = document.getElementById('amountLabel');
+        const totalAmountDisplay = document.getElementById('totalAmountDisplay');
+        const amountInput = document.getElementById('amount');
+        const totalAmountInput = document.getElementById('totalAmount');
+        const selectedContributionsInput = document.getElementById('selectedContributionsInput');
+
+        // Limpiar el formulario
+        const proofInput = document.getElementById('proof');
+        const preview = document.getElementById('proofPreview');
+        const fileName = document.getElementById('proofFileName');
+        const status = document.getElementById('proofStatus');
+        clearFile(proofInput, preview, fileName, status);
+
+        // Calcular total
+        let total = 0;
+        contributions.forEach(c => total += c.amount);
+
+        if (isMultiple) {
+            // Configurar para pagos múltiples
+            modalTitle.innerHTML = '<i class="fas fa-credit-card"></i> Realizar Pago Múltiple por Transferencia';
+            paymentAction.value = 'payMultiple';
+            singleSection.style.display = 'none';
+            multipleSection.style.display = 'block';
+            amountLabel.textContent = 'Total a Pagar:';
+
+            // Generar lista de contribuciones
+            contributionsList.innerHTML = '';
+            contributions.forEach(contribution => {
+                const item = document.createElement('div');
+                item.className = 'contribution-item';
+                item.innerHTML = `
+                    <span class="contribution-item-period">${contribution.period}</span>
+                    <span class="contribution-item-amount">Bs. ${contribution.amount.toFixed(2)}</span>
+                `;
+                contributionsList.appendChild(item);
+            });
+
+            // Agregar inputs hidden para las contribuciones seleccionadas
+            selectedContributionsInput.innerHTML = '';
+            contributions.forEach(contribution => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_contributions[]';
+                input.value = contribution.id;
+                selectedContributionsInput.appendChild(input);
+            });
+
+            totalAmountInput.value = total.toFixed(2);
+            amountInput.value = '';
+        } else {
+            // Configurar para pago individual
+            modalTitle.innerHTML = '<i class="fas fa-credit-card"></i> Realizar Pago Individual por Transferencia';
+            paymentAction.value = 'pay';
+            singleSection.style.display = 'block';
+            multipleSection.style.display = 'none';
+            amountLabel.textContent = 'Monto a Pagar:';
+
+            const contribution = contributions[0];
+            document.getElementById('payId').value = contribution.id;
+            periodInput.value = contribution.period;
+            amountInput.value = contribution.amount.toFixed(2);
+            totalAmountInput.value = '';
+            selectedContributionsInput.innerHTML = '';
+        }
+
+        totalAmountDisplay.textContent = 'Bs. ' + total.toFixed(2);
+        modal.style.display = 'block';
+    }
 
     // Cerrar modal
     document.querySelector('.close').addEventListener('click', function() {
@@ -1185,71 +1336,91 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Validación del formulario de pago individual
+    // Validación del formulario
     if (payForm) {
         payForm.addEventListener('submit', function(e) {
             const fileInput = document.getElementById('proof');
-            const amount = document.getElementById('amount').value;
+            const action = document.getElementById('paymentAction').value;
             
+            // Validar que se haya seleccionado un archivo
             if (!fileInput.files.length) {
                 e.preventDefault();
-                alert('Por favor seleccione un comprobante de pago.');
+                
+                // Resaltar el campo de archivo
+                const proofGroup = document.getElementById('proofGroup');
+                if (proofGroup) {
+                    proofGroup.classList.add('has-error');
+                    
+                    // Agregar mensaje de error si no existe
+                    const existingError = proofGroup.querySelector('.field-error');
+                    if (!existingError) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'field-error';
+                        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Debe subir un comprobante de pago para continuar';
+                        proofGroup.appendChild(errorDiv);
+                    }
+                    
+                    // Scroll al campo de archivo
+                    proofGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                
+                alert('⚠️ Comprobante Requerido\n\nDebe subir un comprobante de pago (imagen o PDF) para procesar su solicitud.');
                 return;
             }
-            
-            if (!amount || parseFloat(amount) <= 0) {
+
+            // Validar que el archivo sea válido
+            const file = fileInput.files[0];
+            if (file.size > 2 * 1024 * 1024) {
                 e.preventDefault();
-                alert('El monto debe ser mayor a 0.');
+                alert('⚠️ Archivo muy grande\n\nEl comprobante no puede superar los 2MB. Por favor seleccione un archivo más pequeño.');
                 return;
             }
-            
-            // Confirmar envío
-            if (!confirm('¿Está seguro de enviar este pago para revisión?')) {
+
+            if (file.size === 0) {
                 e.preventDefault();
+                alert('⚠️ Archivo inválido\n\nEl archivo seleccionado está vacío. Por favor seleccione un comprobante válido.');
+                return;
+            }
+
+            if (action === 'payMultiple') {
+                // Contar solo los inputs hidden generados en el modal (no los checkboxes de la tabla)
+                const selectedInputs = document.querySelectorAll('#selectedContributionsInput input[name="selected_contributions[]"]');
+                const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+                
+                if (selectedInputs.length === 0) {
+                    e.preventDefault();
+                    alert('Error: No se seleccionaron contribuciones.');
+                    return;
+                }
+                
+                if (!totalAmount || totalAmount <= 0) {
+                    e.preventDefault();
+                    alert('El monto total debe ser mayor a 0.');
+                    return;
+                }
+                
+                const contributionsText = selectedInputs.length === 1 ? 'contribución' : 'contribuciones';
+                if (!confirm(`¿Está seguro de enviar el pago de ${selectedInputs.length} ${contributionsText} por un total de Bs. ${totalAmount.toFixed(2)} para revisión?`)) {
+                    e.preventDefault();
+                }
+            } else {
+                const amount = document.getElementById('amount').value;
+                
+                if (!amount || parseFloat(amount) <= 0) {
+                    e.preventDefault();
+                    alert('El monto debe ser mayor a 0.');
+                    return;
+                }
+                
+                if (!confirm('¿Está seguro de enviar este pago para revisión?')) {
+                    e.preventDefault();
+                }
             }
         });
     }
 
-    // Validación del formulario de pagos múltiples
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', function(e) {
-            const selectedCheckboxes = document.querySelectorAll('.contribution-checkbox:checked');
-            const multipleProofInput = document.getElementById('proofMultiple');
-            
-            if (selectedCheckboxes.length === 0) {
-                e.preventDefault();
-                alert('Por favor seleccione al menos una contribución para pagar.');
-                return;
-            }
-            
-            if (!multipleProofInput.files.length) {
-                e.preventDefault();
-                alert('Por favor seleccione un comprobante de pago para las contribuciones seleccionadas.');
-                return;
-            }
-            
-            const totalAmount = parseFloat(document.getElementById('totalAmountInput').value);
-            if (!totalAmount || totalAmount <= 0) {
-                e.preventDefault();
-                alert('El monto total debe ser mayor a 0.');
-                return;
-            }
-            
-            // Confirmar envío
-            const contributionsText = selectedCheckboxes.length === 1 ? 'contribución' : 'contribuciones';
-            if (!confirm(`¿Está seguro de enviar el pago de ${selectedCheckboxes.length} ${contributionsText} por un total de Bs. ${totalAmount.toFixed(2)} para revisión?`)) {
-                e.preventDefault();
-            }
-        });
-    }
-
-    // Inicializar el resumen
-    updatePaymentSummary();
-
-    // Mostrar QR en modal si existe
-    <?php if ($qrImageUrl): ?>
-    console.log('QR disponible para pagos');
-    <?php endif; ?>
+    // Inicializar
+    updateSelectedContributions();
 });
 </script>
 
