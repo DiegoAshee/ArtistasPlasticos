@@ -703,6 +703,14 @@ ob_start();
         </div>
     <?php endif; ?>
 
+    <?php if (!empty($_SESSION['notification_flash'])): ?>
+        <div class="success-message">
+            <i class="fas fa-info-circle"></i>
+            <?= htmlspecialchars($_SESSION['notification_flash']) ?>
+        </div>
+        <?php unset($_SESSION['notification_flash']); ?>
+    <?php endif; ?>
+
     <?php if ($error): ?>
         <div class="error-message">
             <i class="fas fa-exclamation-triangle"></i>

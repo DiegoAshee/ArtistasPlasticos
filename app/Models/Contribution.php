@@ -60,20 +60,26 @@ class Contribution {
 
         $contributionId = $this->db->lastInsertId();
 
-        // Include Notification class
+        // Include Notification class and helpers for URL building
         require_once __DIR__ . '/Notification.php';
-        
+        require_once __DIR__ . '/../Config/helpers.php';
+
         // Create a notification for the new contribution
         $notificationData = [
-            'title' => 'Nueva Contribución Creada',
+            'title' => 'Nueva Contribución Disponible',
             'message' => "Se ha creado una nueva contribución por un monto de $amount para el mes $monthYear",
             'type' => 'info',
-            'data' => json_encode([
+            // Pasar un array (Notification::create lo JSON-encodeará). Incluimos entity/id/url explícitos.
+            'data' => [
                 'contribution_id' => $contributionId,
                 'amount' => $amount,
-                'monthYear' => $monthYear
-            ]),
-            'idRol' => 2 // Asegurarse de que el rol esté definido
+                'monthYear' => $monthYear,
+                'entity' => 'contribution',
+                'id' => (int)$contributionId,
+                // Guardar URL absoluta para evitar problemas de rutas relativas
+                'url' => u('partner/pending-payments?contribution=' . (int)$contributionId),
+            ],
+            'idRol' => 2 // Notificar al rol de socio
         ];
 
         $notification = new \App\Models\Notification();

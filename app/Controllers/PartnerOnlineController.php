@@ -7,6 +7,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Models/PartnerOnline.php';
 require_once __DIR__ . '/../Config/helpers.php';  // Asegúrate de incluir helpers.php donde está la función u()
+// Modelo de notificaciones (para alertar al admin de nuevas solicitudes)
+require_once __DIR__ . '/../Models/Notification.php';
 
 class PartnerOnlineController extends BaseController
 {
@@ -67,6 +69,31 @@ class PartnerOnlineController extends BaseController
                 $successMessage = "Solicitud de cambios exitoso";
                 if (!$emailSent) {
                     $successMessage .= " (Nota: No se pudo enviar el correo de confirmación)";
+                }
+                // Crear notificación para administradores con enlace directo a la solicitud
+                try {
+                    $notifModel = new \App\Models\Notification();
+                    $title = 'Nueva solicitud de cambio';
+                    $message = sprintf('Solicitud de cambios de %s (CI: %s)', $name, $ci);
+                    $notif = [
+                        'title' => $title,
+                        'message' => $message,
+                        'type' => 'info',
+                        // data como array; Notification::create la normalizará y añadirá entity/id/url
+                        'data' => [
+                            'entity' => 'partnerOnline',
+                            'id' => (int)$requestId,
+                            'url' => 'partnerOnline/pending?id=' . (int)$requestId,
+                            'name' => $name,
+                            'ci' => $ci,
+                            'email' => $email
+                        ],
+                        // Enviar a rol admin (ajustará el nombre de columna automáticamente)
+                        'role_id' => 1
+                    ];
+                    $notifModel->create($notif);
+                } catch (\Throwable $e) {
+                    error_log('PartnerOnlineController::createRequest notification error: ' . $e->getMessage());
                 }
                 // Redirigir al perfil usando la URL correcta generada por la función u()
                 $this->redirect(('users/profile'));  // Debería funcionar con BASE_URL correctamente

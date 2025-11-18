@@ -395,6 +395,8 @@ $router->addRoute('GET', '/notifications/all', 'NotificationController', 'index'
 $router->addRoute('POST', '/notifications/mark-read', 'NotificationController', 'markRead');
 $router->addRoute('POST', '/notifications/mark-all-read', 'NotificationController', 'markAllRead');
 $router->addRoute('POST', '/notifications/delete', 'NotificationController', 'delete');
+// Ruta para abrir una notificación (marcar como leída y redirigir)
+$router->addRoute('GET', '/notifications/open/([0-9]+)', 'NotificationController', 'open');
 
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     echo "<b>Error:</b> [$errno] $errstr - $errfile:$errline<br>";
